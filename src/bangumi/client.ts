@@ -60,7 +60,10 @@ export class BangumiClient {
 		});
 
 		if (response.status < 200 || response.status >= 300) {
-			throw new Error(`Bangumi API request failed: ${response.status}`);
+			const detail = response.text ? ` ${response.text}` : "";
+			throw new Error(
+				`Bangumi API request failed: ${response.status}${detail}`
+			);
 		}
 
 		return response.json as T;

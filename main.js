@@ -161,7 +161,10 @@ var BangumiClient = class {
       }
     });
     if (response.status < 200 || response.status >= 300) {
-      throw new Error(`Bangumi API request failed: ${response.status}`);
+      const detail = response.text ? ` ${response.text}` : "";
+      throw new Error(
+        `Bangumi API request failed: ${response.status}${detail}`
+      );
     }
     return response.json;
   }
@@ -172,20 +175,26 @@ var SYNC_BLOCK_START = "<!-- bangumi-sync-start -->";
 var SYNC_BLOCK_END = "<!-- bangumi-sync-end -->";
 var MarkdownRenderer = class {
   renderSubjectNote(subject) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f, _g;
     const bangumiSubject = subject.collection.subject;
     const title = bangumiSubject.name_cn || bangumiSubject.name;
     const cover = ((_a = bangumiSubject.images) == null ? void 0 : _a.large) || ((_b = bangumiSubject.images) == null ? void 0 : _b.common);
     const rating = (_c = subject.collection.rate) != null ? _c : "";
     const updatedAt = (_d = subject.collection.updated_at) != null ? _d : "";
+    const status = this.renderCollectionStatus(subject.collection.type);
+    const tags = (_e = subject.collection.tags) != null ? _e : [];
+    const comment = (_f = subject.collection.comment) != null ? _f : "";
     return [
       "---",
       `bangumi_id: ${bangumiSubject.id}`,
       "type: anime",
-      `status: ${subject.collection.type}`,
+      `collection_type: ${subject.collection.type}`,
+      `status: ${status}`,
       `rating: ${rating}`,
-      `eps_total: ${(_e = bangumiSubject.eps) != null ? _e : ""}`,
+      `eps_total: ${(_g = bangumiSubject.eps) != null ? _g : ""}`,
       `updated_at: ${JSON.stringify(updatedAt)}`,
+      `bangumi_tags: ${JSON.stringify(tags)}`,
+      `comment: ${JSON.stringify(comment)}`,
       "tags:",
       "  - bangumi",
       "  - anime",
@@ -204,8 +213,13 @@ var MarkdownRenderer = class {
       "## Bangumi",
       "",
       `- Subject ID: ${bangumiSubject.id}`,
+      `- Status: ${status}`,
+      `- User rating: ${rating || "N/A"}`,
       `- Original title: ${bangumiSubject.name}`,
       bangumiSubject.date ? `- Air date: ${bangumiSubject.date}` : "",
+      bangumiSubject.eps ? `- Episodes: ${bangumiSubject.eps}` : "",
+      tags.length > 0 ? `- User tags: ${tags.join(", ")}` : "",
+      comment ? `- User comment: ${comment}` : "",
       "",
       SYNC_BLOCK_END,
       "",
@@ -230,8 +244,11 @@ var MarkdownRenderer = class {
     return `${before}${syncedBlock}${after}`;
   }
   renderEpisodeChecklist(subject) {
+    if (subject.episodeSyncError) {
+      return `- [ ] Episode progress unavailable: ${subject.episodeSyncError}`;
+    }
     if (subject.episodes.length === 0) {
-      return "- [ ] Episode sync will appear here after the API flow is completed.";
+      return "- [ ] Episode progress unavailable.";
     }
     return subject.episodes.map((item) => {
       const episode = item.episode;
@@ -239,6 +256,22 @@ var MarkdownRenderer = class {
       const title = episode.name_cn || episode.name || `Episode ${episode.sort}`;
       return `- [${checked}] EP${episode.sort} ${title}`;
     }).join("\n");
+  }
+  renderCollectionStatus(type) {
+    switch (type) {
+      case 1:
+        return "wish";
+      case 2:
+        return "collect";
+      case 3:
+        return "do";
+      case 4:
+        return "on_hold";
+      case 5:
+        return "dropped";
+      default:
+        return String(type);
+    }
   }
 };
 
@@ -266,19 +299,34 @@ var NoteWriter = class {
     const directory = (0, import_obsidian3.normalizePath)(syncDirectory);
     await this.ensureFolder(directory);
     const title = subject.collection.subject.name_cn || subject.collection.subject.name;
-    const path = (0, import_obsidian3.normalizePath)(`${directory}/${this.toSafeFileName(title)}.md`);
+    const path = (0, import_obsidian3.normalizePath)(
+      `${directory}/${this.toSafeFileName(title)} [bgm-${subject.collection.subject.id}].md`
+    );
+    const existingAtPath = this.app.vault.getAbstractFileByPath(path);
+    if (existingAtPath instanceof import_obsidian3.TFile) {
+      const previous = await this.app.vault.read(existingAtPath);
+      await this.app.vault.modify(
+        existingAtPath,
+        this.renderer.mergeSyncedBlock(previous, rendered)
+      );
+      return existingAtPath;
+    }
     return this.app.vault.create(path, rendered);
   }
   findExistingSubjectNote(subjectId, syncDirectory) {
     var _a, _b;
     const directory = (0, import_obsidian3.normalizePath)(syncDirectory);
-    const marker = `bangumi_id: ${subjectId}`;
+    const idMarker = `[bgm-${subjectId}]`;
     return (_b = (_a = this.app.vault.getMarkdownFiles().find(
       (file) => {
         var _a2, _b2;
-        return file.path.startsWith(`${directory}/`) && ((_b2 = (_a2 = this.app.metadataCache.getFileCache(file)) == null ? void 0 : _a2.frontmatter) == null ? void 0 : _b2.bangumi_id) === subjectId;
+        return file.path.startsWith(`${directory}/`) && String(
+          (_b2 = (_a2 = this.app.metadataCache.getFileCache(file)) == null ? void 0 : _a2.frontmatter) == null ? void 0 : _b2.bangumi_id
+        ) === String(subjectId);
       }
-    )) != null ? _a : this.app.vault.getMarkdownFiles().find((file) => file.path.startsWith(`${directory}/`) && file.basename.includes(String(subjectId)))) != null ? _b : null;
+    )) != null ? _a : this.app.vault.getMarkdownFiles().find(
+      (file) => file.path.startsWith(`${directory}/`) && (file.basename.includes(idMarker) || file.basename.includes(String(subjectId)))
+    )) != null ? _b : null;
   }
   async ensureFolder(path) {
     const parts = path.split("/");
@@ -296,6 +344,8 @@ var NoteWriter = class {
 };
 
 // src/sync/sync-service.ts
+var ANIME_SUBJECT_TYPE = 2;
+var PAGE_LIMIT = 50;
 var SyncService = class {
   constructor(app, settings) {
     this.app = app;
@@ -305,12 +355,16 @@ var SyncService = class {
     if (!this.settings.accessToken) {
       return {
         synced: 0,
+        skipped: 0,
+        failed: 0,
         message: "Add a Bangumi access token in plugin settings first."
       };
     }
     if (this.settings.collectionTypes.length === 0) {
       return {
         synced: 0,
+        skipped: 0,
+        failed: 0,
         message: "Select at least one Bangumi collection status to sync."
       };
     }
@@ -319,18 +373,95 @@ var SyncService = class {
       userAgent: this.settings.userAgent
     });
     const username = this.settings.username || (await client.getMe()).username;
-    const firstPage = await client.getCollections({
-      username,
-      subjectType: 2,
-      collectionType: this.settings.collectionTypes[0],
-      limit: 1,
-      offset: 0
-    });
     const writer = new NoteWriter(this.app, new MarkdownRenderer());
+    const seenSubjectIds = /* @__PURE__ */ new Set();
+    let synced = 0;
+    let skipped = 0;
+    let failed = 0;
+    for (const collectionType of this.settings.collectionTypes) {
+      let collections;
+      try {
+        collections = await this.fetchAllCollections(
+          client,
+          username,
+          collectionType
+        );
+      } catch (error) {
+        failed += 1;
+        console.error(
+          `Bangumi Sync failed to fetch collection type ${collectionType}`,
+          error
+        );
+        continue;
+      }
+      for (const collection of collections) {
+        const subjectId = collection.subject.id;
+        if (seenSubjectIds.has(subjectId)) {
+          skipped += 1;
+          continue;
+        }
+        seenSubjectIds.add(subjectId);
+        let episodes = [];
+        let episodeSyncError;
+        try {
+          episodes = await this.fetchAllEpisodeCollections(client, subjectId);
+        } catch (error) {
+          failed += 1;
+          episodeSyncError = error instanceof Error ? error.message : "Unknown episode sync error";
+          console.error(
+            `Bangumi Sync failed to fetch episodes for subject ${subjectId}`,
+            error
+          );
+        }
+        try {
+          await writer.writeSubjectNote(this.settings.syncDirectory, {
+            collection,
+            episodes,
+            episodeSyncError
+          });
+          synced += 1;
+        } catch (error) {
+          failed += 1;
+          console.error(
+            `Bangumi Sync failed to write subject ${subjectId}`,
+            error
+          );
+        }
+      }
+    }
     return {
-      synced: 0,
-      message: `Connected as ${username}. Found ${firstPage.total} matching Bangumi items. Note writing is scaffolded for the next implementation pass.`
+      synced,
+      skipped,
+      failed,
+      message: `Bangumi Sync finished for ${username}: ${synced} note(s) synced, ${skipped} skipped, ${failed} issue(s).`
     };
+  }
+  async fetchAllCollections(client, username, collectionType) {
+    const collections = [];
+    let offset = 0;
+    let total = Number.POSITIVE_INFINITY;
+    while (offset < total) {
+      const page = await client.getCollections({
+        username,
+        subjectType: ANIME_SUBJECT_TYPE,
+        collectionType,
+        limit: PAGE_LIMIT,
+        offset
+      });
+      total = page.total;
+      collections.push(...page.data);
+      if (page.data.length === 0) {
+        break;
+      }
+      offset += page.data.length;
+    }
+    return collections;
+  }
+  async fetchAllEpisodeCollections(client, subjectId) {
+    const page = await client.getSubjectEpisodeCollections(subjectId);
+    return page.data.sort(
+      (left, right) => left.episode.sort - right.episode.sort
+    );
   }
 };
 

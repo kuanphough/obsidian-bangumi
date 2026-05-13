@@ -10,15 +10,21 @@ export class MarkdownRenderer {
 		const cover = bangumiSubject.images?.large || bangumiSubject.images?.common;
 		const rating = subject.collection.rate ?? "";
 		const updatedAt = subject.collection.updated_at ?? "";
+		const status = this.renderCollectionStatus(subject.collection.type);
+		const tags = subject.collection.tags ?? [];
+		const comment = subject.collection.comment ?? "";
 
 		return [
 			"---",
 			`bangumi_id: ${bangumiSubject.id}`,
 			"type: anime",
-			`status: ${subject.collection.type}`,
+			`collection_type: ${subject.collection.type}`,
+			`status: ${status}`,
 			`rating: ${rating}`,
 			`eps_total: ${bangumiSubject.eps ?? ""}`,
 			`updated_at: ${JSON.stringify(updatedAt)}`,
+			`bangumi_tags: ${JSON.stringify(tags)}`,
+			`comment: ${JSON.stringify(comment)}`,
 			"tags:",
 			"  - bangumi",
 			"  - anime",
@@ -37,8 +43,13 @@ export class MarkdownRenderer {
 			"## Bangumi",
 			"",
 			`- Subject ID: ${bangumiSubject.id}`,
+			`- Status: ${status}`,
+			`- User rating: ${rating || "N/A"}`,
 			`- Original title: ${bangumiSubject.name}`,
 			bangumiSubject.date ? `- Air date: ${bangumiSubject.date}` : "",
+			bangumiSubject.eps ? `- Episodes: ${bangumiSubject.eps}` : "",
+			tags.length > 0 ? `- User tags: ${tags.join(", ")}` : "",
+			comment ? `- User comment: ${comment}` : "",
 			"",
 			SYNC_BLOCK_END,
 			"",
@@ -72,8 +83,12 @@ export class MarkdownRenderer {
 	}
 
 	private renderEpisodeChecklist(subject: BangumiSyncedSubject): string {
+		if (subject.episodeSyncError) {
+			return `- [ ] Episode progress unavailable: ${subject.episodeSyncError}`;
+		}
+
 		if (subject.episodes.length === 0) {
-			return "- [ ] Episode sync will appear here after the API flow is completed.";
+			return "- [ ] Episode progress unavailable.";
 		}
 
 		return subject.episodes
@@ -84,5 +99,22 @@ export class MarkdownRenderer {
 				return `- [${checked}] EP${episode.sort} ${title}`;
 			})
 			.join("\n");
+	}
+
+	private renderCollectionStatus(type: number): string {
+		switch (type) {
+			case 1:
+				return "wish";
+			case 2:
+				return "collect";
+			case 3:
+				return "do";
+			case 4:
+				return "on_hold";
+			case 5:
+				return "dropped";
+			default:
+				return String(type);
+		}
 	}
 }

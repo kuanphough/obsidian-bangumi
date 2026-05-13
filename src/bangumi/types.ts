@@ -78,4 +78,5 @@ export interface BangumiEpisodeCollection {
 export interface BangumiSyncedSubject {
 	collection: BangumiCollection;
 	episodes: BangumiEpisodeCollection[];
+	episodeSyncError?: string;
 }

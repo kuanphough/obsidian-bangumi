@@ -33,7 +33,19 @@ export class NoteWriter {
 
 		const title =
 			subject.collection.subject.name_cn || subject.collection.subject.name;
-		const path = normalizePath(`${directory}/${this.toSafeFileName(title)}.md`);
+		const path = normalizePath(
+			`${directory}/${this.toSafeFileName(title)} [bgm-${subject.collection.subject.id}].md`
+		);
+		const existingAtPath = this.app.vault.getAbstractFileByPath(path);
+		if (existingAtPath instanceof TFile) {
+			const previous = await this.app.vault.read(existingAtPath);
+			await this.app.vault.modify(
+				existingAtPath,
+				this.renderer.mergeSyncedBlock(previous, rendered)
+			);
+			return existingAtPath;
+		}
+
 		return this.app.vault.create(path, rendered);
 	}
 
@@ -42,7 +54,7 @@ export class NoteWriter {
 		syncDirectory: string
 	): TFile | null {
 		const directory = normalizePath(syncDirectory);
-		const marker = `bangumi_id: ${subjectId}`;
+		const idMarker = `[bgm-${subjectId}]`;
 
 		return (
 			this.app.vault
@@ -50,12 +62,18 @@ export class NoteWriter {
 				.find(
 					(file) =>
 						file.path.startsWith(`${directory}/`) &&
-						this.app.metadataCache.getFileCache(file)?.frontmatter
-							?.bangumi_id === subjectId
+						String(
+							this.app.metadataCache.getFileCache(file)?.frontmatter?.bangumi_id
+						) === String(subjectId)
 				) ??
 			this.app.vault
 				.getMarkdownFiles()
-				.find((file) => file.path.startsWith(`${directory}/`) && file.basename.includes(String(subjectId))) ??
+				.find(
+					(file) =>
+						file.path.startsWith(`${directory}/`) &&
+						(file.basename.includes(idMarker) ||
+							file.basename.includes(String(subjectId)))
+				) ??
 			null
 		);
 	}
