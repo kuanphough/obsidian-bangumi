@@ -1,0 +1,10 @@
+{
+	"id": "bangumi-sync",
+	"name": "Bangumi Sync",
+	"version": "0.1.0",
+	"minAppVersion": "1.5.0",
+	"description": "Sync Bangumi collection and episode progress into Obsidian notes.",
+	"author": "zhaoyuanhua",
+	"authorUrl": "",
+	"isDesktopOnly": false
+}
