@@ -54,9 +54,11 @@ The subject type folders use `book`, `anime`, `music`, `game`, and `real`. The c
 - Syncs the selected subject types: books (`1`), anime (`2`), music (`3`), games (`4`), and real-life media (`6`).
 - Fetches all selected collection statuses with pagination.
 - Skips on-hold and dropped statuses unless `Include on hold/dropped` is enabled.
-- When incremental sync is enabled, skips unchanged collections based on Bangumi `updated_at` and the last successful sync time. Episode-progress fetch issues do not block advancing the sync timestamp after notes are written.
+- When incremental sync is enabled, skips unchanged collections based on Bangumi `updated_at` and the last successful sync time, but recreates missing local subject notes when needed. Episode-progress fetch issues do not block advancing the sync timestamp after notes are written.
 - Fetches episode progress for each subject when available.
-- Writes Bangumi metadata, user rating, user tags, user comment, cover, Base-friendly progress fields, and episode checklist.
+- Writes Bangumi metadata, user rating, user tags, user comment, cover, a lightweight `progress_done` field, and episode checklist.
+- Optionally writes newly synced in-progress subjects to today's Daily Note as completed todo items. Add `<!-- bangumi-daily-sync-start -->` and `<!-- bangumi-daily-sync-end -->` to your Daily Note template first; in incremental sync, only subjects actually written or updated in this run are added.
+- Compares rendered note content before writing, so full sync does not touch local subject notes whose generated content has not changed.
 - Shows only start, subject-type/status summary, and final notices during sync, and writes `Bangumi Sync Report.md` when issues occur.
 - Updates frontmatter and the `<!-- bangumi-sync-start -->` to `<!-- bangumi-sync-end -->` block on repeat syncs.
 - Leaves content outside the sync block, including `## Notes`, for permanent notes.
@@ -68,7 +70,7 @@ The `Subject note template` setting lets you customize the Markdown generated fo
 
 The template must include `{{sync_block_start}}` and `{{sync_block_end}}`. If either marker is missing, the plugin falls back to the built-in default template to avoid overwriting handwritten notes.
 
-The default frontmatter includes progress fields for Obsidian Base and Dataview: `progress_done`, `progress_total`, `progress_percent`, `progress_available`, `next_episode`, `next_episode_sort`, `last_done_episode`, and `last_done_episode_sort`.
+The default frontmatter keeps basic lookup fields plus `progress_done`. Fuller progress variables such as `progress_total`, `progress_percent`, and next/last episode fields are still available for custom templates.
 
 Bangumi's current v0 episode collection endpoint does not return the user's per-episode comment text, so per-episode comments are not synced.
 
@@ -86,7 +88,7 @@ Common variables:
 - `{{tags_yaml}}`, `{{progress}}`
 - `{{sync_block_start}}`, `{{sync_block_end}}`
 
-See [Subject Note Template Variables](docs/template-variables.md) for the full variable reference.
+See [Subject Note Template Variables](docs/template-variables.md) for the full variable reference. The settings button also creates and opens a local `Template Variables.md` file under your sync directory, so it works before the plugin is published online.
 
 ## Development
 
@@ -100,7 +102,6 @@ On Windows PowerShell, use `npm.cmd` if script execution policy blocks `npm.ps1`
 ## Current Limits
 
 - OAuth login is not exposed because it requires users to create their own Bangumi OAuth application.
-- Daily Notes sync is not implemented.
 
 ## Roadmap
 
@@ -117,6 +118,7 @@ On Windows PowerShell, use `npm.cmd` if script execution policy blocks `npm.ps1`
 - [x] Support configurable subject types beyond anime, such as books, music, games, and real-life media.
 - [x] Add options for file naming and whether to include dropped/on-hold items.
 - [x] Support incremental sync using the last synced timestamp where the Bangumi API allows it.
+- [x] Daily Notes sync.
 
 ### Notes and Templates
 

@@ -34,6 +34,8 @@ const EN = {
 	clipboardTokenFailed: "Could not read the clipboard: {{message}}",
 	clipboardTokenFilled: "Access token filled from clipboard.",
 	clipboardTokenMissing: "Clipboard does not contain an access token.",
+	copy: "Copy",
+	copiedDailyNoteSyncBlock: "Daily Note sync block copied.",
 	collected: "Collected",
 	collectedDesc: "Sync subjects marked as watched.",
 	collectionStatuses: "Collection statuses",
@@ -43,6 +45,15 @@ const EN = {
 	collectionsFetched: "Collections fetched",
 	commentJsonVar: "{{comment_json}}",
 	connectedAs: "Connected as {{username}}.",
+	dailyNoteSync: "Daily note sync",
+	dailyNoteSyncDesc:
+		"Add this block to your Daily Note template. In incremental sync, only newly written or updated in-progress subjects are added.",
+	dailyNoteSyncBlock: "Daily Note sync block",
+	dailyNoteSyncBlockDesc: "Copy this block into your Daily Note template.",
+	dailyNoteSyncMarkersMissing:
+		"Daily Note sync block markers were not found. Add the marker block to your Daily Note template first.",
+	dailyNoteSyncNoteMissing:
+		"Today's Daily Note was not found: {{path}}",
 	dropped: "Dropped",
 	droppedDesc: "Sync subjects marked as dropped.",
 	error: "Error",
@@ -63,10 +74,10 @@ const EN = {
 	includeOnHoldDropped: "Include on hold/dropped",
 	includeOnHoldDroppedDesc:
 		"When disabled, on-hold and dropped collection statuses are skipped even if they are selected below.",
-	incrementalSkipped: "Incremental skipped",
+	incrementalSkipped: "Unchanged",
 	incrementalSync: "Incremental sync",
 	incrementalSyncDesc:
-		"Skip items whose Bangumi collection updated_at is not newer than the last successful sync.",
+		"Skip unchanged items by Bangumi updated_at, but recreate missing local files when needed.",
 	issues: "Issues",
 	lastSyncedAt: "Last synced at",
 	music: "Music",
@@ -81,6 +92,7 @@ const EN = {
 	onHoldDesc: "Sync subjects marked as on hold.",
 	openTokenPage: "Open token page",
 	progressStarted: "Bangumi Sync started.",
+	progressUnavailableReport: "Progress content was not fetched",
 	realLife: "Real life",
 	realLifeDesc: "Sync real-life media subjects.",
 	reportCreated: " Report created.",
@@ -100,6 +112,8 @@ const EN = {
 		"Must include {{sync_block_start}} and {{sync_block_end}}. See the template variable documentation for all available variables.",
 	templateVariablesDoc: "Template variables",
 	templateVariablesDocDesc: "Open the documentation for available template variables.",
+	templateVariablesDocFailed:
+		"Could not open template variable documentation: {{message}}",
 	subjectType: "Subject type",
 	subjectTypeRequired: "Select at least one Bangumi subject type to sync.",
 	subjectTypes: "Subject types",
@@ -125,6 +139,7 @@ const EN = {
 	wish: "Wish",
 	wishDesc: "Sync subjects marked as want to watch.",
 	writeNoteStage: "write note",
+	writeDailyNoteStage: "write daily note sync block",
 	writingItem: "Writing {{current}}/{{total}}: {{title}}"
 } as const;
 
@@ -159,6 +174,8 @@ const ZH: Record<LocaleKey, string> = {
 	clipboardTokenFailed: "无法读取剪贴板：{{message}}",
 	clipboardTokenFilled: "已从剪贴板填入 access token。",
 	clipboardTokenMissing: "剪贴板里没有 access token。",
+	copy: "复制",
+	copiedDailyNoteSyncBlock: "已复制每日日记同步块。",
 	collected: "已收藏",
 	collectedDesc: "同步标记为已看/已读/已完成的条目。",
 	collectionStatuses: "收藏状态",
@@ -167,6 +184,15 @@ const ZH: Record<LocaleKey, string> = {
 	collectionsFetched: "已拉取收藏数",
 	commentJsonVar: "{{comment_json}}",
 	connectedAs: "已连接为 {{username}}。",
+	dailyNoteSync: "每日日记同步",
+	dailyNoteSyncDesc:
+		"请先把下面的同步块放进你的每日日记模板。增量同步时，只会添加本次实际新增或更新的进行中条目。",
+	dailyNoteSyncBlock: "每日日记同步块",
+	dailyNoteSyncBlockDesc: "复制这段同步块到你的每日日记模板里。",
+	dailyNoteSyncMarkersMissing:
+		"没有找到每日日记同步块标记。请先把同步块放进你的每日日记模板。",
+	dailyNoteSyncNoteMissing:
+		"没有找到今天的每日日记：{{path}}",
 	dropped: "已抛弃",
 	droppedDesc: "同步标记为抛弃的条目。",
 	error: "错误",
@@ -187,10 +213,10 @@ const ZH: Record<LocaleKey, string> = {
 	includeOnHoldDropped: "包含搁置/抛弃",
 	includeOnHoldDroppedDesc:
 		"关闭时，即使下方选中了搁置或抛弃状态，同步时也会跳过。",
-	incrementalSkipped: "增量跳过",
+	incrementalSkipped: "未变化",
 	incrementalSync: "增量同步",
 	incrementalSyncDesc:
-		"跳过 Bangumi 收藏更新时间不晚于上次成功同步时间的条目。",
+		"根据 Bangumi 更新时间跳过未变化条目，但会在本地文件缺失时重新创建。",
 	issues: "问题数",
 	lastSyncedAt: "上次同步时间",
 	music: "音乐",
@@ -205,6 +231,7 @@ const ZH: Record<LocaleKey, string> = {
 	onHoldDesc: "同步标记为搁置的条目。",
 	openTokenPage: "打开 token 页面",
 	progressStarted: "Bangumi Sync 已开始。",
+	progressUnavailableReport: "没拉到进度内容",
 	realLife: "三次元",
 	realLifeDesc: "同步三次元条目。",
 	reportCreated: " 已生成报告。",
@@ -224,6 +251,7 @@ const ZH: Record<LocaleKey, string> = {
 		"必须包含 {{sync_block_start}} 和 {{sync_block_end}}。所有可用变量请查看模板变量文档。",
 	templateVariablesDoc: "模板变量文档",
 	templateVariablesDocDesc: "打开可用模板变量说明文档。",
+	templateVariablesDocFailed: "无法打开模板变量文档：{{message}}",
 	subjectType: "条目类型",
 	subjectTypeRequired: "请选择至少一个要同步的 Bangumi 条目类型。",
 	subjectTypes: "条目类型",
@@ -249,6 +277,7 @@ const ZH: Record<LocaleKey, string> = {
 	wish: "想看/想读",
 	wishDesc: "同步标记为想看/想读的条目。",
 	writeNoteStage: "写入笔记",
+	writeDailyNoteStage: "写入每日日记同步块",
 	writingItem: "正在写入 {{current}}/{{total}}：{{title}}"
 };
 

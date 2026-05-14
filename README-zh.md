@@ -52,9 +52,11 @@ Bangumi `User-Agent` 会自动生成，格式为 `Kuanphough/bangumi-sync/<插�
 - 会同步已选择的条目类型：书籍（`1`）、动画（`2`）、音乐（`3`）、游戏（`4`）和三次元（`6`）。
 - 会分页拉取所有已选择的收藏状态。
 - 除非开启 `Include on hold/dropped`，否则会跳过搁置和抛弃状态。
-- 开启增量同步时，会根据 Bangumi `updated_at` 和上次成功同步时间跳过未变化条目。章节进度拉取失败不会在笔记已写入后阻止同步时间推进。
+- 开启增量同步时，会根据 Bangumi `updated_at` 和上次成功同步时间跳过未变化条目，但如果本地条目笔记缺失，会重新创建。章节进度拉取失败不会在笔记已写入后阻止同步时间推进。
 - 如果可用，会同步每个条目的章节进度。
-- 会写入 Bangumi 元数据、用户评分、用户标签、用户评论、封面、适合 Obsidian Base 使用的进度字段和章节 checklist。
+- 会写入 Bangumi 元数据、用户评分、用户标签、用户评论、封面、轻量的 `progress_done` 字段和章节 checklist。
+- 可选将本次新增同步的进行中条目写入今天的每日日记，格式为已完成 todo。需要先把 `<!-- bangumi-daily-sync-start -->` 和 `<!-- bangumi-daily-sync-end -->` 放进每日日记模板；增量同步时只会添加本次实际新增或更新的进行中条目。
+- 写入条目笔记前会比较生成内容；即使全量同步，内容没有变化的本地条目笔记也不会被刷新。
 - 同步过程中只显示开始、条目类型/收藏状态汇总和结束提示；如果出现问题，会写入 `Bangumi Sync Report.md`。
 - 重复同步时，会更新 frontmatter 和 `<!-- bangumi-sync-start -->` 到 `<!-- bangumi-sync-end -->` 之间的同步块。
 - 同步块之外的内容会保留，包括用于长期记录的 `## Notes`。
@@ -66,7 +68,7 @@ Bangumi `User-Agent` 会自动生成，格式为 `Kuanphough/bangumi-sync/<插�
 
 模板必须包含 `{{sync_block_start}}` 和 `{{sync_block_end}}`。如果缺少任意一个标记，插件会回退到内置默认模板，避免重复同步时覆盖手写笔记。
 
-默认 frontmatter 会写入适合 Obsidian Base 和 Dataview 使用的进度字段：`progress_done`、`progress_total`、`progress_percent`、`progress_available`、`next_episode`、`next_episode_sort`、`last_done_episode` 和 `last_done_episode_sort`。
+默认 frontmatter 只保留基础检索字段和 `progress_done`。`progress_total`、`progress_percent`、下一集/最后完成集等更完整的进度变量仍可在自定义模板里手动加回。
 
 当前使用的 Bangumi v0 章节收藏接口不返回用户对单集的评论文本，因此暂不同步单集评论。
 
@@ -84,7 +86,7 @@ Bangumi `User-Agent` 会自动生成，格式为 `Kuanphough/bangumi-sync/<插�
 - `{{tags_yaml}}`、`{{progress}}`
 - `{{sync_block_start}}`、`{{sync_block_end}}`
 
-完整变量说明见 [Subject Note Template Variables](docs/template-variables.md)。
+完整变量说明见 [Subject Note Template Variables](docs/template-variables.md)。设置页按钮也会在同步目录下创建并打开本地 `Template Variables.md`，即使插件还没发布到线上仓库也可以使用。
 
 ## 开发
 
@@ -98,7 +100,6 @@ npm run build
 ## 当前限制
 
 - 暂不暴露 OAuth 登录，因为它需要用户创建自己的 Bangumi OAuth 应用。
-- 暂未实现 Daily Notes 同步。
 - 当前 Bangumi v0 章节收藏接口不返回用户单集评论，因此无法同步单集评论。
 
 ## Roadmap
@@ -116,12 +117,13 @@ npm run build
 - [x] 支持动画以外的可配置条目类型，例如书籍、音乐、游戏和三次元。
 - [x] 增加文件命名、是否包含搁置/抛弃条目的选项。
 - [x] 在 Bangumi API 支持的范围内，基于上次同步时间实现增量同步。
+- [x] Daily Notes 同步。
 
 ### 笔记与模板
 
 - [x] 增加用户可编辑的 Markdown 条目笔记模板。
 - [x] 写入适合 Obsidian Base 使用的 frontmatter 进度字段。
-- [ ] 支持自定义 frontmatter 字段，方便配合 Dataview 使用。
+- [X] 支持自定义 frontmatter 字段，方便配合 Dataview 使用。
 - [ ] 为想编辑部分生成内容的用户提供更安全的合并策略。
 - [ ] 可选按状态、年份、标签或条目类型创建索引笔记。
 

@@ -44,6 +44,23 @@ var BANGUMI_SUBJECT_TYPES = {
   real: 6
 };
 
+// src/date-format.ts
+function formatLocalDateTime(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hour = pad(date.getHours());
+  const minute = pad(date.getMinutes());
+  return `${year}-${month}-${day} ${hour}:${minute}`;
+}
+function pad(value) {
+  return String(value).padStart(2, "0");
+}
+
 // src/i18n.ts
 var import_obsidian = require("obsidian");
 var EN = {
@@ -68,6 +85,8 @@ var EN = {
   clipboardTokenFailed: "Could not read the clipboard: {{message}}",
   clipboardTokenFilled: "Access token filled from clipboard.",
   clipboardTokenMissing: "Clipboard does not contain an access token.",
+  copy: "Copy",
+  copiedDailyNoteSyncBlock: "Daily Note sync block copied.",
   collected: "Collected",
   collectedDesc: "Sync subjects marked as watched.",
   collectionStatuses: "Collection statuses",
@@ -76,6 +95,12 @@ var EN = {
   collectionsFetched: "Collections fetched",
   commentJsonVar: "{{comment_json}}",
   connectedAs: "Connected as {{username}}.",
+  dailyNoteSync: "Daily note sync",
+  dailyNoteSyncDesc: "Add this block to your Daily Note template. In incremental sync, only newly written or updated in-progress subjects are added.",
+  dailyNoteSyncBlock: "Daily Note sync block",
+  dailyNoteSyncBlockDesc: "Copy this block into your Daily Note template.",
+  dailyNoteSyncMarkersMissing: "Daily Note sync block markers were not found. Add the marker block to your Daily Note template first.",
+  dailyNoteSyncNoteMissing: "Today's Daily Note was not found: {{path}}",
   dropped: "Dropped",
   droppedDesc: "Sync subjects marked as dropped.",
   error: "Error",
@@ -93,9 +118,9 @@ var EN = {
   idTitleFormatDesc: "Example: [bgm-123] Title.md",
   includeOnHoldDropped: "Include on hold/dropped",
   includeOnHoldDroppedDesc: "When disabled, on-hold and dropped collection statuses are skipped even if they are selected below.",
-  incrementalSkipped: "Incremental skipped",
+  incrementalSkipped: "Unchanged",
   incrementalSync: "Incremental sync",
-  incrementalSyncDesc: "Skip items whose Bangumi collection updated_at is not newer than the last successful sync.",
+  incrementalSyncDesc: "Skip unchanged items by Bangumi updated_at, but recreate missing local files when needed.",
   issues: "Issues",
   lastSyncedAt: "Last synced at",
   music: "Music",
@@ -110,6 +135,7 @@ var EN = {
   onHoldDesc: "Sync subjects marked as on hold.",
   openTokenPage: "Open token page",
   progressStarted: "Bangumi Sync started.",
+  progressUnavailableReport: "Progress content was not fetched",
   realLife: "Real life",
   realLifeDesc: "Sync real-life media subjects.",
   reportCreated: " Report created.",
@@ -128,6 +154,7 @@ var EN = {
   subjectNoteTemplateDesc: "Must include {{sync_block_start}} and {{sync_block_end}}. See the template variable documentation for all available variables.",
   templateVariablesDoc: "Template variables",
   templateVariablesDocDesc: "Open the documentation for available template variables.",
+  templateVariablesDocFailed: "Could not open template variable documentation: {{message}}",
   subjectType: "Subject type",
   subjectTypeRequired: "Select at least one Bangumi subject type to sync.",
   subjectTypes: "Subject types",
@@ -151,6 +178,7 @@ var EN = {
   wish: "Wish",
   wishDesc: "Sync subjects marked as want to watch.",
   writeNoteStage: "write note",
+  writeDailyNoteStage: "write daily note sync block",
   writingItem: "Writing {{current}}/{{total}}: {{title}}"
 };
 var ZH = {
@@ -175,6 +203,8 @@ var ZH = {
   clipboardTokenFailed: "\u65E0\u6CD5\u8BFB\u53D6\u526A\u8D34\u677F\uFF1A{{message}}",
   clipboardTokenFilled: "\u5DF2\u4ECE\u526A\u8D34\u677F\u586B\u5165 access token\u3002",
   clipboardTokenMissing: "\u526A\u8D34\u677F\u91CC\u6CA1\u6709 access token\u3002",
+  copy: "\u590D\u5236",
+  copiedDailyNoteSyncBlock: "\u5DF2\u590D\u5236\u6BCF\u65E5\u65E5\u8BB0\u540C\u6B65\u5757\u3002",
   collected: "\u5DF2\u6536\u85CF",
   collectedDesc: "\u540C\u6B65\u6807\u8BB0\u4E3A\u5DF2\u770B/\u5DF2\u8BFB/\u5DF2\u5B8C\u6210\u7684\u6761\u76EE\u3002",
   collectionStatuses: "\u6536\u85CF\u72B6\u6001",
@@ -183,6 +213,12 @@ var ZH = {
   collectionsFetched: "\u5DF2\u62C9\u53D6\u6536\u85CF\u6570",
   commentJsonVar: "{{comment_json}}",
   connectedAs: "\u5DF2\u8FDE\u63A5\u4E3A {{username}}\u3002",
+  dailyNoteSync: "\u6BCF\u65E5\u65E5\u8BB0\u540C\u6B65",
+  dailyNoteSyncDesc: "\u8BF7\u5148\u628A\u4E0B\u9762\u7684\u540C\u6B65\u5757\u653E\u8FDB\u4F60\u7684\u6BCF\u65E5\u65E5\u8BB0\u6A21\u677F\u3002\u589E\u91CF\u540C\u6B65\u65F6\uFF0C\u53EA\u4F1A\u6DFB\u52A0\u672C\u6B21\u5B9E\u9645\u65B0\u589E\u6216\u66F4\u65B0\u7684\u8FDB\u884C\u4E2D\u6761\u76EE\u3002",
+  dailyNoteSyncBlock: "\u6BCF\u65E5\u65E5\u8BB0\u540C\u6B65\u5757",
+  dailyNoteSyncBlockDesc: "\u590D\u5236\u8FD9\u6BB5\u540C\u6B65\u5757\u5230\u4F60\u7684\u6BCF\u65E5\u65E5\u8BB0\u6A21\u677F\u91CC\u3002",
+  dailyNoteSyncMarkersMissing: "\u6CA1\u6709\u627E\u5230\u6BCF\u65E5\u65E5\u8BB0\u540C\u6B65\u5757\u6807\u8BB0\u3002\u8BF7\u5148\u628A\u540C\u6B65\u5757\u653E\u8FDB\u4F60\u7684\u6BCF\u65E5\u65E5\u8BB0\u6A21\u677F\u3002",
+  dailyNoteSyncNoteMissing: "\u6CA1\u6709\u627E\u5230\u4ECA\u5929\u7684\u6BCF\u65E5\u65E5\u8BB0\uFF1A{{path}}",
   dropped: "\u5DF2\u629B\u5F03",
   droppedDesc: "\u540C\u6B65\u6807\u8BB0\u4E3A\u629B\u5F03\u7684\u6761\u76EE\u3002",
   error: "\u9519\u8BEF",
@@ -200,9 +236,9 @@ var ZH = {
   idTitleFormatDesc: "\u793A\u4F8B\uFF1A[bgm-123] Title.md",
   includeOnHoldDropped: "\u5305\u542B\u6401\u7F6E/\u629B\u5F03",
   includeOnHoldDroppedDesc: "\u5173\u95ED\u65F6\uFF0C\u5373\u4F7F\u4E0B\u65B9\u9009\u4E2D\u4E86\u6401\u7F6E\u6216\u629B\u5F03\u72B6\u6001\uFF0C\u540C\u6B65\u65F6\u4E5F\u4F1A\u8DF3\u8FC7\u3002",
-  incrementalSkipped: "\u589E\u91CF\u8DF3\u8FC7",
+  incrementalSkipped: "\u672A\u53D8\u5316",
   incrementalSync: "\u589E\u91CF\u540C\u6B65",
-  incrementalSyncDesc: "\u8DF3\u8FC7 Bangumi \u6536\u85CF\u66F4\u65B0\u65F6\u95F4\u4E0D\u665A\u4E8E\u4E0A\u6B21\u6210\u529F\u540C\u6B65\u65F6\u95F4\u7684\u6761\u76EE\u3002",
+  incrementalSyncDesc: "\u6839\u636E Bangumi \u66F4\u65B0\u65F6\u95F4\u8DF3\u8FC7\u672A\u53D8\u5316\u6761\u76EE\uFF0C\u4F46\u4F1A\u5728\u672C\u5730\u6587\u4EF6\u7F3A\u5931\u65F6\u91CD\u65B0\u521B\u5EFA\u3002",
   issues: "\u95EE\u9898\u6570",
   lastSyncedAt: "\u4E0A\u6B21\u540C\u6B65\u65F6\u95F4",
   music: "\u97F3\u4E50",
@@ -217,6 +253,7 @@ var ZH = {
   onHoldDesc: "\u540C\u6B65\u6807\u8BB0\u4E3A\u6401\u7F6E\u7684\u6761\u76EE\u3002",
   openTokenPage: "\u6253\u5F00 token \u9875\u9762",
   progressStarted: "Bangumi Sync \u5DF2\u5F00\u59CB\u3002",
+  progressUnavailableReport: "\u6CA1\u62C9\u5230\u8FDB\u5EA6\u5185\u5BB9",
   realLife: "\u4E09\u6B21\u5143",
   realLifeDesc: "\u540C\u6B65\u4E09\u6B21\u5143\u6761\u76EE\u3002",
   reportCreated: " \u5DF2\u751F\u6210\u62A5\u544A\u3002",
@@ -235,6 +272,7 @@ var ZH = {
   subjectNoteTemplateDesc: "\u5FC5\u987B\u5305\u542B {{sync_block_start}} \u548C {{sync_block_end}}\u3002\u6240\u6709\u53EF\u7528\u53D8\u91CF\u8BF7\u67E5\u770B\u6A21\u677F\u53D8\u91CF\u6587\u6863\u3002",
   templateVariablesDoc: "\u6A21\u677F\u53D8\u91CF\u6587\u6863",
   templateVariablesDocDesc: "\u6253\u5F00\u53EF\u7528\u6A21\u677F\u53D8\u91CF\u8BF4\u660E\u6587\u6863\u3002",
+  templateVariablesDocFailed: "\u65E0\u6CD5\u6253\u5F00\u6A21\u677F\u53D8\u91CF\u6587\u6863\uFF1A{{message}}",
   subjectType: "\u6761\u76EE\u7C7B\u578B",
   subjectTypeRequired: "\u8BF7\u9009\u62E9\u81F3\u5C11\u4E00\u4E2A\u8981\u540C\u6B65\u7684 Bangumi \u6761\u76EE\u7C7B\u578B\u3002",
   subjectTypes: "\u6761\u76EE\u7C7B\u578B",
@@ -258,6 +296,7 @@ var ZH = {
   wish: "\u60F3\u770B/\u60F3\u8BFB",
   wishDesc: "\u540C\u6B65\u6807\u8BB0\u4E3A\u60F3\u770B/\u60F3\u8BFB\u7684\u6761\u76EE\u3002",
   writeNoteStage: "\u5199\u5165\u7B14\u8BB0",
+  writeDailyNoteStage: "\u5199\u5165\u6BCF\u65E5\u65E5\u8BB0\u540C\u6B65\u5757",
   writingItem: "\u6B63\u5728\u5199\u5165 {{current}}/{{total}}\uFF1A{{title}}"
 };
 function isChineseLocale() {
@@ -274,7 +313,7 @@ function t(key, values = {}) {
 // src/sync/markdown-renderer.ts
 var SYNC_BLOCK_START = "<!-- bangumi-sync-start -->";
 var SYNC_BLOCK_END = "<!-- bangumi-sync-end -->";
-var DEFAULT_SUBJECT_NOTE_TEMPLATE = `---
+var LEGACY_DEFAULT_SUBJECT_NOTE_TEMPLATE = `---
 bangumi_id: {{bangumi_id}}
 title: {{title_json}}
 original_title: {{original_title_json}}
@@ -291,6 +330,35 @@ next_episode_sort: {{next_episode_sort}}
 last_done_episode: {{last_done_episode_json}}
 last_done_episode_sort: {{last_done_episode_sort}}
 air_date: {{air_date_yaml}}
+updated_at: {{updated_at_yaml}}
+bangumi_tags: {{bangumi_tags_json}}
+comment: {{comment_json}}
+tags:
+{{tags_yaml}}
+cover: {{cover_yaml}}
+---
+
+# {{title}}
+
+{{sync_block_start}}
+{{cover_image}}
+## Progress
+
+{{progress}}
+
+{{sync_block_end}}
+
+## Notes
+`;
+var DEFAULT_SUBJECT_NOTE_TEMPLATE = `---
+bangumi_id: {{bangumi_id}}
+title: {{title_json}}
+original_title: {{original_title_json}}
+type: {{type}}
+status: {{status}}
+rating: {{rating}}
+eps_total: {{eps_total}}
+progress_done: {{progress_done}}
 updated_at: {{updated_at_yaml}}
 bangumi_tags: {{bangumi_tags_json}}
 comment: {{comment_json}}
@@ -524,6 +592,7 @@ var DEFAULT_SETTINGS = {
   fileNameFormat: BANGUMI_FILE_NAME_FORMATS.titleThenId,
   includeOnHoldAndDropped: false,
   incrementalSync: true,
+  dailyNoteSync: false,
   lastSyncedAt: "",
   subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
   collectionTypes: [BANGUMI_COLLECTION_TYPES.do],
@@ -618,6 +687,8 @@ var FILE_NAME_FORMAT_OPTIONS = [
     descriptionKey: "idOnlyFormatDesc"
   }
 ];
+var DAILY_NOTE_SYNC_SNIPPET = `<!-- bangumi-daily-sync-start -->
+<!-- bangumi-daily-sync-end -->`;
 var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
@@ -690,7 +761,29 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         this.display();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("lastSyncedAt")).setDesc(this.plugin.settings.lastSyncedAt || t("neverSynced")).addButton(
+    new import_obsidian2.Setting(containerEl).setName(t("dailyNoteSync")).setDesc(t("dailyNoteSyncDesc")).addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.dailyNoteSync).onChange(async (enabled) => {
+        this.plugin.settings.dailyNoteSync = enabled;
+        await this.plugin.saveSettings();
+      })
+    );
+    new import_obsidian2.Setting(containerEl).setName(t("dailyNoteSyncBlock")).setDesc(t("dailyNoteSyncBlockDesc")).addButton(
+      (button) => button.setButtonText(t("copy")).onClick(async () => {
+        await navigator.clipboard.writeText(DAILY_NOTE_SYNC_SNIPPET);
+        new import_obsidian2.Notice(t("copiedDailyNoteSyncBlock"));
+      })
+    );
+    const dailySnippetEl = containerEl.createEl("textarea", {
+      text: DAILY_NOTE_SYNC_SNIPPET
+    });
+    dailySnippetEl.readOnly = true;
+    dailySnippetEl.rows = 2;
+    dailySnippetEl.style.width = "100%";
+    dailySnippetEl.style.boxSizing = "border-box";
+    dailySnippetEl.style.marginBottom = "12px";
+    new import_obsidian2.Setting(containerEl).setName(t("lastSyncedAt")).setDesc(
+      formatLocalDateTime(this.plugin.settings.lastSyncedAt) || t("neverSynced")
+    ).addButton(
       (button) => button.setButtonText(t("resetSyncState")).onClick(async () => {
         this.plugin.settings.lastSyncedAt = "";
         await this.plugin.saveSettings();
@@ -728,20 +821,26 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
       );
     }
     containerEl.createEl("h3", { text: t("noteTemplate") });
-    new import_obsidian2.Setting(containerEl).setName(t("subjectNoteTemplate")).setDesc(t("subjectNoteTemplateDesc")).addButton(
-      (button) => button.setButtonText(t("templateVariablesDoc")).onClick(() => {
-        window.open(
-          "https://github.com/Kuanphough/bangumi-sync/blob/main/docs/template-variables.md"
-        );
-      })
-    ).addTextArea((text) => {
-      text.inputEl.rows = 18;
-      text.inputEl.cols = 80;
-      text.setValue(this.plugin.settings.subjectNoteTemplate).onChange(async (value) => {
-        this.plugin.settings.subjectNoteTemplate = value.trim() || DEFAULT_SUBJECT_NOTE_TEMPLATE;
-        await this.plugin.saveSettings();
-      });
+    const subjectTemplateSetting = new import_obsidian2.Setting(containerEl).setName(t("subjectNoteTemplate")).setDesc(t("subjectNoteTemplateDesc"));
+    subjectTemplateSetting.descEl.style.maxWidth = "34em";
+    subjectTemplateSetting.descEl.style.lineHeight = "1.45";
+    const subjectTemplateEl = containerEl.createEl("textarea");
+    subjectTemplateEl.rows = 18;
+    subjectTemplateEl.value = this.plugin.settings.subjectNoteTemplate;
+    subjectTemplateEl.style.width = "100%";
+    subjectTemplateEl.style.minHeight = "360px";
+    subjectTemplateEl.style.boxSizing = "border-box";
+    subjectTemplateEl.style.marginTop = "8px";
+    subjectTemplateEl.style.marginBottom = "8px";
+    subjectTemplateEl.addEventListener("change", async () => {
+      this.plugin.settings.subjectNoteTemplate = subjectTemplateEl.value.trim() || DEFAULT_SUBJECT_NOTE_TEMPLATE;
+      await this.plugin.saveSettings();
     });
+    new import_obsidian2.Setting(containerEl).setName(t("templateVariablesDoc")).setDesc(t("templateVariablesDocDesc")).addButton(
+      (button) => button.setButtonText(t("templateVariablesDoc")).onClick(() => {
+        void this.plugin.openTemplateVariablesDoc();
+      })
+    );
     new import_obsidian2.Setting(containerEl).setName(t("resetSubjectNoteTemplate")).setDesc(t("resetSubjectNoteTemplateDesc")).addButton(
       (button) => button.setButtonText(t("reset")).onClick(async () => {
         this.plugin.settings.subjectNoteTemplate = DEFAULT_SUBJECT_NOTE_TEMPLATE;
@@ -841,11 +940,12 @@ var NoteWriter = class {
     const rendered = this.renderer.renderSubjectNote(subject);
     if (existing) {
       const previous = await this.app.vault.read(existing);
-      await this.app.vault.modify(
-        existing,
-        this.renderer.mergeSyncedContent(previous, rendered)
-      );
-      return existing;
+      const next = this.renderer.mergeSyncedContent(previous, rendered);
+      if (next === previous) {
+        return { file: existing, changed: false };
+      }
+      await this.app.vault.modify(existing, next);
+      return { file: existing, changed: true };
     }
     const directory = (0, import_obsidian4.normalizePath)(targetDirectory);
     await this.ensureFolder(directory);
@@ -856,13 +956,15 @@ var NoteWriter = class {
     const existingAtPath = this.app.vault.getAbstractFileByPath(path);
     if (existingAtPath instanceof import_obsidian4.TFile) {
       const previous = await this.app.vault.read(existingAtPath);
-      await this.app.vault.modify(
-        existingAtPath,
-        this.renderer.mergeSyncedContent(previous, rendered)
-      );
-      return existingAtPath;
+      const next = this.renderer.mergeSyncedContent(previous, rendered);
+      if (next === previous) {
+        return { file: existingAtPath, changed: false };
+      }
+      await this.app.vault.modify(existingAtPath, next);
+      return { file: existingAtPath, changed: true };
     }
-    return this.app.vault.create(path, rendered);
+    const file = await this.app.vault.create(path, rendered);
+    return { file, changed: true };
   }
   findExistingSubjectNote(subjectId, syncDirectory) {
     var _a, _b;
@@ -910,6 +1012,8 @@ var NoteWriter = class {
 // src/sync/sync-service.ts
 var PAGE_LIMIT = 50;
 var REPORT_FILE_NAME = "Bangumi Sync Report.md";
+var DAILY_SYNC_BLOCK_START = "<!-- bangumi-daily-sync-start -->";
+var DAILY_SYNC_BLOCK_END = "<!-- bangumi-daily-sync-end -->";
 var SyncService = class {
   constructor(app, settings) {
     this.app = app;
@@ -984,6 +1088,7 @@ var SyncService = class {
       new MarkdownRenderer(this.settings.subjectNoteTemplate),
       this.settings.fileNameFormat
     );
+    const existingSubjectIds = this.getExistingSubjectIds();
     const seenSubjectIds = /* @__PURE__ */ new Set();
     const failures = [];
     const syncStartedAt = (/* @__PURE__ */ new Date()).toISOString();
@@ -992,6 +1097,11 @@ var SyncService = class {
     let incrementalSkipped = 0;
     let totalCollections = 0;
     let hasBlockingFailure = false;
+    const dailySyncEntries = [];
+    const dailyNoteSyncAvailable = await this.validateDailyNoteSyncTarget(
+      failures,
+      options
+    );
     for (const subjectType of this.settings.subjectTypes) {
       for (const collectionType of collectionTypes) {
         const subjectTypeName = this.renderSubjectType(subjectType);
@@ -1033,7 +1143,7 @@ var SyncService = class {
             continue;
           }
           seenSubjectIds.add(subjectId);
-          if (this.shouldSkipUnchanged(collection)) {
+          if (this.shouldSkipUnchanged(collection) && existingSubjectIds.has(subjectId)) {
             incrementalSkipped += 1;
             groupUnchanged += 1;
             groupProcessed += 1;
@@ -1059,7 +1169,7 @@ var SyncService = class {
             );
           }
           try {
-            await writer.writeSubjectNote(
+            const result = await writer.writeSubjectNote(
               this.settings.syncDirectory,
               this.getTargetDirectory(collection),
               {
@@ -1068,8 +1178,21 @@ var SyncService = class {
                 episodeSyncError
               }
             );
-            written += 1;
-            groupWritten += 1;
+            existingSubjectIds.add(subjectId);
+            if (result.changed) {
+              written += 1;
+              groupWritten += 1;
+            } else {
+              incrementalSkipped += 1;
+              groupUnchanged += 1;
+            }
+            if (result.changed && this.settings.dailyNoteSync && dailyNoteSyncAvailable && collection.type === BANGUMI_COLLECTION_TYPES.do) {
+              dailySyncEntries.push({
+                collection,
+                episodes,
+                episodeSyncError
+              });
+            }
           } catch (error) {
             hasBlockingFailure = true;
             failures.push({
@@ -1101,6 +1224,17 @@ var SyncService = class {
           current: groupProcessed,
           total: collections.length
         });
+      }
+    }
+    if (this.settings.dailyNoteSync && dailySyncEntries.length > 0) {
+      try {
+        await this.writeDailyNoteSyncBlock(dailySyncEntries);
+      } catch (error) {
+        failures.push({
+          stage: t("writeDailyNoteStage"),
+          error: this.getErrorMessage(error)
+        });
+        console.error("Bangumi Sync failed to write daily note sync block", error);
       }
     }
     let reportPath;
@@ -1166,6 +1300,173 @@ var SyncService = class {
     }
     return collections;
   }
+  async validateDailyNoteSyncTarget(failures, options) {
+    if (!this.settings.dailyNoteSync) {
+      return false;
+    }
+    const path = this.getDailyNotePath();
+    const existing = this.app.vault.getAbstractFileByPath(path);
+    if (!(existing instanceof import_obsidian5.TFile)) {
+      this.recordDailyNoteSyncWarning(
+        failures,
+        options,
+        t("dailyNoteSyncNoteMissing", { path })
+      );
+      return false;
+    }
+    const content = await this.app.vault.read(existing);
+    if (!this.hasDailySyncMarkers(content)) {
+      this.recordDailyNoteSyncWarning(
+        failures,
+        options,
+        t("dailyNoteSyncMarkersMissing")
+      );
+      return false;
+    }
+    return true;
+  }
+  recordDailyNoteSyncWarning(failures, options, message) {
+    var _a;
+    failures.push({
+      stage: t("writeDailyNoteStage"),
+      error: message
+    });
+    (_a = options.onProgress) == null ? void 0 : _a.call(options, {
+      stage: "warning",
+      message
+    });
+  }
+  async writeDailyNoteSyncBlock(entries) {
+    const path = this.getDailyNotePath();
+    const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
+    if (folder) {
+      await this.ensureFolder(folder);
+    }
+    const existing = this.app.vault.getAbstractFileByPath(path);
+    const nextBlock = this.renderDailySyncBlock(entries);
+    if (existing instanceof import_obsidian5.TFile) {
+      const previous = await this.app.vault.read(existing);
+      await this.app.vault.modify(
+        existing,
+        this.mergeDailySyncBlock(previous, nextBlock)
+      );
+      return;
+    }
+    throw new Error(t("dailyNoteSyncNoteMissing", { path }));
+  }
+  renderDailySyncBlock(entries) {
+    const date = (0, import_obsidian5.moment)().format("YYYY-MM-DD");
+    const rows = entries.map((entry) => this.renderDailySyncRow(entry, date));
+    return [
+      DAILY_SYNC_BLOCK_START,
+      ...rows,
+      DAILY_SYNC_BLOCK_END,
+      ""
+    ].join("\n");
+  }
+  renderDailySyncRow(entry, date) {
+    const collection = entry.collection;
+    const progress = this.getDailyProgress(entry);
+    const title = this.getSubjectTitle(collection);
+    const subjectId = collection.subject.id;
+    return `- [x] [${this.escapeMarkdownLinkText(title)}](https://bgm.tv/subject/${subjectId}) \u8FDB\u5EA6\uFF1A${progress} \u2705 ${date}`;
+  }
+  getDailyProgress(entry) {
+    if (entry.episodeSyncError || entry.episodes.length === 0) {
+      return "N/A";
+    }
+    const validEpisodes = entry.episodes.filter((item) => item.episode !== null);
+    const done = validEpisodes.filter((item) => item.type > 0).length;
+    const total = entry.collection.subject.eps || validEpisodes.length;
+    return total > 0 ? `${done}/${total}` : String(done);
+  }
+  getProgressSummary(entry) {
+    var _a;
+    if (entry.episodeSyncError || entry.episodes.length === 0) {
+      return { progress: "N/A", next: "N/A" };
+    }
+    const validEpisodes = entry.episodes.filter((item) => item.episode !== null);
+    const total = entry.collection.subject.eps || validEpisodes.length;
+    const done = validEpisodes.filter((item) => item.type > 0).length;
+    const next = (_a = validEpisodes.find((item) => item.type <= 0)) == null ? void 0 : _a.episode;
+    return {
+      progress: total > 0 ? `${done} / ${total}` : "N/A",
+      next: next ? this.getEpisodeTitle(next) : "N/A"
+    };
+  }
+  mergeDailySyncBlock(existingContent, nextBlock) {
+    if (!this.hasDailySyncMarkers(existingContent)) {
+      throw new Error(t("dailyNoteSyncMarkersMissing"));
+    }
+    const start = existingContent.indexOf(DAILY_SYNC_BLOCK_START);
+    const end = existingContent.indexOf(DAILY_SYNC_BLOCK_END);
+    const mergedBlock = this.mergeDailySyncRows(
+      existingContent.slice(start, end + DAILY_SYNC_BLOCK_END.length),
+      nextBlock
+    );
+    return `${existingContent.slice(0, start)}${mergedBlock}${existingContent.slice(end + DAILY_SYNC_BLOCK_END.length)}`;
+  }
+  hasDailySyncMarkers(content) {
+    const start = content.indexOf(DAILY_SYNC_BLOCK_START);
+    const end = content.indexOf(DAILY_SYNC_BLOCK_END);
+    return start !== -1 && end !== -1 && end > start;
+  }
+  mergeDailySyncRows(existingBlock, nextBlock) {
+    const rowsBySubjectId = /* @__PURE__ */ new Map();
+    const orderedSubjectIds = [];
+    for (const row of this.extractDailySyncRows(existingBlock)) {
+      const subjectId = this.extractSubjectId(row);
+      if (subjectId === null) {
+        continue;
+      }
+      rowsBySubjectId.set(subjectId, row);
+      orderedSubjectIds.push(subjectId);
+    }
+    for (const row of this.extractDailySyncRows(nextBlock)) {
+      const subjectId = this.extractSubjectId(row);
+      if (subjectId === null) {
+        continue;
+      }
+      if (!rowsBySubjectId.has(subjectId)) {
+        orderedSubjectIds.push(subjectId);
+      }
+      rowsBySubjectId.set(subjectId, row);
+    }
+    return [
+      DAILY_SYNC_BLOCK_START,
+      ...orderedSubjectIds.map((subjectId) => {
+        var _a;
+        return (_a = rowsBySubjectId.get(subjectId)) != null ? _a : "";
+      }),
+      DAILY_SYNC_BLOCK_END
+    ].join("\n");
+  }
+  extractDailySyncRows(block) {
+    return block.split("\n").map((line) => line.trimEnd()).filter((line) => line.startsWith("- ["));
+  }
+  extractSubjectId(row) {
+    const match = row.match(/https:\/\/bgm\.tv\/subject\/(\d+)/);
+    return match ? Number(match[1]) : null;
+  }
+  getDailyNotePath() {
+    const options = this.getDailyNotesOptions();
+    const fileName = `${(0, import_obsidian5.moment)().format(options.format || "YYYY-MM-DD")}.md`;
+    const folder = (0, import_obsidian5.normalizePath)(options.folder || "");
+    return (0, import_obsidian5.normalizePath)(folder ? `${folder}/${fileName}` : fileName);
+  }
+  getDailyNotesOptions() {
+    var _a, _b, _c;
+    const internalPlugins = this.app.internalPlugins;
+    const dailyNotes = internalPlugins == null ? void 0 : internalPlugins.getPluginById("daily-notes");
+    return (_c = (_b = (_a = dailyNotes == null ? void 0 : dailyNotes.instance) == null ? void 0 : _a.options) != null ? _b : dailyNotes == null ? void 0 : dailyNotes.options) != null ? _c : {};
+  }
+  escapeMarkdownLinkText(value) {
+    return value.replace(/\[/g, "\\[").replace(/\]/g, "\\]").replace(/\n/g, " ");
+  }
+  getEpisodeTitle(episode) {
+    const title = episode.name_cn || episode.name || "";
+    return title ? `EP${episode.sort} ${title}` : `EP${episode.sort}`;
+  }
   getEffectiveCollectionTypes() {
     if (this.settings.includeOnHoldAndDropped) {
       return this.settings.collectionTypes;
@@ -1185,6 +1486,27 @@ var SyncService = class {
       return false;
     }
     return updatedAt <= lastSyncedAt;
+  }
+  getExistingSubjectIds() {
+    var _a, _b, _c;
+    const directory = (0, import_obsidian5.normalizePath)(this.settings.syncDirectory);
+    const ids = /* @__PURE__ */ new Set();
+    for (const file of this.app.vault.getMarkdownFiles()) {
+      if (!file.path.startsWith(`${directory}/`) && ((_a = file.parent) == null ? void 0 : _a.path) !== directory) {
+        continue;
+      }
+      const frontmatterId = (_c = (_b = this.app.metadataCache.getFileCache(file)) == null ? void 0 : _b.frontmatter) == null ? void 0 : _c.bangumi_id;
+      const parsedFrontmatterId = Number(frontmatterId);
+      if (Number.isInteger(parsedFrontmatterId)) {
+        ids.add(parsedFrontmatterId);
+        continue;
+      }
+      const idMatch = file.basename.match(/bgm-(\d+)/);
+      if (idMatch) {
+        ids.add(Number(idMatch[1]));
+      }
+    }
+    return ids;
   }
   async fetchAllEpisodeCollections(client, subjectId) {
     const page = await client.getSubjectEpisodeCollections(subjectId);
@@ -1226,7 +1548,7 @@ var SyncService = class {
     return [
       `# ${t("reportTitle")}`,
       "",
-      `- ${t("syncedAt")}: ${(/* @__PURE__ */ new Date()).toISOString()}`,
+      `- ${t("syncedAt")}: ${formatLocalDateTime(/* @__PURE__ */ new Date())}`,
       `- ${t("user")}: ${params.username}`,
       `- ${t("collectionsFetched")}: ${params.totalCollections}`,
       `- ${t("notesSynced")}: ${params.written}`,
@@ -1239,9 +1561,9 @@ var SyncService = class {
       ...params.failures.flatMap((failure, index) => {
         var _a;
         return [
-          `### ${index + 1}. ${(_a = failure.title) != null ? _a : failure.stage}`,
+          `### ${index + 1}. ${(_a = failure.title) != null ? _a : this.getFailureReportStage(failure)}`,
           "",
-          `- ${t("reportStage")}: ${failure.stage}`,
+          `- ${t("reportStage")}: ${this.getFailureReportStage(failure)}`,
           failure.subjectId ? `- ${t("subjectId")}: ${failure.subjectId}` : "",
           failure.subjectType ? `- ${t("subjectType")}: ${failure.subjectType}` : "",
           failure.collectionStatus ? `- ${t("collectionStatus")}: ${failure.collectionStatus}` : "",
@@ -1250,6 +1572,12 @@ var SyncService = class {
         ];
       })
     ].filter((line) => line !== "").join("\n");
+  }
+  getFailureReportStage(failure) {
+    if (failure.stage === t("fetchEpisodesStage")) {
+      return t("progressUnavailableReport");
+    }
+    return failure.stage;
   }
   async ensureFolder(path) {
     const parts = (0, import_obsidian5.normalizePath)(path).split("/");
@@ -1303,6 +1631,90 @@ var SyncService = class {
 
 // src/main.ts
 var ACCESS_TOKEN_CREATE_URL = "https://next.bgm.tv/demo/access-token/create";
+var TEMPLATE_VARIABLES_FILE_NAME = "Template Variables.md";
+var TEMPLATE_VARIABLES_CONTENT = `# Bangumi Sync Template Variables
+
+The \`Subject note template\` setting supports \`{{variable_name}}\` placeholders.
+
+The template must include both \`{{sync_block_start}}\` and \`{{sync_block_end}}\`. On repeat syncs, the plugin updates the frontmatter and the content between those markers while keeping the rest of the note.
+
+## Identity
+
+| Variable | Description |
+| --- | --- |
+| \`{{bangumi_id}}\` | Bangumi subject ID. |
+| \`{{title}}\` | Display title, preferring Chinese title when available. |
+| \`{{title_json}}\` | JSON/YAML-safe title string. |
+| \`{{original_title}}\` | Original Bangumi title. |
+| \`{{original_title_json}}\` | JSON/YAML-safe original title string. |
+| \`{{type}}\` | Subject type label: \`book\`, \`anime\`, \`music\`, \`game\`, or \`real\`. |
+| \`{{status}}\` | Collection status label: \`wish\`, \`collect\`, \`do\`, \`on_hold\`, or \`dropped\`. |
+
+## Collection Metadata
+
+| Variable | Description |
+| --- | --- |
+| \`{{rating}}\` | User rating. Empty when unrated. |
+| \`{{eps_total}}\` | Total episode count from Bangumi, when available. |
+| \`{{air_date}}\` | Subject air/release date. |
+| \`{{air_date_yaml}}\` | YAML-safe air/release date. |
+| \`{{updated_at}}\` | Collection update time. |
+| \`{{updated_at_yaml}}\` | YAML-safe collection update time. |
+| \`{{bangumi_tags_json}}\` | User collection tags as a JSON array. |
+| \`{{comment}}\` | User collection comment. |
+| \`{{comment_json}}\` | JSON/YAML-safe user collection comment. |
+
+## Progress
+
+| Variable | Description |
+| --- | --- |
+| \`{{progress_done}}\` | Completed episode count, based on episode collection \`type > 0\`. |
+| \`{{progress_total}}\` | Total episode count, preferring subject \`eps\`, then fetched episode count. |
+| \`{{progress_percent}}\` | Integer percentage, rounded from \`done / total * 100\`. |
+| \`{{progress_available}}\` | \`true\` when episode progress was fetched and has valid episodes, otherwise \`false\`. |
+| \`{{next_episode_json}}\` | JSON/YAML-safe next unfinished episode label, or empty string. |
+| \`{{next_episode_sort}}\` | Next unfinished episode sort number, or empty string. |
+| \`{{last_done_episode_json}}\` | JSON/YAML-safe last completed episode label, or empty string. |
+| \`{{last_done_episode_sort}}\` | Last completed episode sort number, or empty string. |
+| \`{{progress}}\` | Rendered Markdown episode checklist for the sync block. |
+
+## Media And Tags
+
+| Variable | Description |
+| --- | --- |
+| \`{{cover}}\` | Cover image URL. |
+| \`{{cover_yaml}}\` | YAML-safe cover image URL. |
+| \`{{cover_image}}\` | Markdown image syntax for the cover. |
+| \`{{tags_yaml}}\` | YAML list containing \`bangumi\`, subject type, and collection status. |
+
+## Sync Markers
+
+| Variable | Description |
+| --- | --- |
+| \`{{sync_block_start}}\` | Required sync block start marker. |
+| \`{{sync_block_end}}\` | Required sync block end marker. |
+
+## Default Frontmatter Example
+
+\`\`\`markdown
+---
+bangumi_id: {{bangumi_id}}
+title: {{title_json}}
+original_title: {{original_title_json}}
+type: {{type}}
+status: {{status}}
+rating: {{rating}}
+eps_total: {{eps_total}}
+progress_done: {{progress_done}}
+updated_at: {{updated_at_yaml}}
+bangumi_tags: {{bangumi_tags_json}}
+comment: {{comment_json}}
+tags:
+{{tags_yaml}}
+cover: {{cover_yaml}}
+---
+\`\`\`
+`;
 var BangumiSyncPlugin = class extends import_obsidian6.Plugin {
   async onload() {
     await this.loadSettings();
@@ -1322,9 +1734,31 @@ var BangumiSyncPlugin = class extends import_obsidian6.Plugin {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     this.settings.username = "";
     this.settings.userAgent = buildUserAgent(this.manifest.version);
+    let migrated = false;
+    if (this.settings.subjectNoteTemplate === LEGACY_DEFAULT_SUBJECT_NOTE_TEMPLATE) {
+      this.settings.subjectNoteTemplate = DEFAULT_SUBJECT_NOTE_TEMPLATE;
+      migrated = true;
+    }
+    if (migrated) {
+      await this.saveSettings();
+    }
   }
   async saveSettings() {
     await this.saveData(this.settings);
+  }
+  async openTemplateVariablesDoc() {
+    try {
+      const directory = (0, import_obsidian6.normalizePath)(this.settings.syncDirectory || "Bangumi");
+      await this.ensureFolder(directory);
+      const path = (0, import_obsidian6.normalizePath)(`${directory}/${TEMPLATE_VARIABLES_FILE_NAME}`);
+      const existing = this.app.vault.getAbstractFileByPath(path);
+      const file = existing instanceof import_obsidian6.TFile ? existing : await this.app.vault.create(path, TEMPLATE_VARIABLES_CONTENT);
+      await this.app.workspace.getLeaf(false).openFile(file);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("unknownError");
+      new import_obsidian6.Notice(t("templateVariablesDocFailed", { message }));
+      console.error(error);
+    }
   }
   openAccessTokenPage() {
     window.open(ACCESS_TOKEN_CREATE_URL);
@@ -1350,11 +1784,21 @@ var BangumiSyncPlugin = class extends import_obsidian6.Plugin {
   normalizeAccessToken(value) {
     return value.trim().replace(/^Bearer\s+/i, "").trim();
   }
+  async ensureFolder(path) {
+    const parts = (0, import_obsidian6.normalizePath)(path).split("/");
+    let current = "";
+    for (const part of parts) {
+      current = current ? `${current}/${part}` : part;
+      if (!this.app.vault.getAbstractFileByPath(current)) {
+        await this.app.vault.createFolder(current);
+      }
+    }
+  }
   async syncNow() {
     try {
       const result = await new SyncService(this.app, this.settings).sync({
         onProgress: (progress) => {
-          if (progress.stage === "start" || progress.stage === "summary") {
+          if (progress.stage === "start" || progress.stage === "summary" || progress.stage === "warning") {
             new import_obsidian6.Notice(progress.message);
           }
         }

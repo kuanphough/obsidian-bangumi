@@ -1,4 +1,4 @@
-import { App, TFile, normalizePath } from "obsidian";
+import { App, TFile, moment, normalizePath } from "obsidian";
 
 import {
 	BangumiCollection,
@@ -8,6 +8,7 @@ import {
 	BangumiSubjectType
 } from "../bangumi/types";
 import { BangumiClient } from "../bangumi/client";
+import { formatLocalDateTime } from "../date-format";
 import {
 	BANGUMI_STORAGE_LAYOUTS,
 	BangumiStorageLayout,
@@ -39,7 +40,15 @@ export interface SyncFailure {
 }
 
 export interface SyncProgress {
-	stage: "start" | "user" | "fetch" | "write" | "summary" | "report" | "complete";
+	stage:
+		| "start"
+		| "user"
+		| "fetch"
+		| "write"
+		| "summary"
+		| "warning"
+		| "report"
+		| "complete";
 	message: string;
 	current?: number;
 	total?: number;
@@ -51,6 +60,26 @@ export interface SyncOptions {
 
 const PAGE_LIMIT = 50;
 const REPORT_FILE_NAME = "Bangumi Sync Report.md";
+const DAILY_SYNC_BLOCK_START = "<!-- bangumi-daily-sync-start -->";
+const DAILY_SYNC_BLOCK_END = "<!-- bangumi-daily-sync-end -->";
+
+interface DailySyncEntry {
+	collection: BangumiCollection;
+	episodes: BangumiEpisodeCollection[];
+	episodeSyncError?: string;
+}
+
+interface DailyNotesOptions {
+	folder?: string;
+	format?: string;
+}
+
+interface DailyNotesPlugin {
+	instance?: {
+		options?: DailyNotesOptions;
+	};
+	options?: DailyNotesOptions;
+}
 
 export class SyncService {
 	constructor(
@@ -132,6 +161,7 @@ export class SyncService {
 			new MarkdownRenderer(this.settings.subjectNoteTemplate),
 			this.settings.fileNameFormat
 		);
+		const existingSubjectIds = this.getExistingSubjectIds();
 		const seenSubjectIds = new Set<number>();
 		const failures: SyncFailure[] = [];
 		const syncStartedAt = new Date().toISOString();
@@ -140,6 +170,11 @@ export class SyncService {
 		let incrementalSkipped = 0;
 		let totalCollections = 0;
 		let hasBlockingFailure = false;
+		const dailySyncEntries: DailySyncEntry[] = [];
+		const dailyNoteSyncAvailable = await this.validateDailyNoteSyncTarget(
+			failures,
+			options
+		);
 
 		for (const subjectType of this.settings.subjectTypes) {
 			for (const collectionType of collectionTypes) {
@@ -186,7 +221,10 @@ export class SyncService {
 					}
 					seenSubjectIds.add(subjectId);
 
-					if (this.shouldSkipUnchanged(collection)) {
+					if (
+						this.shouldSkipUnchanged(collection) &&
+						existingSubjectIds.has(subjectId)
+					) {
 						incrementalSkipped += 1;
 						groupUnchanged += 1;
 						groupProcessed += 1;
@@ -214,7 +252,7 @@ export class SyncService {
 					}
 
 					try {
-						await writer.writeSubjectNote(
+						const result = await writer.writeSubjectNote(
 							this.settings.syncDirectory,
 							this.getTargetDirectory(collection),
 							{
@@ -223,8 +261,26 @@ export class SyncService {
 								episodeSyncError
 							}
 						);
-						written += 1;
-						groupWritten += 1;
+						existingSubjectIds.add(subjectId);
+						if (result.changed) {
+							written += 1;
+							groupWritten += 1;
+						} else {
+							incrementalSkipped += 1;
+							groupUnchanged += 1;
+						}
+						if (
+							result.changed &&
+							this.settings.dailyNoteSync &&
+							dailyNoteSyncAvailable &&
+							collection.type === BANGUMI_COLLECTION_TYPES.do
+						) {
+							dailySyncEntries.push({
+								collection,
+								episodes,
+								episodeSyncError
+							});
+						}
 					} catch (error) {
 						hasBlockingFailure = true;
 						failures.push({
@@ -257,6 +313,18 @@ export class SyncService {
 					current: groupProcessed,
 					total: collections.length
 				});
+			}
+		}
+
+		if (this.settings.dailyNoteSync && dailySyncEntries.length > 0) {
+			try {
+				await this.writeDailyNoteSyncBlock(dailySyncEntries);
+			} catch (error) {
+				failures.push({
+					stage: t("writeDailyNoteStage"),
+					error: this.getErrorMessage(error)
+				});
+				console.error("Bangumi Sync failed to write daily note sync block", error);
 			}
 		}
 
@@ -337,6 +405,225 @@ export class SyncService {
 		return collections;
 	}
 
+	private async validateDailyNoteSyncTarget(
+		failures: SyncFailure[],
+		options: SyncOptions
+	): Promise<boolean> {
+		if (!this.settings.dailyNoteSync) {
+			return false;
+		}
+
+		const path = this.getDailyNotePath();
+		const existing = this.app.vault.getAbstractFileByPath(path);
+		if (!(existing instanceof TFile)) {
+			this.recordDailyNoteSyncWarning(
+				failures,
+				options,
+				t("dailyNoteSyncNoteMissing", { path })
+			);
+			return false;
+		}
+
+		const content = await this.app.vault.read(existing);
+		if (!this.hasDailySyncMarkers(content)) {
+			this.recordDailyNoteSyncWarning(
+				failures,
+				options,
+				t("dailyNoteSyncMarkersMissing")
+			);
+			return false;
+		}
+
+		return true;
+	}
+
+	private recordDailyNoteSyncWarning(
+		failures: SyncFailure[],
+		options: SyncOptions,
+		message: string
+	): void {
+		failures.push({
+			stage: t("writeDailyNoteStage"),
+			error: message
+		});
+		options.onProgress?.({
+			stage: "warning",
+			message
+		});
+	}
+
+	private async writeDailyNoteSyncBlock(entries: DailySyncEntry[]): Promise<void> {
+		const path = this.getDailyNotePath();
+		const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
+		if (folder) {
+			await this.ensureFolder(folder);
+		}
+
+		const existing = this.app.vault.getAbstractFileByPath(path);
+		const nextBlock = this.renderDailySyncBlock(entries);
+
+		if (existing instanceof TFile) {
+			const previous = await this.app.vault.read(existing);
+			await this.app.vault.modify(
+				existing,
+				this.mergeDailySyncBlock(previous, nextBlock)
+			);
+			return;
+		}
+
+		throw new Error(t("dailyNoteSyncNoteMissing", { path }));
+	}
+
+	private renderDailySyncBlock(entries: DailySyncEntry[]): string {
+		const date = moment().format("YYYY-MM-DD");
+		const rows = entries.map((entry) => this.renderDailySyncRow(entry, date));
+
+		return [
+			DAILY_SYNC_BLOCK_START,
+			...rows,
+			DAILY_SYNC_BLOCK_END,
+			""
+		].join("\n");
+	}
+
+	private renderDailySyncRow(entry: DailySyncEntry, date: string): string {
+		const collection = entry.collection;
+		const progress = this.getDailyProgress(entry);
+		const title = this.getSubjectTitle(collection);
+		const subjectId = collection.subject.id;
+
+		return `- [x] [${this.escapeMarkdownLinkText(title)}](https://bgm.tv/subject/${subjectId}) 进度：${progress} ✅ ${date}`;
+	}
+
+	private getDailyProgress(entry: DailySyncEntry): string {
+		if (entry.episodeSyncError || entry.episodes.length === 0) {
+			return "N/A";
+		}
+
+		const validEpisodes = entry.episodes.filter((item) => item.episode !== null);
+		const done = validEpisodes.filter((item) => item.type > 0).length;
+		const total = entry.collection.subject.eps || validEpisodes.length;
+		return total > 0 ? `${done}/${total}` : String(done);
+	}
+
+	private getProgressSummary(entry: DailySyncEntry): {
+		progress: string;
+		next: string;
+	} {
+		if (entry.episodeSyncError || entry.episodes.length === 0) {
+			return { progress: "N/A", next: "N/A" };
+		}
+
+		const validEpisodes = entry.episodes.filter((item) => item.episode !== null);
+		const total = entry.collection.subject.eps || validEpisodes.length;
+		const done = validEpisodes.filter((item) => item.type > 0).length;
+		const next = validEpisodes.find((item) => item.type <= 0)?.episode;
+
+		return {
+			progress: total > 0 ? `${done} / ${total}` : "N/A",
+			next: next ? this.getEpisodeTitle(next) : "N/A"
+		};
+	}
+
+	private mergeDailySyncBlock(
+		existingContent: string,
+		nextBlock: string
+	): string {
+		if (!this.hasDailySyncMarkers(existingContent)) {
+			throw new Error(t("dailyNoteSyncMarkersMissing"));
+		}
+
+		const start = existingContent.indexOf(DAILY_SYNC_BLOCK_START);
+		const end = existingContent.indexOf(DAILY_SYNC_BLOCK_END);
+		const mergedBlock = this.mergeDailySyncRows(
+			existingContent.slice(start, end + DAILY_SYNC_BLOCK_END.length),
+			nextBlock
+		);
+
+		return `${existingContent.slice(0, start)}${mergedBlock}${existingContent.slice(end + DAILY_SYNC_BLOCK_END.length)}`;
+	}
+
+	private hasDailySyncMarkers(content: string): boolean {
+		const start = content.indexOf(DAILY_SYNC_BLOCK_START);
+		const end = content.indexOf(DAILY_SYNC_BLOCK_END);
+		return start !== -1 && end !== -1 && end > start;
+	}
+
+	private mergeDailySyncRows(existingBlock: string, nextBlock: string): string {
+		const rowsBySubjectId = new Map<number, string>();
+		const orderedSubjectIds: number[] = [];
+
+		for (const row of this.extractDailySyncRows(existingBlock)) {
+			const subjectId = this.extractSubjectId(row);
+			if (subjectId === null) {
+				continue;
+			}
+			rowsBySubjectId.set(subjectId, row);
+			orderedSubjectIds.push(subjectId);
+		}
+
+		for (const row of this.extractDailySyncRows(nextBlock)) {
+			const subjectId = this.extractSubjectId(row);
+			if (subjectId === null) {
+				continue;
+			}
+			if (!rowsBySubjectId.has(subjectId)) {
+				orderedSubjectIds.push(subjectId);
+			}
+			rowsBySubjectId.set(subjectId, row);
+		}
+
+		return [
+			DAILY_SYNC_BLOCK_START,
+			...orderedSubjectIds.map((subjectId) => rowsBySubjectId.get(subjectId) ?? ""),
+			DAILY_SYNC_BLOCK_END
+		].join("\n");
+	}
+
+	private extractDailySyncRows(block: string): string[] {
+		return block
+			.split("\n")
+			.map((line) => line.trimEnd())
+			.filter((line) => line.startsWith("- ["));
+	}
+
+	private extractSubjectId(row: string): number | null {
+		const match = row.match(/https:\/\/bgm\.tv\/subject\/(\d+)/);
+		return match ? Number(match[1]) : null;
+	}
+
+	private getDailyNotePath(): string {
+		const options = this.getDailyNotesOptions();
+		const fileName = `${moment().format(options.format || "YYYY-MM-DD")}.md`;
+		const folder = normalizePath(options.folder || "");
+		return normalizePath(folder ? `${folder}/${fileName}` : fileName);
+	}
+
+	private getDailyNotesOptions(): DailyNotesOptions {
+		const internalPlugins = (
+			this.app as App & {
+				internalPlugins?: {
+					getPluginById(id: string): DailyNotesPlugin | undefined;
+				};
+			}
+		).internalPlugins;
+		const dailyNotes = internalPlugins?.getPluginById("daily-notes");
+		return dailyNotes?.instance?.options ?? dailyNotes?.options ?? {};
+	}
+
+	private escapeMarkdownLinkText(value: string): string {
+		return value.replace(/\[/g, "\\[").replace(/\]/g, "\\]").replace(/\n/g, " ");
+	}
+
+	private getEpisodeTitle(episode: {
+		sort: number;
+		name?: string;
+		name_cn?: string;
+	}): string {
+		const title = episode.name_cn || episode.name || "";
+		return title ? `EP${episode.sort} ${title}` : `EP${episode.sort}`;
+	}
+
 	private getEffectiveCollectionTypes(): BangumiCollectionType[] {
 		if (this.settings.includeOnHoldAndDropped) {
 			return this.settings.collectionTypes;
@@ -361,6 +648,32 @@ export class SyncService {
 		}
 
 		return updatedAt <= lastSyncedAt;
+	}
+
+	private getExistingSubjectIds(): Set<number> {
+		const directory = normalizePath(this.settings.syncDirectory);
+		const ids = new Set<number>();
+
+		for (const file of this.app.vault.getMarkdownFiles()) {
+			if (!file.path.startsWith(`${directory}/`) && file.parent?.path !== directory) {
+				continue;
+			}
+
+			const frontmatterId =
+				this.app.metadataCache.getFileCache(file)?.frontmatter?.bangumi_id;
+			const parsedFrontmatterId = Number(frontmatterId);
+			if (Number.isInteger(parsedFrontmatterId)) {
+				ids.add(parsedFrontmatterId);
+				continue;
+			}
+
+			const idMatch = file.basename.match(/bgm-(\d+)/);
+			if (idMatch) {
+				ids.add(Number(idMatch[1]));
+			}
+		}
+
+		return ids;
 	}
 
 	private async fetchAllEpisodeCollections(
@@ -427,7 +740,7 @@ export class SyncService {
 		return [
 			`# ${t("reportTitle")}`,
 			"",
-			`- ${t("syncedAt")}: ${new Date().toISOString()}`,
+			`- ${t("syncedAt")}: ${formatLocalDateTime(new Date())}`,
 			`- ${t("user")}: ${params.username}`,
 			`- ${t("collectionsFetched")}: ${params.totalCollections}`,
 			`- ${t("notesSynced")}: ${params.written}`,
@@ -438,9 +751,9 @@ export class SyncService {
 			`## ${t("reportFailures")}`,
 			"",
 			...params.failures.flatMap((failure, index) => [
-				`### ${index + 1}. ${failure.title ?? failure.stage}`,
+				`### ${index + 1}. ${failure.title ?? this.getFailureReportStage(failure)}`,
 				"",
-				`- ${t("reportStage")}: ${failure.stage}`,
+				`- ${t("reportStage")}: ${this.getFailureReportStage(failure)}`,
 				failure.subjectId ? `- ${t("subjectId")}: ${failure.subjectId}` : "",
 				failure.subjectType ? `- ${t("subjectType")}: ${failure.subjectType}` : "",
 				failure.collectionStatus
@@ -452,6 +765,14 @@ export class SyncService {
 		]
 			.filter((line) => line !== "")
 			.join("\n");
+	}
+
+	private getFailureReportStage(failure: SyncFailure): string {
+		if (failure.stage === t("fetchEpisodesStage")) {
+			return t("progressUnavailableReport");
+		}
+
+		return failure.stage;
 	}
 
 	private async ensureFolder(path: string): Promise<void> {

@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 
 import type BangumiSyncPlugin from "./main";
 import {
@@ -7,6 +7,7 @@ import {
 	BangumiCollectionType,
 	BangumiSubjectType
 } from "./bangumi/types";
+import { formatLocalDateTime } from "./date-format";
 import { t } from "./i18n";
 import { DEFAULT_SUBJECT_NOTE_TEMPLATE } from "./sync/markdown-renderer";
 
@@ -23,6 +24,7 @@ export interface BangumiSyncSettings {
 	fileNameFormat: BangumiFileNameFormat;
 	includeOnHoldAndDropped: boolean;
 	incrementalSync: boolean;
+	dailyNoteSync: boolean;
 	lastSyncedAt: string;
 	subjectTypes: BangumiSubjectType[];
 	collectionTypes: BangumiCollectionType[];
@@ -65,6 +67,7 @@ export const DEFAULT_SETTINGS: BangumiSyncSettings = {
 	fileNameFormat: BANGUMI_FILE_NAME_FORMATS.titleThenId,
 	includeOnHoldAndDropped: false,
 	incrementalSync: true,
+	dailyNoteSync: false,
 	lastSyncedAt: "",
 	subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
 	collectionTypes: [BANGUMI_COLLECTION_TYPES.do],
@@ -179,6 +182,9 @@ const FILE_NAME_FORMAT_OPTIONS: Array<{
 		descriptionKey: "idOnlyFormatDesc"
 	}
 ];
+
+const DAILY_NOTE_SYNC_SNIPPET = `<!-- bangumi-daily-sync-start -->
+<!-- bangumi-daily-sync-end -->`;
 
 export class BangumiSyncSettingTab extends PluginSettingTab {
 	constructor(app: App, private readonly plugin: BangumiSyncPlugin) {
@@ -303,8 +309,41 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
+			.setName(t("dailyNoteSync"))
+			.setDesc(t("dailyNoteSyncDesc"))
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.dailyNoteSync)
+					.onChange(async (enabled) => {
+						this.plugin.settings.dailyNoteSync = enabled;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(t("dailyNoteSyncBlock"))
+			.setDesc(t("dailyNoteSyncBlockDesc"))
+			.addButton((button) =>
+				button.setButtonText(t("copy")).onClick(async () => {
+					await navigator.clipboard.writeText(DAILY_NOTE_SYNC_SNIPPET);
+					new Notice(t("copiedDailyNoteSyncBlock"));
+				})
+			);
+		const dailySnippetEl = containerEl.createEl("textarea", {
+			text: DAILY_NOTE_SYNC_SNIPPET
+		});
+		dailySnippetEl.readOnly = true;
+		dailySnippetEl.rows = 2;
+		dailySnippetEl.style.width = "100%";
+		dailySnippetEl.style.boxSizing = "border-box";
+		dailySnippetEl.style.marginBottom = "12px";
+
+		new Setting(containerEl)
 			.setName(t("lastSyncedAt"))
-			.setDesc(this.plugin.settings.lastSyncedAt || t("neverSynced"))
+			.setDesc(
+				formatLocalDateTime(this.plugin.settings.lastSyncedAt) ||
+					t("neverSynced")
+			)
 			.addButton((button) =>
 				button.setButtonText(t("resetSyncState")).onClick(async () => {
 					this.plugin.settings.lastSyncedAt = "";
@@ -359,29 +398,36 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 
 		containerEl.createEl("h3", { text: t("noteTemplate") });
 
-		new Setting(containerEl)
+		const subjectTemplateSetting = new Setting(containerEl)
 			.setName(t("subjectNoteTemplate"))
-			.setDesc(t("subjectNoteTemplateDesc"))
+			.setDesc(t("subjectNoteTemplateDesc"));
+		subjectTemplateSetting.descEl.style.maxWidth = "34em";
+		subjectTemplateSetting.descEl.style.lineHeight = "1.45";
+
+		const subjectTemplateEl = containerEl.createEl("textarea");
+		subjectTemplateEl.rows = 18;
+		subjectTemplateEl.value = this.plugin.settings.subjectNoteTemplate;
+		subjectTemplateEl.style.width = "100%";
+		subjectTemplateEl.style.minHeight = "360px";
+		subjectTemplateEl.style.boxSizing = "border-box";
+		subjectTemplateEl.style.marginTop = "8px";
+		subjectTemplateEl.style.marginBottom = "8px";
+		subjectTemplateEl.addEventListener("change", async () => {
+			this.plugin.settings.subjectNoteTemplate =
+				subjectTemplateEl.value.trim() || DEFAULT_SUBJECT_NOTE_TEMPLATE;
+			await this.plugin.saveSettings();
+		});
+
+		new Setting(containerEl)
+			.setName(t("templateVariablesDoc"))
+			.setDesc(t("templateVariablesDocDesc"))
 			.addButton((button) =>
 				button
 					.setButtonText(t("templateVariablesDoc"))
 					.onClick(() => {
-						window.open(
-							"https://github.com/Kuanphough/bangumi-sync/blob/main/docs/template-variables.md"
-						);
+						void this.plugin.openTemplateVariablesDoc();
 					})
-			)
-			.addTextArea((text) => {
-				text.inputEl.rows = 18;
-				text.inputEl.cols = 80;
-				text
-					.setValue(this.plugin.settings.subjectNoteTemplate)
-					.onChange(async (value) => {
-						this.plugin.settings.subjectNoteTemplate =
-							value.trim() || DEFAULT_SUBJECT_NOTE_TEMPLATE;
-						await this.plugin.saveSettings();
-					});
-			});
+			);
 
 		new Setting(containerEl)
 			.setName(t("resetSubjectNoteTemplate"))

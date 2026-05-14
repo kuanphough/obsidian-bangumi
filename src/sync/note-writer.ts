@@ -7,6 +7,11 @@ import {
 } from "../settings";
 import { MarkdownRenderer } from "./markdown-renderer";
 
+export interface NoteWriteResult {
+	file: TFile;
+	changed: boolean;
+}
+
 export class NoteWriter {
 	constructor(
 		private readonly app: App,
@@ -18,7 +23,7 @@ export class NoteWriter {
 		syncRootDirectory: string,
 		targetDirectory: string,
 		subject: BangumiSyncedSubject
-	): Promise<TFile> {
+	): Promise<NoteWriteResult> {
 		const existing = this.findExistingSubjectNote(
 			subject.collection.subject.id,
 			syncRootDirectory
@@ -27,11 +32,12 @@ export class NoteWriter {
 
 		if (existing) {
 			const previous = await this.app.vault.read(existing);
-			await this.app.vault.modify(
-				existing,
-				this.renderer.mergeSyncedContent(previous, rendered)
-			);
-			return existing;
+			const next = this.renderer.mergeSyncedContent(previous, rendered);
+			if (next === previous) {
+				return { file: existing, changed: false };
+			}
+			await this.app.vault.modify(existing, next);
+			return { file: existing, changed: true };
 		}
 
 		const directory = normalizePath(targetDirectory);
@@ -45,14 +51,16 @@ export class NoteWriter {
 		const existingAtPath = this.app.vault.getAbstractFileByPath(path);
 		if (existingAtPath instanceof TFile) {
 			const previous = await this.app.vault.read(existingAtPath);
-			await this.app.vault.modify(
-				existingAtPath,
-				this.renderer.mergeSyncedContent(previous, rendered)
-			);
-			return existingAtPath;
+			const next = this.renderer.mergeSyncedContent(previous, rendered);
+			if (next === previous) {
+				return { file: existingAtPath, changed: false };
+			}
+			await this.app.vault.modify(existingAtPath, next);
+			return { file: existingAtPath, changed: true };
 		}
 
-		return this.app.vault.create(path, rendered);
+		const file = await this.app.vault.create(path, rendered);
+		return { file, changed: true };
 	}
 
 	private findExistingSubjectNote(

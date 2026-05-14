@@ -3,7 +3,7 @@ import { BangumiSyncedSubject } from "../bangumi/types";
 export const SYNC_BLOCK_START = "<!-- bangumi-sync-start -->";
 export const SYNC_BLOCK_END = "<!-- bangumi-sync-end -->";
 
-export const DEFAULT_SUBJECT_NOTE_TEMPLATE = `---
+export const LEGACY_DEFAULT_SUBJECT_NOTE_TEMPLATE = `---
 bangumi_id: {{bangumi_id}}
 title: {{title_json}}
 original_title: {{original_title_json}}
@@ -20,6 +20,36 @@ next_episode_sort: {{next_episode_sort}}
 last_done_episode: {{last_done_episode_json}}
 last_done_episode_sort: {{last_done_episode_sort}}
 air_date: {{air_date_yaml}}
+updated_at: {{updated_at_yaml}}
+bangumi_tags: {{bangumi_tags_json}}
+comment: {{comment_json}}
+tags:
+{{tags_yaml}}
+cover: {{cover_yaml}}
+---
+
+# {{title}}
+
+{{sync_block_start}}
+{{cover_image}}
+## Progress
+
+{{progress}}
+
+{{sync_block_end}}
+
+## Notes
+`;
+
+export const DEFAULT_SUBJECT_NOTE_TEMPLATE = `---
+bangumi_id: {{bangumi_id}}
+title: {{title_json}}
+original_title: {{original_title_json}}
+type: {{type}}
+status: {{status}}
+rating: {{rating}}
+eps_total: {{eps_total}}
+progress_done: {{progress_done}}
 updated_at: {{updated_at_yaml}}
 bangumi_tags: {{bangumi_tags_json}}
 comment: {{comment_json}}

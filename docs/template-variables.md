@@ -62,6 +62,9 @@ The template must include both `{{sync_block_start}}` and `{{sync_block_end}}`. 
 
 ## Default Frontmatter Example
 
+The built-in default keeps only the basic lookup fields plus `progress_done`.
+Other progress variables remain available for custom templates.
+
 ```markdown
 ---
 bangumi_id: {{bangumi_id}}
@@ -72,14 +75,6 @@ status: {{status}}
 rating: {{rating}}
 eps_total: {{eps_total}}
 progress_done: {{progress_done}}
-progress_total: {{progress_total}}
-progress_percent: {{progress_percent}}
-progress_available: {{progress_available}}
-next_episode: {{next_episode_json}}
-next_episode_sort: {{next_episode_sort}}
-last_done_episode: {{last_done_episode_json}}
-last_done_episode_sort: {{last_done_episode_sort}}
-air_date: {{air_date_yaml}}
 updated_at: {{updated_at_yaml}}
 bangumi_tags: {{bangumi_tags_json}}
 comment: {{comment_json}}
