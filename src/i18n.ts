@@ -97,7 +97,9 @@ const EN = {
 	subjectId: "Subject ID",
 	subjectNoteTemplate: "Subject note template",
 	subjectNoteTemplateDesc:
-		"Must include {{sync_block_start}} and {{sync_block_end}}. Available variables include {{title}}, {{title_json}}, {{original_title}}, {{type}}, {{status}}, {{rating}}, {{eps_total}}, {{progress_done}}, {{progress_total}}, {{progress_percent}}, {{progress_available}}, {{next_episode_json}}, {{next_episode_sort}}, {{last_done_episode_json}}, {{last_done_episode_sort}}, {{air_date_yaml}}, {{updated_at_yaml}}, {{bangumi_tags_json}}, {{comment_json}}, {{cover_yaml}}, {{cover_image}}, and {{progress}}.",
+		"Must include {{sync_block_start}} and {{sync_block_end}}. See the template variable documentation for all available variables.",
+	templateVariablesDoc: "Template variables",
+	templateVariablesDocDesc: "Open the documentation for available template variables.",
 	subjectType: "Subject type",
 	subjectTypeRequired: "Select at least one Bangumi subject type to sync.",
 	subjectTypes: "Subject types",
@@ -219,7 +221,9 @@ const ZH: Record<LocaleKey, string> = {
 	subjectId: "条目 ID",
 	subjectNoteTemplate: "条目笔记模板",
 	subjectNoteTemplateDesc:
-		"必须包含 {{sync_block_start}} 和 {{sync_block_end}}。可用变量包括 {{title}}、{{title_json}}、{{original_title}}、{{type}}、{{status}}、{{rating}}、{{eps_total}}、{{progress_done}}、{{progress_total}}、{{progress_percent}}、{{progress_available}}、{{next_episode_json}}、{{next_episode_sort}}、{{last_done_episode_json}}、{{last_done_episode_sort}}、{{air_date_yaml}}、{{updated_at_yaml}}、{{bangumi_tags_json}}、{{comment_json}}、{{cover_yaml}}、{{cover_image}} 和 {{progress}}。",
+		"必须包含 {{sync_block_start}} 和 {{sync_block_end}}。所有可用变量请查看模板变量文档。",
+	templateVariablesDoc: "模板变量文档",
+	templateVariablesDocDesc: "打开可用模板变量说明文档。",
 	subjectType: "条目类型",
 	subjectTypeRequired: "请选择至少一个要同步的 Bangumi 条目类型。",
 	subjectTypes: "条目类型",

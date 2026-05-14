@@ -362,6 +362,15 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName(t("subjectNoteTemplate"))
 			.setDesc(t("subjectNoteTemplateDesc"))
+			.addButton((button) =>
+				button
+					.setButtonText(t("templateVariablesDoc"))
+					.onClick(() => {
+						window.open(
+							"https://github.com/Kuanphough/bangumi-sync/blob/main/docs/template-variables.md"
+						);
+					})
+			)
 			.addTextArea((text) => {
 				text.inputEl.rows = 18;
 				text.inputEl.cols = 80;

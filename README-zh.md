@@ -84,6 +84,8 @@ Bangumi `User-Agent` 会自动生成，格式为 `Kuanphough/bangumi-sync/<插�
 - `{{tags_yaml}}`、`{{progress}}`
 - `{{sync_block_start}}`、`{{sync_block_end}}`
 
+完整变量说明见 [Subject Note Template Variables](docs/template-variables.md)。
+
 ## 开发
 
 ```bash

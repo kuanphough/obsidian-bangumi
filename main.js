@@ -125,7 +125,9 @@ var EN = {
   storageLayout: "Storage layout",
   subjectId: "Subject ID",
   subjectNoteTemplate: "Subject note template",
-  subjectNoteTemplateDesc: "Must include {{sync_block_start}} and {{sync_block_end}}. Available variables include {{title}}, {{title_json}}, {{original_title}}, {{type}}, {{status}}, {{rating}}, {{eps_total}}, {{progress_done}}, {{progress_total}}, {{progress_percent}}, {{progress_available}}, {{next_episode_json}}, {{next_episode_sort}}, {{last_done_episode_json}}, {{last_done_episode_sort}}, {{air_date_yaml}}, {{updated_at_yaml}}, {{bangumi_tags_json}}, {{comment_json}}, {{cover_yaml}}, {{cover_image}}, and {{progress}}.",
+  subjectNoteTemplateDesc: "Must include {{sync_block_start}} and {{sync_block_end}}. See the template variable documentation for all available variables.",
+  templateVariablesDoc: "Template variables",
+  templateVariablesDocDesc: "Open the documentation for available template variables.",
   subjectType: "Subject type",
   subjectTypeRequired: "Select at least one Bangumi subject type to sync.",
   subjectTypes: "Subject types",
@@ -230,7 +232,9 @@ var ZH = {
   storageLayout: "\u5B58\u50A8\u903B\u8F91",
   subjectId: "\u6761\u76EE ID",
   subjectNoteTemplate: "\u6761\u76EE\u7B14\u8BB0\u6A21\u677F",
-  subjectNoteTemplateDesc: "\u5FC5\u987B\u5305\u542B {{sync_block_start}} \u548C {{sync_block_end}}\u3002\u53EF\u7528\u53D8\u91CF\u5305\u62EC {{title}}\u3001{{title_json}}\u3001{{original_title}}\u3001{{type}}\u3001{{status}}\u3001{{rating}}\u3001{{eps_total}}\u3001{{progress_done}}\u3001{{progress_total}}\u3001{{progress_percent}}\u3001{{progress_available}}\u3001{{next_episode_json}}\u3001{{next_episode_sort}}\u3001{{last_done_episode_json}}\u3001{{last_done_episode_sort}}\u3001{{air_date_yaml}}\u3001{{updated_at_yaml}}\u3001{{bangumi_tags_json}}\u3001{{comment_json}}\u3001{{cover_yaml}}\u3001{{cover_image}} \u548C {{progress}}\u3002",
+  subjectNoteTemplateDesc: "\u5FC5\u987B\u5305\u542B {{sync_block_start}} \u548C {{sync_block_end}}\u3002\u6240\u6709\u53EF\u7528\u53D8\u91CF\u8BF7\u67E5\u770B\u6A21\u677F\u53D8\u91CF\u6587\u6863\u3002",
+  templateVariablesDoc: "\u6A21\u677F\u53D8\u91CF\u6587\u6863",
+  templateVariablesDocDesc: "\u6253\u5F00\u53EF\u7528\u6A21\u677F\u53D8\u91CF\u8BF4\u660E\u6587\u6863\u3002",
   subjectType: "\u6761\u76EE\u7C7B\u578B",
   subjectTypeRequired: "\u8BF7\u9009\u62E9\u81F3\u5C11\u4E00\u4E2A\u8981\u540C\u6B65\u7684 Bangumi \u6761\u76EE\u7C7B\u578B\u3002",
   subjectTypes: "\u6761\u76EE\u7C7B\u578B",
@@ -724,7 +728,13 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
       );
     }
     containerEl.createEl("h3", { text: t("noteTemplate") });
-    new import_obsidian2.Setting(containerEl).setName(t("subjectNoteTemplate")).setDesc(t("subjectNoteTemplateDesc")).addTextArea((text) => {
+    new import_obsidian2.Setting(containerEl).setName(t("subjectNoteTemplate")).setDesc(t("subjectNoteTemplateDesc")).addButton(
+      (button) => button.setButtonText(t("templateVariablesDoc")).onClick(() => {
+        window.open(
+          "https://github.com/Kuanphough/bangumi-sync/blob/main/docs/template-variables.md"
+        );
+      })
+    ).addTextArea((text) => {
       text.inputEl.rows = 18;
       text.inputEl.cols = 80;
       text.setValue(this.plugin.settings.subjectNoteTemplate).onChange(async (value) => {

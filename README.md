@@ -86,6 +86,8 @@ Common variables:
 - `{{tags_yaml}}`, `{{progress}}`
 - `{{sync_block_start}}`, `{{sync_block_end}}`
 
+See [Subject Note Template Variables](docs/template-variables.md) for the full variable reference.
+
 ## Development
 
 ```bash
