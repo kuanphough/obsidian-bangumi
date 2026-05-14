@@ -21,23 +21,23 @@ Bangumi Sync is an Obsidian plugin for turning Bangumi collections into local no
 
 ### Basic Features
 
-![Basic features](79c60d80-5b63-4ac7-8885-ee75eff7727e.png)
+![Basic features](image/79c60d80-5b63-4ac7-8885-ee75eff7727e.png)
 
 ### Category-based Sync
 
-![Category-based sync](daeae350-b7b9-42a4-b18f-57eea8c1d36e.png)
+![Category-based sync](image/daeae350-b7b9-42a4-b18f-57eea8c1d36e.png)
 
 ### Note Template
 
-![Note template](fd599c5f-c9be-4add-8f89-538fceae5bd4.png)
+![Note template](image/fd599c5f-c9be-4add-8f89-538fceae5bd4.png)
 
 ### Subject Notes
 
-![Subject note](a3de6bc4-a41b-40aa-8459-44377ecddf77.png) ![Subject note details](3e1b5ea0-f53d-42a9-b945-d8577eea9802.png)
+![Subject note](image/a3de6bc4-a41b-40aa-8459-44377ecddf77.png) ![Subject note details](image/3e1b5ea0-f53d-42a9-b945-d8577eea9802.png)
 
 ### Daily Note Preview
 
-![Daily Note preview](QQ_1778751638574.png)
+![alt text](image\QQ_1778751638574.png)
 
 ## Installation
 
