@@ -72,7 +72,7 @@ export const DEFAULT_SETTINGS: BangumiSyncSettings = {
 	subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
 	collectionTypes: [BANGUMI_COLLECTION_TYPES.do],
 	subjectNoteTemplate: DEFAULT_SUBJECT_NOTE_TEMPLATE,
-	userAgent: buildUserAgent("0.1.1")
+	userAgent: buildUserAgent("0.1.2")
 };
 
 const SUBJECT_OPTIONS: Array<{

@@ -1,7 +1,7 @@
 {
 	"name": "bangumi-note",
-	"version": "0.1.1",
-	"description": "Sync Bangumi collection and episode progress into Obsidian notes.",
+	"version": "0.1.2",
+	"description": "Sync Bangumi collection and episode progress into notes.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
