@@ -44,10 +44,10 @@ Bangumi Sync is an Obsidian plugin for turning Bangumi collections into local no
 ### Manual Installation
 
 1. Download `manifest.json` and `main.js` from a release.
-2. Create `.obsidian/plugins/bangumi-sync/` in your vault.
+2. Create `.obsidian/plugins/bangumi-note/` in your vault.
 3. Put `manifest.json` and `main.js` into that folder.
 4. Restart Obsidian or reload community plugins.
-5. Enable `Bangumi Sync` in Settings → Community plugins.
+5. Enable `bangumi` in Settings → Community plugins.
 
 ### BRAT
 
@@ -55,8 +55,8 @@ If you use [BRAT](https://github.com/TfTHacker/obsidian42-brat) to install beta/
 
 1. Install and enable BRAT in Obsidian.
 2. Open the command palette and run `BRAT: Add a beta plugin for testing`.
-3. Enter this repository, for example `Kuanphough/bangumi-sync`, or the full GitHub URL.
-4. After BRAT downloads the plugin, enable `Bangumi Sync` in Community plugins.
+3. Enter this repository, for example `kuanphough/obsidian-bangumi`, or the full GitHub URL.
+4. After BRAT downloads the plugin, enable `bangumi` in Community plugins.
 
 BRAT is intended for testing development builds. After a stable release is available, most users should prefer Obsidian Community plugins or GitHub release attachments.
 

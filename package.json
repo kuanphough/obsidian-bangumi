@@ -1,7 +1,7 @@
 {
-	"name": "bangumi-sync",
-	"version": "0.1.0",
-	"description": "Obsidian plugin skeleton for syncing Bangumi collection and episode progress.",
+	"name": "bangumi-note",
+	"version": "0.1.1",
+	"description": "Sync Bangumi collection and episode progress into Obsidian notes.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
@@ -14,7 +14,7 @@
 		"bangumi",
 		"sync"
 	],
-	"author": "zhaoyuanhua",
+	"author": "Kuanphough",
 	"license": "MIT",
 	"devDependencies": {
 		"@types/node": "^20.11.0",

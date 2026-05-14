@@ -20,7 +20,7 @@ Notice.messages = [];
 export class Plugin {
 	constructor() {
 		this.app = {};
-		this.manifest = { version: "0.1.0" };
+		this.manifest = { version: "0.1.1" };
 	}
 	async loadData() {
 		return this.__data ?? {};

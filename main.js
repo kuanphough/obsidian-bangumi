@@ -583,7 +583,7 @@ var BANGUMI_FILE_NAME_FORMATS = {
   idOnly: "id-only"
 };
 function buildUserAgent(version) {
-  return `Kuanphough/bangumi-sync/${version} (Obsidian Plugin)`;
+  return `Kuanphough/bangumi-note/${version} (Obsidian Plugin)`;
 }
 var DEFAULT_SETTINGS = {
   accessToken: "",
@@ -603,7 +603,7 @@ var DEFAULT_SETTINGS = {
   subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
   collectionTypes: [BANGUMI_COLLECTION_TYPES.do],
   subjectNoteTemplate: DEFAULT_SUBJECT_NOTE_TEMPLATE,
-  userAgent: buildUserAgent("0.1.0")
+  userAgent: buildUserAgent("0.1.1")
 };
 var SUBJECT_OPTIONS = [
   {

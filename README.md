@@ -38,10 +38,10 @@ Bangumi Sync 是一个 Obsidian 插件，用于把 Bangumi 收藏同步到本地
 ### 手动安装
 
 1. 下载发布包中的 `manifest.json` 和 `main.js`。
-2. 在你的 Obsidian 库中创建目录：`.obsidian/plugins/bangumi-sync/`。
+2. 在你的 Obsidian 库中创建目录：`.obsidian/plugins/bangumi-note/`。
 3. 将 `manifest.json` 和 `main.js` 放入该目录。
 4. 重启 Obsidian 或刷新插件列表。
-5. 在设置 → 第三方插件中启用 `Bangumi Sync`。
+5. 在设置 → 第三方插件中启用 `bangumi`。
 
 ### BRAT
 
@@ -49,8 +49,8 @@ Bangumi Sync 是一个 Obsidian 插件，用于把 Bangumi 收藏同步到本地
 
 1. 先在 Obsidian 中安装并启用 BRAT。
 2. 打开命令面板，运行 `BRAT: Add a beta plugin for testing`。
-3. 输入本仓库地址，例如 `Kuanphough/bangumi-sync`，或完整 GitHub URL。
-4. 等待 BRAT 下载插件后，在第三方插件列表中启用 `Bangumi Sync`。
+3. 输入本仓库地址，例如 `kuanphough/obsidian-bangumi`，或完整 GitHub URL。
+4. 等待 BRAT 下载插件后，在第三方插件列表中启用 `bangumi`。
 
 BRAT 适合测试开发版。正式发布后，普通用户更建议使用 Obsidian 社区插件或 GitHub release 附件安装。
 

@@ -51,7 +51,7 @@ export type BangumiFileNameFormat =
 	(typeof BANGUMI_FILE_NAME_FORMATS)[keyof typeof BANGUMI_FILE_NAME_FORMATS];
 
 export function buildUserAgent(version: string): string {
-	return `Kuanphough/bangumi-sync/${version} (Obsidian Plugin)`;
+	return `Kuanphough/bangumi-note/${version} (Obsidian Plugin)`;
 }
 
 export const DEFAULT_SETTINGS: BangumiSyncSettings = {
@@ -72,7 +72,7 @@ export const DEFAULT_SETTINGS: BangumiSyncSettings = {
 	subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
 	collectionTypes: [BANGUMI_COLLECTION_TYPES.do],
 	subjectNoteTemplate: DEFAULT_SUBJECT_NOTE_TEMPLATE,
-	userAgent: buildUserAgent("0.1.0")
+	userAgent: buildUserAgent("0.1.1")
 };
 
 const SUBJECT_OPTIONS: Array<{
