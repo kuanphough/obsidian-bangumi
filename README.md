@@ -1,136 +1,154 @@
 # Bangumi Sync
 
-English | [中文文档](README-zh.md)
+[English](README-en.md) | 中文文档
 
-Obsidian plugin for syncing Bangumi anime collections and episode progress into Markdown notes.
+## 一句话介绍
 
-## Usage
+Bangumi Sync 是一个 Obsidian 插件，用于把 Bangumi 收藏同步到本地笔记。它支持多条目类型、收藏状态筛选、章节进度、增量同步、每日笔记同步块和用户可编辑模板。
 
-1. Install or build the plugin in an Obsidian vault plugin directory.
-2. Enable the plugin in Obsidian.
-3. Open the plugin settings, click `Open token page`, log in to Bangumi, create a token, and copy it.
-4. Click `Fill from clipboard` in the plugin settings, or paste the token into `Access token` manually.
-5. The plugin automatically syncs the Bangumi account that owns the saved token.
-6. Choose the storage layout, file name format, subject types, and collection statuses to sync, then click the ribbon icon or run `Bangumi Sync: Sync now`.
+## 功能特性
 
-The plugin follows the Obsidian app language. Simplified Chinese and Traditional Chinese display Chinese UI text; other languages display English.
+- 同步 Bangumi 书籍、动画、音乐、游戏和三次元条目。
+- 按收藏状态筛选：想看、已看、进行中、搁置、抛弃。
+- 支持增量同步，并在本地条目笔记被误删时自动补回。
+- 同步评分、标签、评论、封面、章节 checklist 和轻量进度字段 `progress_done`。
+- 保留 `## Notes` 等同步块外的手写内容。
+- 可选把本次新增或更新的进行中条目写入 Daily Note。
+- 支持自定义条目笔记模板和 frontmatter 字段。
+- 同步失败时生成 `Bangumi Sync Report.md`，方便排查问题。
 
-The Bangumi `User-Agent` is generated automatically as `Kuanphough/bangumi-sync/<plugin-version> (Obsidian Plugin)`, so users do not need to configure it manually.
+## 界面展示
+### 基础功能
+![alt text](79c60d80-5b63-4ac7-8885-ee75eff7727e.png)
 
-### Access Token
+### 按分类同步
+![alt text](daeae350-b7b9-42a4-b18f-57eea8c1d36e.png)
 
-To get a token:
+### 笔记模板
+![alt text](fd599c5f-c9be-4add-8f89-538fceae5bd4.png)
 
-1. Click `Open token page` in the plugin settings, or open <https://next.bgm.tv/demo/access-token/create>.
-2. Log in to Bangumi if the page asks you to.
-3. Create a new access token.
-4. Copy the generated token.
-5. Click `Fill from clipboard`, or paste it into the plugin setting `Access token`.
+### 条目页面
+![alt text](a3de6bc4-a41b-40aa-8459-44377ecddf77.png) ![alt text](3e1b5ea0-f53d-42a9-b945-d8577eea9802.png)
 
-Keep the token private. It authorizes the plugin to read your Bangumi account data. The token input is displayed as a password field in settings.
+### 日记预览
+![alt text](QQ_1778751638574.png)
+## 安装
 
-Notes are created under `Bangumi` by default. Each file name includes the Bangumi subject ID, for example `Title [bgm-123].md`, so subjects with the same title do not overwrite each other.
+### 手动安装
 
-## File Names
+1. 下载发布包中的 `manifest.json` 和 `main.js`。
+2. 在你的 Obsidian 库中创建目录：`.obsidian/plugins/bangumi-sync/`。
+3. 将 `manifest.json` 和 `main.js` 放入该目录。
+4. 重启 Obsidian 或刷新插件列表。
+5. 在设置 → 第三方插件中启用 `Bangumi Sync`。
 
-The `File name format` setting supports:
+### BRAT
 
-- `Title [bgm-id]`: example `Title [bgm-123].md`.
-- `[bgm-id] Title`: example `[bgm-123] Title.md`.
-- `Bangumi ID only`: example `bgm-123.md`.
+如果你使用 [BRAT](https://github.com/TfTHacker/obsidian42-brat) 安装 beta/开发版插件：
 
-## Storage Layouts
+1. 先在 Obsidian 中安装并启用 BRAT。
+2. 打开命令面板，运行 `BRAT: Add a beta plugin for testing`。
+3. 输入本仓库地址，例如 `Kuanphough/bangumi-sync`，或完整 GitHub URL。
+4. 等待 BRAT 下载插件后，在第三方插件列表中启用 `Bangumi Sync`。
 
-The `Storage layout` setting controls where synced note files are created:
+BRAT 适合测试开发版。正式发布后，普通用户更建议使用 Obsidian 社区插件或 GitHub release 附件安装。
 
-- `No categories`: all synced notes are stored directly in the sync directory.
-- `By subject type`: notes are stored as `Sync directory / subject type / collection status`.
-- `By collection status`: notes are stored as `Sync directory / collection status / subject type`.
+## 快速开始
 
-The subject type folders use `book`, `anime`, `music`, `game`, and `real`. The collection status folders use `wish`, `collect`, `do`, `on_hold`, and `dropped`.
+1. 打开插件设置，点击 `打开 token 页面`。
+2. 登录 Bangumi，创建 access token 并复制。
+3. 回到 Obsidian，点击 `从剪贴板填入`，或手动粘贴到 `Access token`。
+4. 点击 `测试 token` 确认配置有效。
+5. 选择同步目录、存储逻辑、文件命名、条目类型和收藏状态。
+6. 点击左侧栏图标，或运行命令 `Bangumi Sync: Sync now`。
 
-## Sync Behavior
+插件会自动使用 token 所属的 Bangumi 账号，不需要填写用户名。`User-Agent` 会按插件版本自动生成。
 
-- Syncs the selected subject types: books (`1`), anime (`2`), music (`3`), games (`4`), and real-life media (`6`).
-- Fetches all selected collection statuses with pagination.
-- Skips on-hold and dropped statuses unless `Include on hold/dropped` is enabled.
-- When incremental sync is enabled, skips unchanged collections based on Bangumi `updated_at` and the last successful sync time, but recreates missing local subject notes when needed. Episode-progress fetch issues do not block advancing the sync timestamp after notes are written.
-- Fetches episode progress for each subject when available.
-- Writes Bangumi metadata, user rating, user tags, user comment, cover, a lightweight `progress_done` field, and episode checklist.
-- Optionally writes newly synced in-progress subjects to today's Daily Note as completed todo items. Add `<!-- bangumi-daily-sync-start -->` and `<!-- bangumi-daily-sync-end -->` to your Daily Note template first; in incremental sync, only subjects actually written or updated in this run are added.
-- Compares rendered note content before writing, so full sync does not touch local subject notes whose generated content has not changed.
-- Shows only start, subject-type/status summary, and final notices during sync, and writes `Bangumi Sync Report.md` when issues occur.
-- Updates frontmatter and the `<!-- bangumi-sync-start -->` to `<!-- bangumi-sync-end -->` block on repeat syncs.
-- Leaves content outside the sync block, including `## Notes`, for permanent notes.
-- Continues syncing other subjects if one subject fails, then reports the issue count.
+## Access Token
 
-## Note Template
+获取 token 的页面：<https://next.bgm.tv/demo/access-token/create>
 
-The `Subject note template` setting lets you customize the Markdown generated for each synced subject.
+请妥善保管 token。它会授权插件读取你的 Bangumi 账号数据。设置页里的 token 输入框会以密码字段显示。
 
-The template must include `{{sync_block_start}}` and `{{sync_block_end}}`. If either marker is missing, the plugin falls back to the built-in default template to avoid overwriting handwritten notes.
+## 设置说明
 
-The default frontmatter keeps basic lookup fields plus `progress_done`. Fuller progress variables such as `progress_total`, `progress_percent`, and next/last episode fields are still available for custom templates.
+| 设置 | 说明 |
+| --- | --- |
+| `Access token` | Bangumi access token。可以手动粘贴，也可以从剪贴板填入。 |
+| `Sync directory` | 同步笔记的根目录，默认 `Bangumi`。 |
+| `Storage layout` | 控制是否按条目类型或收藏状态分文件夹。 |
+| `File name format` | 控制条目笔记文件名，默认 `Title [bgm-id].md`。 |
+| `Include on hold/dropped` | 是否同步搁置和抛弃条目。 |
+| `Incremental sync` | 根据 Bangumi 更新时间跳过未变化条目，并补回本地缺失文件。 |
+| `Daily note sync` | 将本次新增或更新的进行中条目写入今天的 Daily Note 同步块。 |
+| `Subject note template` | 自定义条目笔记 Markdown 模板。 |
 
-Bangumi's current v0 episode collection endpoint does not return the user's per-episode comment text, so per-episode comments are not synced.
+## 同步行为
 
-Common variables:
+- 重复同步时会更新 frontmatter 和 `<!-- bangumi-sync-start -->` 到 `<!-- bangumi-sync-end -->` 之间的同步块。
+- 同步块之外的内容会保留，包括用于长期记录的 `## Notes`。
+- 全量同步也会先比较生成内容；如果没有变化，不会刷新本地文件。
+- 章节进度拉取失败不会阻止条目笔记生成，报告中会显示“没拉到进度内容”。
+- 某个条目失败不会中断整次同步，结束后会汇总问题并生成报告。
 
-- `{{title}}`, `{{title_json}}`
-- `{{original_title}}`, `{{original_title_json}}`
-- `{{type}}`, `{{status}}`, `{{rating}}`, `{{eps_total}}`
-- `{{progress_done}}`, `{{progress_total}}`, `{{progress_percent}}`, `{{progress_available}}`
-- `{{next_episode_json}}`, `{{next_episode_sort}}`
-- `{{last_done_episode_json}}`, `{{last_done_episode_sort}}`
-- `{{air_date_yaml}}`, `{{updated_at_yaml}}`
-- `{{bangumi_tags_json}}`, `{{comment_json}}`
-- `{{cover}}`, `{{cover_yaml}}`, `{{cover_image}}`
-- `{{tags_yaml}}`, `{{progress}}`
-- `{{sync_block_start}}`, `{{sync_block_end}}`
+## 笔记模板
 
-See [Subject Note Template Variables](docs/template-variables.md) for the full variable reference. The settings button also creates and opens a local `Template Variables.md` file under your sync directory, so it works before the plugin is published online.
+`Subject note template` 必须包含：
 
-## Development
-
-```bash
-npm install
-npm run build
+```markdown
+{{sync_block_start}}
+{{sync_block_end}}
 ```
 
-On Windows PowerShell, use `npm.cmd` if script execution policy blocks `npm.ps1`.
+默认 frontmatter 只保留基础检索字段和 `progress_done`。如果需要 `progress_total`、`progress_percent`、下一集、最后完成集等字段，可以在自定义模板里手动加回。
 
-## Current Limits
+完整变量说明见 [Subject Note Template Variables](docs/template-variables.md)。设置页按钮也会在同步目录下创建并打开本地 `Template Variables.md`。
 
-- OAuth login is not exposed because it requires users to create their own Bangumi OAuth application.
+## 每日日记同步
 
-## Roadmap
+开启 `Daily note sync` 后，请先把下面的标记放入你的 Daily Note 模板：
 
-### Stabilize the MVP
+```markdown
+<!-- bangumi-daily-sync-start -->
+<!-- bangumi-daily-sync-end -->
+```
 
-- [x] Test the full sync flow in a real Obsidian vault with a real Bangumi token.
-- [x] Improve error messages for expired tokens, missing permissions, and Bangumi API rate limits.
-- [ ] Add lightweight tests for Markdown rendering, sync-block merging, and duplicate file prevention.
-- [ ] Add a manual `Test token` action in settings before running a full sync.
+同步后插件只会写入这两个标记之间，例如：
 
-### Better Sync Experience
+```markdown
+- [x] [名侦探光之美少女！](https://bgm.tv/subject/611077) 进度：1/24 ✅ 2026-05-14
+```
 
-- [x] Show clearer sync progress and final details, including which subjects failed.
-- [x] Support configurable subject types beyond anime, such as books, music, games, and real-life media.
-- [x] Add options for file naming and whether to include dropped/on-hold items.
-- [x] Support incremental sync using the last synced timestamp where the Bangumi API allows it.
-- [x] Daily Notes sync.
+增量同步时，只会添加本次实际新增或更新的进行中条目。
 
-### Notes and Templates
+## 当前限制
 
-- [x] Add a user-editable Markdown template for synced subject notes.
-- [ ] Support custom frontmatter fields for Dataview workflows.
-- [ ] Add safer merge behavior for users who want to edit parts of the generated Bangumi section.
-- [ ] Optionally create index notes by status, year, tag, or subject type.
+- 暂不支持 OAuth 登录；目前使用手动 access token。
+- Bangumi v0 章节收藏接口不返回用户单集评论，因此无法同步单集评论。
+- 插件目前以桌面端为主。移动端兼容性可能不佳，尤其是剪贴板、打开 token 页面、Daily Note 路径识别和大文本框设置页布局，请谨慎使用。
 
-### Account and Distribution
+## 反馈与支持
 
-- [x] Add token-page and clipboard helpers so users can get and fill an access token with fewer steps.
-- [ ] Revisit OAuth login only if there is a practical public-client flow that does not require users to manage their own client secret.
-- [ ] Add release packaging instructions for `manifest.json`, `main.js`, and optional `styles.css`.
-- [ ] Add version bump and release checklist for publishing as an Obsidian community plugin.
-- [ ] Review mobile compatibility and document any desktop-only limitations.
+如果遇到问题，请在 issue 中附上：
+
+- Obsidian 版本和插件版本
+- 同步时的收藏类型和收藏状态设置
+- `Bangumi Sync Report.md` 中的相关错误
+- 可复现步骤
+
+
+后续计划见 [Roadmap](docs/roadmap.md)。
+
+## 致谢
+
+这个插件参考并受益于许多前辈项目和文档：
+
+- [Obsidian 官方插件文档](https://docs.obsidian.md/Plugins/Getting+started/Build+a+plugin)：插件结构、设置页和构建流程的基础参考。
+- [obsidian-sample-plugin](https://github.com/obsidianmd/obsidian-sample-plugin)：插件脚手架、版本更新和发布流程参考。
+- [Bangumi API](https://github.com/bangumi/api)：Bangumi 数据同步能力的基础。
+- [obsidian-weread-plugin](https://github.com/zhaohongxuan/obsidian-weread-plugin)：同步型阅读/收藏插件的设计参考。
+- [yearly-glance](https://github.com/Moyf/yearly-glance)：README 结构和正式发布文档的参考。
+
+## License
+
+本项目基于 MIT License 开源。详见 [LICENSE](LICENSE) 文件。

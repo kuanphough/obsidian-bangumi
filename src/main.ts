@@ -7,6 +7,7 @@ import {
 	DEFAULT_SETTINGS
 } from "./settings";
 import { t } from "./i18n";
+import { BangumiClient } from "./bangumi/client";
 import {
 	DEFAULT_SUBJECT_NOTE_TEMPLATE,
 	LEGACY_DEFAULT_SUBJECT_NOTE_TEMPLATE
@@ -180,6 +181,26 @@ export default class BangumiSyncPlugin extends Plugin {
 			const message =
 				error instanceof Error ? error.message : t("unknownError");
 			new Notice(t("clipboardTokenFailed", { message }));
+			console.error(error);
+		}
+	}
+
+	async testAccessToken(): Promise<void> {
+		if (!this.settings.accessToken) {
+			new Notice(t("noToken"));
+			return;
+		}
+
+		try {
+			const user = await new BangumiClient({
+				accessToken: this.settings.accessToken,
+				userAgent: this.settings.userAgent
+			}).getMe();
+			new Notice(t("testTokenSucceeded", { username: user.username }));
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : t("unknownError");
+			new Notice(t("testTokenFailed", { message }));
 			console.error(error);
 		}
 	}

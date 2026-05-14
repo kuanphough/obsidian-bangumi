@@ -155,6 +155,9 @@ var EN = {
   templateVariablesDoc: "Template variables",
   templateVariablesDocDesc: "Open the documentation for available template variables.",
   templateVariablesDocFailed: "Could not open template variable documentation: {{message}}",
+  testToken: "Test token",
+  testTokenFailed: "Token test failed: {{message}}",
+  testTokenSucceeded: "Token is valid. Connected as {{username}}.",
   subjectType: "Subject type",
   subjectTypeRequired: "Select at least one Bangumi subject type to sync.",
   subjectTypes: "Subject types",
@@ -273,6 +276,9 @@ var ZH = {
   templateVariablesDoc: "\u6A21\u677F\u53D8\u91CF\u6587\u6863",
   templateVariablesDocDesc: "\u6253\u5F00\u53EF\u7528\u6A21\u677F\u53D8\u91CF\u8BF4\u660E\u6587\u6863\u3002",
   templateVariablesDocFailed: "\u65E0\u6CD5\u6253\u5F00\u6A21\u677F\u53D8\u91CF\u6587\u6863\uFF1A{{message}}",
+  testToken: "\u6D4B\u8BD5 token",
+  testTokenFailed: "Token \u6D4B\u8BD5\u5931\u8D25\uFF1A{{message}}",
+  testTokenSucceeded: "Token \u6709\u6548\uFF0C\u5DF2\u8FDE\u63A5\u4E3A {{username}}\u3002",
   subjectType: "\u6761\u76EE\u7C7B\u578B",
   subjectTypeRequired: "\u8BF7\u9009\u62E9\u81F3\u5C11\u4E00\u4E2A\u8981\u540C\u6B65\u7684 Bangumi \u6761\u76EE\u7C7B\u578B\u3002",
   subjectTypes: "\u6761\u76EE\u7C7B\u578B",
@@ -721,6 +727,10 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
           this.display();
         });
       })
+    ).addButton(
+      (button) => button.setButtonText(t("testToken")).onClick(() => {
+        void this.plugin.testAccessToken();
+      })
     );
     new import_obsidian2.Setting(containerEl).setName(t("syncDirectory")).setDesc(t("syncDirectoryDesc")).addText(
       (text) => text.setPlaceholder("Bangumi").setValue(this.plugin.settings.syncDirectory).onChange(async (value) => {
@@ -851,9 +861,6 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
   }
 };
 
-// src/sync/sync-service.ts
-var import_obsidian5 = require("obsidian");
-
 // src/bangumi/client.ts
 var import_obsidian3 = require("obsidian");
 var BangumiClient = class {
@@ -923,6 +930,9 @@ var BangumiClient = class {
     }
   }
 };
+
+// src/sync/sync-service.ts
+var import_obsidian5 = require("obsidian");
 
 // src/sync/note-writer.ts
 var import_obsidian4 = require("obsidian");
@@ -1778,6 +1788,23 @@ var BangumiSyncPlugin = class extends import_obsidian6.Plugin {
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
       new import_obsidian6.Notice(t("clipboardTokenFailed", { message }));
+      console.error(error);
+    }
+  }
+  async testAccessToken() {
+    if (!this.settings.accessToken) {
+      new import_obsidian6.Notice(t("noToken"));
+      return;
+    }
+    try {
+      const user = await new BangumiClient({
+        accessToken: this.settings.accessToken,
+        userAgent: this.settings.userAgent
+      }).getMe();
+      new import_obsidian6.Notice(t("testTokenSucceeded", { username: user.username }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("unknownError");
+      new import_obsidian6.Notice(t("testTokenFailed", { message }));
       console.error(error);
     }
   }

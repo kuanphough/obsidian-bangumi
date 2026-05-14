@@ -234,6 +234,13 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 							this.display();
 						});
 					})
+			)
+			.addButton((button) =>
+				button
+					.setButtonText(t("testToken"))
+					.onClick(() => {
+						void this.plugin.testAccessToken();
+					})
 			);
 
 		new Setting(containerEl)
