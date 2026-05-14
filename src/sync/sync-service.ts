@@ -11,7 +11,6 @@ import { BangumiClient } from "../bangumi/client";
 import { formatLocalDateTime } from "../date-format";
 import {
 	BANGUMI_STORAGE_LAYOUTS,
-	BangumiStorageLayout,
 	BangumiSyncSettings
 } from "../settings";
 import { t } from "../i18n";
@@ -659,8 +658,7 @@ export class SyncService {
 				continue;
 			}
 
-			const frontmatterId =
-				this.app.metadataCache.getFileCache(file)?.frontmatter?.bangumi_id;
+			const frontmatterId = this.getFrontmatterBangumiId(file);
 			const parsedFrontmatterId = Number(frontmatterId);
 			if (Number.isInteger(parsedFrontmatterId)) {
 				ids.add(parsedFrontmatterId);
@@ -674,6 +672,16 @@ export class SyncService {
 		}
 
 		return ids;
+	}
+
+	private getFrontmatterBangumiId(file: TFile): unknown {
+		const frontmatter: unknown =
+			this.app.metadataCache.getFileCache(file)?.frontmatter;
+		if (typeof frontmatter !== "object" || frontmatter === null) {
+			return undefined;
+		}
+
+		return (frontmatter as { bangumi_id?: unknown }).bangumi_id;
 	}
 
 	private async fetchAllEpisodeCollections(
@@ -695,7 +703,7 @@ export class SyncService {
 		const subjectType = this.renderSubjectType(collection.subject.type);
 		const collectionStatus = this.renderCollectionStatus(collection.type);
 
-		switch (this.settings.storageLayout as BangumiStorageLayout) {
+		switch (this.settings.storageLayout) {
 			case BANGUMI_STORAGE_LAYOUTS.subjectThenCollection:
 				return `${root}/${subjectType}/${collectionStatus}`;
 			case BANGUMI_STORAGE_LAYOUTS.collectionThenSubject:

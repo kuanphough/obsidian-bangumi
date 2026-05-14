@@ -1,6 +1,6 @@
 {
 	"name": "bangumi-note",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "Sync Bangumi collection and episode progress into notes.",
 	"main": "main.js",
 	"scripts": {
@@ -18,7 +18,6 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@types/node": "^20.11.0",
-		"builtin-modules": "^3.3.0",
 		"esbuild": "^0.24.0",
 		"obsidian": "^1.5.12",
 		"typescript": "^5.4.0"

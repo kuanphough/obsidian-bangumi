@@ -76,9 +76,7 @@ export class NoteWriter {
 				.find(
 					(file) =>
 						file.path.startsWith(`${directory}/`) &&
-						String(
-							this.app.metadataCache.getFileCache(file)?.frontmatter?.bangumi_id
-						) === String(subjectId)
+						String(this.getFrontmatterBangumiId(file)) === String(subjectId)
 				) ??
 			this.app.vault
 				.getMarkdownFiles()
@@ -90,6 +88,16 @@ export class NoteWriter {
 				) ??
 			null
 		);
+	}
+
+	private getFrontmatterBangumiId(file: TFile): unknown {
+		const frontmatter: unknown =
+			this.app.metadataCache.getFileCache(file)?.frontmatter;
+		if (typeof frontmatter !== "object" || frontmatter === null) {
+			return undefined;
+		}
+
+		return (frontmatter as { bangumi_id?: unknown }).bangumi_id;
 	}
 
 	private async ensureFolder(path: string): Promise<void> {

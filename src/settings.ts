@@ -72,7 +72,7 @@ export const DEFAULT_SETTINGS: BangumiSyncSettings = {
 	subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
 	collectionTypes: [BANGUMI_COLLECTION_TYPES.do],
 	subjectNoteTemplate: DEFAULT_SUBJECT_NOTE_TEMPLATE,
-	userAgent: buildUserAgent("0.1.2")
+	userAgent: buildUserAgent("0.1.3")
 };
 
 const SUBJECT_OPTIONS: Array<{
@@ -203,7 +203,7 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 				(option) => option.key === this.plugin.settings.fileNameFormat
 			) ?? FILE_NAME_FORMAT_OPTIONS[0];
 
-		containerEl.createEl("h2", { text: t("bangumiSync") });
+		new Setting(containerEl).setName(t("bangumiSync")).setHeading();
 
 		new Setting(containerEl)
 			.setName(t("accessToken"))
@@ -341,9 +341,7 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 		});
 		dailySnippetEl.readOnly = true;
 		dailySnippetEl.rows = 2;
-		dailySnippetEl.style.width = "100%";
-		dailySnippetEl.style.boxSizing = "border-box";
-		dailySnippetEl.style.marginBottom = "12px";
+		dailySnippetEl.addClass("bangumi-note-daily-sync-snippet");
 
 		new Setting(containerEl)
 			.setName(t("lastSyncedAt"))
@@ -359,7 +357,7 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 				})
 			);
 
-		containerEl.createEl("h3", { text: t("subjectTypes") });
+		new Setting(containerEl).setName(t("subjectTypes")).setHeading();
 
 		for (const option of SUBJECT_OPTIONS) {
 			new Setting(containerEl)
@@ -381,7 +379,7 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 				);
 		}
 
-		containerEl.createEl("h3", { text: t("collectionStatuses") });
+		new Setting(containerEl).setName(t("collectionStatuses")).setHeading();
 
 		for (const option of COLLECTION_OPTIONS) {
 			new Setting(containerEl)
@@ -403,26 +401,21 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 				);
 		}
 
-		containerEl.createEl("h3", { text: t("noteTemplate") });
+		new Setting(containerEl).setName(t("noteTemplate")).setHeading();
 
 		const subjectTemplateSetting = new Setting(containerEl)
 			.setName(t("subjectNoteTemplate"))
 			.setDesc(t("subjectNoteTemplateDesc"));
-		subjectTemplateSetting.descEl.style.maxWidth = "34em";
-		subjectTemplateSetting.descEl.style.lineHeight = "1.45";
+		subjectTemplateSetting.descEl.addClass("bangumi-note-template-desc");
 
 		const subjectTemplateEl = containerEl.createEl("textarea");
 		subjectTemplateEl.rows = 18;
 		subjectTemplateEl.value = this.plugin.settings.subjectNoteTemplate;
-		subjectTemplateEl.style.width = "100%";
-		subjectTemplateEl.style.minHeight = "360px";
-		subjectTemplateEl.style.boxSizing = "border-box";
-		subjectTemplateEl.style.marginTop = "8px";
-		subjectTemplateEl.style.marginBottom = "8px";
-		subjectTemplateEl.addEventListener("change", async () => {
+		subjectTemplateEl.addClass("bangumi-note-template-textarea");
+		subjectTemplateEl.addEventListener("change", () => {
 			this.plugin.settings.subjectNoteTemplate =
 				subjectTemplateEl.value.trim() || DEFAULT_SUBJECT_NOTE_TEMPLATE;
-			await this.plugin.saveSettings();
+			void this.plugin.saveSettings();
 		});
 
 		new Setting(containerEl)

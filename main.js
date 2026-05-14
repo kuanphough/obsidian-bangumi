@@ -310,10 +310,13 @@ function isChineseLocale() {
 }
 function t(key, values = {}) {
   const table = isChineseLocale() ? ZH : EN;
-  return table[key].replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (match, name) => {
-    const value = values[name];
-    return value === void 0 ? match : String(value);
-  });
+  return table[key].replace(
+    /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g,
+    (match, name) => {
+      const value = values[name];
+      return value === void 0 ? match : String(value);
+    }
+  );
 }
 
 // src/sync/markdown-renderer.ts
@@ -525,10 +528,13 @@ var MarkdownRenderer = class {
     return template.includes("{{sync_block_start}}") && template.includes("{{sync_block_end}}");
   }
   renderTemplate(template, values) {
-    return template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (match, key) => {
-      var _a;
-      return (_a = values[key]) != null ? _a : match;
-    });
+    return template.replace(
+      /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g,
+      (match, key) => {
+        var _a;
+        return (_a = values[key]) != null ? _a : match;
+      }
+    );
   }
   renderYamlScalar(value) {
     return value || '""';
@@ -603,7 +609,7 @@ var DEFAULT_SETTINGS = {
   subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
   collectionTypes: [BANGUMI_COLLECTION_TYPES.do],
   subjectNoteTemplate: DEFAULT_SUBJECT_NOTE_TEMPLATE,
-  userAgent: buildUserAgent("0.1.2")
+  userAgent: buildUserAgent("0.1.3")
 };
 var SUBJECT_OPTIONS = [
   {
@@ -710,7 +716,7 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
     const selectedFileNameFormat = (_b = FILE_NAME_FORMAT_OPTIONS.find(
       (option) => option.key === this.plugin.settings.fileNameFormat
     )) != null ? _b : FILE_NAME_FORMAT_OPTIONS[0];
-    containerEl.createEl("h2", { text: t("bangumiSync") });
+    new import_obsidian2.Setting(containerEl).setName(t("bangumiSync")).setHeading();
     new import_obsidian2.Setting(containerEl).setName(t("accessToken")).setDesc(t("accessTokenDesc")).addText((text) => {
       text.inputEl.type = "password";
       text.setPlaceholder("Bearer token").setValue(this.plugin.settings.accessToken).onChange(async (value) => {
@@ -788,9 +794,7 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
     });
     dailySnippetEl.readOnly = true;
     dailySnippetEl.rows = 2;
-    dailySnippetEl.style.width = "100%";
-    dailySnippetEl.style.boxSizing = "border-box";
-    dailySnippetEl.style.marginBottom = "12px";
+    dailySnippetEl.addClass("bangumi-note-daily-sync-snippet");
     new import_obsidian2.Setting(containerEl).setName(t("lastSyncedAt")).setDesc(
       formatLocalDateTime(this.plugin.settings.lastSyncedAt) || t("neverSynced")
     ).addButton(
@@ -800,7 +804,7 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         this.display();
       })
     );
-    containerEl.createEl("h3", { text: t("subjectTypes") });
+    new import_obsidian2.Setting(containerEl).setName(t("subjectTypes")).setHeading();
     for (const option of SUBJECT_OPTIONS) {
       new import_obsidian2.Setting(containerEl).setName(t(option.labelKey)).setDesc(t(option.descriptionKey)).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.subjectTypes.includes(option.key)).onChange(async (enabled) => {
@@ -815,7 +819,7 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         })
       );
     }
-    containerEl.createEl("h3", { text: t("collectionStatuses") });
+    new import_obsidian2.Setting(containerEl).setName(t("collectionStatuses")).setHeading();
     for (const option of COLLECTION_OPTIONS) {
       new import_obsidian2.Setting(containerEl).setName(t(option.labelKey)).setDesc(t(option.descriptionKey)).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.collectionTypes.includes(option.key)).onChange(async (enabled) => {
@@ -830,21 +834,16 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         })
       );
     }
-    containerEl.createEl("h3", { text: t("noteTemplate") });
+    new import_obsidian2.Setting(containerEl).setName(t("noteTemplate")).setHeading();
     const subjectTemplateSetting = new import_obsidian2.Setting(containerEl).setName(t("subjectNoteTemplate")).setDesc(t("subjectNoteTemplateDesc"));
-    subjectTemplateSetting.descEl.style.maxWidth = "34em";
-    subjectTemplateSetting.descEl.style.lineHeight = "1.45";
+    subjectTemplateSetting.descEl.addClass("bangumi-note-template-desc");
     const subjectTemplateEl = containerEl.createEl("textarea");
     subjectTemplateEl.rows = 18;
     subjectTemplateEl.value = this.plugin.settings.subjectNoteTemplate;
-    subjectTemplateEl.style.width = "100%";
-    subjectTemplateEl.style.minHeight = "360px";
-    subjectTemplateEl.style.boxSizing = "border-box";
-    subjectTemplateEl.style.marginTop = "8px";
-    subjectTemplateEl.style.marginBottom = "8px";
-    subjectTemplateEl.addEventListener("change", async () => {
+    subjectTemplateEl.addClass("bangumi-note-template-textarea");
+    subjectTemplateEl.addEventListener("change", () => {
       this.plugin.settings.subjectNoteTemplate = subjectTemplateEl.value.trim() || DEFAULT_SUBJECT_NOTE_TEMPLATE;
-      await this.plugin.saveSettings();
+      void this.plugin.saveSettings();
     });
     new import_obsidian2.Setting(containerEl).setName(t("templateVariablesDoc")).setDesc(t("templateVariablesDocDesc")).addButton(
       (button) => button.setButtonText(t("templateVariablesDoc")).onClick(() => {
@@ -981,15 +980,18 @@ var NoteWriter = class {
     const directory = (0, import_obsidian4.normalizePath)(syncDirectory);
     const idMarker = `[bgm-${subjectId}]`;
     return (_b = (_a = this.app.vault.getMarkdownFiles().find(
-      (file) => {
-        var _a2, _b2;
-        return file.path.startsWith(`${directory}/`) && String(
-          (_b2 = (_a2 = this.app.metadataCache.getFileCache(file)) == null ? void 0 : _a2.frontmatter) == null ? void 0 : _b2.bangumi_id
-        ) === String(subjectId);
-      }
+      (file) => file.path.startsWith(`${directory}/`) && String(this.getFrontmatterBangumiId(file)) === String(subjectId)
     )) != null ? _a : this.app.vault.getMarkdownFiles().find(
       (file) => file.path.startsWith(`${directory}/`) && (file.basename.includes(idMarker) || file.basename.includes(String(subjectId)))
     )) != null ? _b : null;
+  }
+  getFrontmatterBangumiId(file) {
+    var _a;
+    const frontmatter = (_a = this.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter;
+    if (typeof frontmatter !== "object" || frontmatter === null) {
+      return void 0;
+    }
+    return frontmatter.bangumi_id;
   }
   async ensureFolder(path) {
     const parts = path.split("/");
@@ -1498,14 +1500,14 @@ var SyncService = class {
     return updatedAt <= lastSyncedAt;
   }
   getExistingSubjectIds() {
-    var _a, _b, _c;
+    var _a;
     const directory = (0, import_obsidian5.normalizePath)(this.settings.syncDirectory);
     const ids = /* @__PURE__ */ new Set();
     for (const file of this.app.vault.getMarkdownFiles()) {
       if (!file.path.startsWith(`${directory}/`) && ((_a = file.parent) == null ? void 0 : _a.path) !== directory) {
         continue;
       }
-      const frontmatterId = (_c = (_b = this.app.metadataCache.getFileCache(file)) == null ? void 0 : _b.frontmatter) == null ? void 0 : _c.bangumi_id;
+      const frontmatterId = this.getFrontmatterBangumiId(file);
       const parsedFrontmatterId = Number(frontmatterId);
       if (Number.isInteger(parsedFrontmatterId)) {
         ids.add(parsedFrontmatterId);
@@ -1517,6 +1519,14 @@ var SyncService = class {
       }
     }
     return ids;
+  }
+  getFrontmatterBangumiId(file) {
+    var _a;
+    const frontmatter = (_a = this.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter;
+    if (typeof frontmatter !== "object" || frontmatter === null) {
+      return void 0;
+    }
+    return frontmatter.bangumi_id;
   }
   async fetchAllEpisodeCollections(client, subjectId) {
     const page = await client.getSubjectEpisodeCollections(subjectId);
@@ -1741,7 +1751,9 @@ var BangumiSyncPlugin = class extends import_obsidian6.Plugin {
     this.addSettingTab(new BangumiSyncSettingTab(this.app, this));
   }
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    const loadedData = await this.loadData();
+    const loadedSettings = this.isSettingsRecord(loadedData) ? loadedData : {};
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings);
     this.settings.username = "";
     this.settings.userAgent = buildUserAgent(this.manifest.version);
     let migrated = false;
@@ -1755,6 +1767,9 @@ var BangumiSyncPlugin = class extends import_obsidian6.Plugin {
   }
   async saveSettings() {
     await this.saveData(this.settings);
+  }
+  isSettingsRecord(value) {
+    return typeof value === "object" && value !== null;
   }
   async openTemplateVariablesDoc() {
     try {

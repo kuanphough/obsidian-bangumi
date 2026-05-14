@@ -122,7 +122,10 @@ export default class BangumiSyncPlugin extends Plugin {
 	}
 
 	async loadSettings(): Promise<void> {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const loadedData: unknown = await this.loadData();
+		const loadedSettings: Partial<BangumiSyncSettings> =
+			this.isSettingsRecord(loadedData) ? loadedData : {};
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings);
 		this.settings.username = "";
 		this.settings.userAgent = buildUserAgent(this.manifest.version);
 		let migrated = false;
@@ -140,6 +143,10 @@ export default class BangumiSyncPlugin extends Plugin {
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
+	}
+
+	private isSettingsRecord(value: unknown): value is Partial<BangumiSyncSettings> {
+		return typeof value === "object" && value !== null;
 	}
 
 	async openTemplateVariablesDoc(): Promise<void> {

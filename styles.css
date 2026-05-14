@@ -1,0 +1,18 @@
+.bangumi-note-daily-sync-snippet {
+	width: 100%;
+	box-sizing: border-box;
+	margin-bottom: 12px;
+}
+
+.bangumi-note-template-desc {
+	max-width: 34em;
+	line-height: 1.45;
+}
+
+.bangumi-note-template-textarea {
+	width: 100%;
+	min-height: 360px;
+	box-sizing: border-box;
+	margin-top: 8px;
+	margin-bottom: 8px;
+}

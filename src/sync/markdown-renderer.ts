@@ -255,9 +255,12 @@ export class MarkdownRenderer {
 		template: string,
 		values: Record<string, string>
 	): string {
-		return template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (match, key) => {
-			return values[key] ?? match;
-		});
+		return template.replace(
+			/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g,
+			(match: string, key: string) => {
+				return values[key] ?? match;
+			}
+		);
 	}
 
 	private renderYamlScalar(value: string): string {

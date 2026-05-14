@@ -296,8 +296,11 @@ export function t(
 	values: Record<string, string | number | undefined> = {}
 ): string {
 	const table = isChineseLocale() ? ZH : EN;
-	return table[key].replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (match, name) => {
-		const value = values[name];
-		return value === undefined ? match : String(value);
-	});
+	return table[key].replace(
+		/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g,
+		(match: string, name: string) => {
+			const value = values[name];
+			return value === undefined ? match : String(value);
+		}
+	);
 }
