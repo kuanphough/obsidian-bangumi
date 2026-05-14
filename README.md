@@ -32,7 +32,7 @@ Bangumi Sync 是一个 Obsidian 插件，用于把 Bangumi 收藏同步到本地
 ![alt text](image/3e1b5ea0-f53d-42a9-b945-d8577eea9802.png)
 
 ### 日记预览
-![alt text](image\QQ_1778751638574.png)
+![alt text](image/QQ_1778751638574.png)
 ## 安装
 
 ### 手动安装

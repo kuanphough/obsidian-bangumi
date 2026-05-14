@@ -37,7 +37,7 @@ Bangumi Sync is an Obsidian plugin for turning Bangumi collections into local no
 
 ### Daily Note Preview
 
-![alt text](image\QQ_1778751638574.png)
+![alt text](image/QQ_1778751638574.png)
 
 ## Installation
 
