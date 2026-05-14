@@ -7,6 +7,7 @@ import {
 	BangumiPagedResponse,
 	BangumiUser
 } from "./types";
+import { t } from "../i18n";
 
 export interface BangumiClientOptions {
 	accessToken: string;
@@ -60,12 +61,38 @@ export class BangumiClient {
 		});
 
 		if (response.status < 200 || response.status >= 300) {
-			const detail = response.text ? ` ${response.text}` : "";
 			throw new Error(
-				`Bangumi API request failed: ${response.status}${detail}`
+				this.buildErrorMessage(response.status, path, response.text)
 			);
 		}
 
 		return response.json as T;
+	}
+
+	private buildErrorMessage(status: number, path: string, detail: string): string {
+		const detailText = detail.trim() ? ` Detail: ${detail.trim()}` : "";
+		const values = {
+			status,
+			path,
+			detail: detailText
+		};
+
+		switch (status) {
+			case 401:
+				return t("apiUnauthorized", values);
+			case 403:
+				return t("apiForbidden", values);
+			case 404:
+				return t("apiNotFound", values);
+			case 429:
+				return t("apiRateLimit", values);
+			case 500:
+			case 502:
+			case 503:
+			case 504:
+				return t("apiServerError", values);
+			default:
+				return t("apiRequestFailed", values);
+		}
 	}
 }

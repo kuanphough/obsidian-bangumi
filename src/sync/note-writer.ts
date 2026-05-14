@@ -1,21 +1,27 @@
 import { App, TFile, normalizePath } from "obsidian";
 
 import { BangumiSyncedSubject } from "../bangumi/types";
+import {
+	BANGUMI_FILE_NAME_FORMATS,
+	BangumiFileNameFormat
+} from "../settings";
 import { MarkdownRenderer } from "./markdown-renderer";
 
 export class NoteWriter {
 	constructor(
 		private readonly app: App,
-		private readonly renderer: MarkdownRenderer
+		private readonly renderer: MarkdownRenderer,
+		private readonly fileNameFormat: BangumiFileNameFormat
 	) {}
 
 	async writeSubjectNote(
-		syncDirectory: string,
+		syncRootDirectory: string,
+		targetDirectory: string,
 		subject: BangumiSyncedSubject
 	): Promise<TFile> {
 		const existing = this.findExistingSubjectNote(
 			subject.collection.subject.id,
-			syncDirectory
+			syncRootDirectory
 		);
 		const rendered = this.renderer.renderSubjectNote(subject);
 
@@ -23,25 +29,25 @@ export class NoteWriter {
 			const previous = await this.app.vault.read(existing);
 			await this.app.vault.modify(
 				existing,
-				this.renderer.mergeSyncedBlock(previous, rendered)
+				this.renderer.mergeSyncedContent(previous, rendered)
 			);
 			return existing;
 		}
 
-		const directory = normalizePath(syncDirectory);
+		const directory = normalizePath(targetDirectory);
 		await this.ensureFolder(directory);
 
 		const title =
 			subject.collection.subject.name_cn || subject.collection.subject.name;
 		const path = normalizePath(
-			`${directory}/${this.toSafeFileName(title)} [bgm-${subject.collection.subject.id}].md`
+			`${directory}/${this.buildFileName(title, subject.collection.subject.id)}.md`
 		);
 		const existingAtPath = this.app.vault.getAbstractFileByPath(path);
 		if (existingAtPath instanceof TFile) {
 			const previous = await this.app.vault.read(existingAtPath);
 			await this.app.vault.modify(
 				existingAtPath,
-				this.renderer.mergeSyncedBlock(previous, rendered)
+				this.renderer.mergeSyncedContent(previous, rendered)
 			);
 			return existingAtPath;
 		}
@@ -92,5 +98,20 @@ export class NoteWriter {
 
 	private toSafeFileName(value: string): string {
 		return value.replace(/[\\/:*?"<>|]/g, "_").trim() || "Untitled";
+	}
+
+	private buildFileName(title: string, subjectId: number): string {
+		const safeTitle = this.toSafeFileName(title);
+		const id = `bgm-${subjectId}`;
+
+		switch (this.fileNameFormat) {
+			case BANGUMI_FILE_NAME_FORMATS.idThenTitle:
+				return `${id} ${safeTitle}`;
+			case BANGUMI_FILE_NAME_FORMATS.idOnly:
+				return id;
+			case BANGUMI_FILE_NAME_FORMATS.titleThenId:
+			default:
+				return `${safeTitle} [${id}]`;
+		}
 	}
 }

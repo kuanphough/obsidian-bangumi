@@ -9,6 +9,17 @@ export const BANGUMI_COLLECTION_TYPES = {
 export type BangumiCollectionType =
 	(typeof BANGUMI_COLLECTION_TYPES)[keyof typeof BANGUMI_COLLECTION_TYPES];
 
+export const BANGUMI_SUBJECT_TYPES = {
+	book: 1,
+	anime: 2,
+	music: 3,
+	game: 4,
+	real: 6
+} as const;
+
+export type BangumiSubjectType =
+	(typeof BANGUMI_SUBJECT_TYPES)[keyof typeof BANGUMI_SUBJECT_TYPES];
+
 export interface BangumiUser {
 	id: number;
 	username: string;
@@ -71,7 +82,7 @@ export interface BangumiEpisode {
 }
 
 export interface BangumiEpisodeCollection {
-	episode: BangumiEpisode;
+	episode: BangumiEpisode | null;
 	type: number;
 }
 
