@@ -25,6 +25,10 @@ export interface BangumiSyncSettings {
 	includeOnHoldAndDropped: boolean;
 	incrementalSync: boolean;
 	dailyNoteSync: boolean;
+	fetchDetailedSubjectInfo: boolean;
+	fetchStaff: boolean;
+	fetchCharacters: boolean;
+	fetchRelations: boolean;
 	lastSyncedAt: string;
 	subjectTypes: BangumiSubjectType[];
 	collectionTypes: BangumiCollectionType[];
@@ -68,6 +72,10 @@ export const DEFAULT_SETTINGS: BangumiSyncSettings = {
 	includeOnHoldAndDropped: false,
 	incrementalSync: true,
 	dailyNoteSync: false,
+	fetchDetailedSubjectInfo: false,
+	fetchStaff: false,
+	fetchCharacters: false,
+	fetchRelations: false,
 	lastSyncedAt: "",
 	subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
 	collectionTypes: [BANGUMI_COLLECTION_TYPES.do],
@@ -407,6 +415,59 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 						})
 				);
 		}
+
+		new Setting(containerEl)
+			.setName(t("templateDataSources"))
+			.setDesc(t("templateDataSourcesDesc"))
+			.setHeading();
+
+		new Setting(containerEl)
+			.setName(t("fetchDetailedSubjectInfo"))
+			.setDesc(t("fetchDetailedSubjectInfoDesc"))
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.fetchDetailedSubjectInfo)
+					.onChange(async (enabled) => {
+						this.plugin.settings.fetchDetailedSubjectInfo = enabled;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(t("fetchStaff"))
+			.setDesc(t("fetchStaffDesc"))
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.fetchStaff)
+					.onChange(async (enabled) => {
+						this.plugin.settings.fetchStaff = enabled;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(t("fetchCharacters"))
+			.setDesc(t("fetchCharactersDesc"))
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.fetchCharacters)
+					.onChange(async (enabled) => {
+						this.plugin.settings.fetchCharacters = enabled;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(t("fetchRelations"))
+			.setDesc(t("fetchRelationsDesc"))
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.fetchRelations)
+					.onChange(async (enabled) => {
+						this.plugin.settings.fetchRelations = enabled;
+						await this.plugin.saveSettings();
+					})
+			);
 
 		new Setting(containerEl).setName(t("noteTemplate")).setHeading();
 

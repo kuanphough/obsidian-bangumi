@@ -5,6 +5,7 @@ import {
 	BangumiCollectionType,
 	BangumiEpisodeCollection,
 	BANGUMI_COLLECTION_TYPES,
+	BangumiSubjectExtras,
 	BangumiSubjectType
 } from "../bangumi/types";
 import { BangumiClient } from "../bangumi/client";
@@ -14,7 +15,10 @@ import {
 	BangumiSyncSettings
 } from "../settings";
 import { t } from "../i18n";
-import { MarkdownRenderer } from "./markdown-renderer";
+import {
+	DEFAULT_SUBJECT_NOTE_TEMPLATE,
+	MarkdownRenderer
+} from "./markdown-renderer";
 import { NoteWriter } from "./note-writer";
 
 export interface SyncResult {
@@ -253,13 +257,19 @@ export class SyncService {
 					}
 
 					try {
+						const extras = await this.fetchSubjectExtras(
+							client,
+							collection,
+							failures
+						);
 						const result = await writer.writeSubjectNote(
 							this.settings.syncDirectory,
 							this.getTargetDirectory(collection),
 							{
 								collection,
 								episodes,
-								episodeSyncError
+								episodeSyncError,
+								extras
 							}
 						);
 						existingSubjectIds.add(subjectId);
@@ -390,6 +400,7 @@ export class SyncService {
 		const subjectId = collection.subject.id;
 		let episodes: BangumiEpisodeCollection[] = [];
 		let episodeSyncError: string | undefined;
+		const failures: SyncFailure[] = [];
 
 		try {
 			episodes = await this.fetchAllEpisodeCollections(client, subjectId);
@@ -401,20 +412,22 @@ export class SyncService {
 			);
 		}
 
+		const extras = await this.fetchSubjectExtras(client, collection, failures);
 		const result = await writer.writeSubjectNote(
 			this.settings.syncDirectory,
 			this.getTargetDirectory(collection),
 			{
 				collection,
 				episodes,
-				episodeSyncError
+				episodeSyncError,
+				extras
 			}
 		);
 
 		return {
 			changed: result.changed,
 			path: result.file.path,
-			episodeSyncError
+			episodeSyncError: episodeSyncError ?? extras.errors?.join("; ")
 		};
 	}
 
@@ -447,6 +460,162 @@ export class SyncService {
 		}
 
 		return collections;
+	}
+
+	private async fetchSubjectExtras(
+		client: BangumiClient,
+		collection: BangumiCollection,
+		failures: SyncFailure[]
+	): Promise<BangumiSubjectExtras> {
+		const subjectId = collection.subject.id;
+		const title = this.getSubjectTitle(collection);
+		const extras: BangumiSubjectExtras = {};
+		const errors: string[] = [];
+
+		if (this.shouldFetchDetailedSubjectInfo()) {
+			try {
+				collection.subject = {
+					...collection.subject,
+					...(await client.getSubject(subjectId))
+				};
+			} catch (error) {
+				this.recordExtraFailure(
+					failures,
+					errors,
+					collection,
+					title,
+					"fetch detailed subject info",
+					error
+				);
+			}
+		}
+
+		if (this.shouldFetchStaff()) {
+			try {
+				extras.staff = await client.getSubjectPersons(subjectId);
+			} catch (error) {
+				this.recordExtraFailure(
+					failures,
+					errors,
+					collection,
+					title,
+					"fetch staff",
+					error
+				);
+			}
+		}
+
+		if (this.shouldFetchCharacters()) {
+			try {
+				extras.characters = await client.getSubjectCharacters(subjectId);
+			} catch (error) {
+				this.recordExtraFailure(
+					failures,
+					errors,
+					collection,
+					title,
+					"fetch characters",
+					error
+				);
+			}
+		}
+
+		if (this.shouldFetchRelations()) {
+			try {
+				extras.relations = await client.getRelatedSubjects(subjectId);
+			} catch (error) {
+				this.recordExtraFailure(
+					failures,
+					errors,
+					collection,
+					title,
+					"fetch relations",
+					error
+				);
+			}
+		}
+
+		if (errors.length > 0) {
+			extras.errors = errors;
+		}
+
+		return extras;
+	}
+
+	private recordExtraFailure(
+		failures: SyncFailure[],
+		errors: string[],
+		collection: BangumiCollection,
+		title: string,
+		stage: string,
+		error: unknown
+	): void {
+		const message = this.getErrorMessage(error);
+		errors.push(`${stage}: ${message}`);
+		failures.push({
+			stage,
+			subjectId: collection.subject.id,
+			title,
+			subjectType: this.renderSubjectType(collection.subject.type),
+			collectionStatus: this.renderCollectionStatus(collection.type),
+			error: message
+		});
+		console.error(
+			`Bangumi Sync failed to ${stage} for subject ${collection.subject.id}`,
+			error
+		);
+	}
+
+	private shouldFetchDetailedSubjectInfo(): boolean {
+		return (
+			this.settings.fetchDetailedSubjectInfo ||
+			this.templateUsesAny([
+				"summary_section",
+				"subject_summary",
+				"subject_infobox",
+				"subject_infobox_json",
+				"subject_tags",
+				"subject_tags_json",
+				"subject_rating",
+				"subject_rating_json",
+				"subject_collection_stats",
+				"subject_collection_stats_json"
+			])
+		);
+	}
+
+	private shouldFetchStaff(): boolean {
+		return this.settings.fetchStaff || this.templateUsesAny(["staff", "staff_json"]);
+	}
+
+	private shouldFetchCharacters(): boolean {
+		return (
+			this.settings.fetchCharacters ||
+			this.templateUsesAny(["characters", "characters_json"])
+		);
+	}
+
+	private shouldFetchRelations(): boolean {
+		return (
+			this.settings.fetchRelations ||
+			this.templateUsesAny(["relations", "relations_json"])
+		);
+	}
+
+	private templateUsesAny(variables: string[]): boolean {
+		const template = this.getEffectiveTemplate();
+		return variables.some((variable) =>
+			template.includes(`{{${variable}}`) ||
+			template.includes(`{{ ${variable}`)
+		);
+	}
+
+	private getEffectiveTemplate(): string {
+		const template = this.settings.subjectNoteTemplate;
+		return template.includes("{{sync_block_start}}") &&
+			template.includes("{{sync_block_end}}")
+			? template
+			: DEFAULT_SUBJECT_NOTE_TEMPLATE;
 	}
 
 	private createNoteWriter(): NoteWriter {

@@ -108,7 +108,15 @@ var EN = {
   fetchEpisodesStage: "fetch episodes",
   fetchedItems: "Fetched {{count}} {{subjectType}}/{{collectionStatus}} item(s).",
   fetchingCollections: "Fetching {{subjectType}}/{{collectionStatus}} collections...",
+  fetchCharacters: "Fetch characters",
+  fetchCharactersDesc: "Expose subject characters as template variables. Adds one extra API request per subject.",
   fileNameFormat: "File name format",
+  fetchDetailedSubjectInfo: "Fetch detailed subject info",
+  fetchDetailedSubjectInfoDesc: "Expose platform, volumes, total episodes, summary, infobox, public tags, public rating, and collection stats as template variables.",
+  fetchRelations: "Fetch relations",
+  fetchRelationsDesc: "Expose related subjects as template variables. Adds one extra API request per subject.",
+  fetchStaff: "Fetch staff",
+  fetchStaffDesc: "Expose subject staff/persons as template variables. Adds one extra API request per subject.",
   fillFromClipboard: "Fill from clipboard",
   game: "Games",
   gameDesc: "Sync game subjects.",
@@ -161,6 +169,8 @@ var EN = {
   subjectType: "Subject type",
   subjectTypeRequired: "Select at least one Bangumi subject type to sync.",
   subjectTypes: "Subject types",
+  templateDataSources: "Template data toggles",
+  templateDataSourcesDesc: "Variables used in your template are fetched automatically. Enable these to force extra data fetching; this adds API requests and may make sync slower.",
   syncDirectory: "Sync directory",
   syncDirectoryDesc: "Notes will be created under this folder.",
   syncFailed: "Bangumi Sync failed: {{message}}",
@@ -245,7 +255,15 @@ var ZH = {
   fetchEpisodesStage: "\u62C9\u53D6\u7AE0\u8282\u8FDB\u5EA6",
   fetchedItems: "\u5DF2\u62C9\u53D6 {{count}} \u4E2A {{subjectType}}/{{collectionStatus}} \u6761\u76EE\u3002",
   fetchingCollections: "\u6B63\u5728\u62C9\u53D6 {{subjectType}}/{{collectionStatus}} \u6536\u85CF...",
+  fetchCharacters: "\u62C9\u53D6\u89D2\u8272\u4FE1\u606F",
+  fetchCharactersDesc: "\u5C06\u6761\u76EE\u89D2\u8272\u4FE1\u606F\u66B4\u9732\u4E3A\u6A21\u677F\u53D8\u91CF\u3002\u6BCF\u4E2A\u6761\u76EE\u4F1A\u589E\u52A0\u4E00\u6B21 API \u8BF7\u6C42\u3002",
   fileNameFormat: "\u6587\u4EF6\u547D\u540D\u683C\u5F0F",
+  fetchDetailedSubjectInfo: "\u62C9\u53D6\u8BE6\u7EC6\u6761\u76EE\u4FE1\u606F",
+  fetchDetailedSubjectInfoDesc: "\u5C06\u5E73\u53F0\u3001\u5377\u6570\u3001\u603B\u7AE0\u8282\u6570\u3001\u7B80\u4ECB\u3001infobox\u3001\u516C\u5171\u6807\u7B7E\u3001\u516C\u5171\u8BC4\u5206\u548C\u6536\u85CF\u7EDF\u8BA1\u66B4\u9732\u4E3A\u6A21\u677F\u53D8\u91CF\u3002",
+  fetchRelations: "\u62C9\u53D6\u5173\u8054\u6761\u76EE",
+  fetchRelationsDesc: "\u5C06\u5173\u8054\u6761\u76EE\u66B4\u9732\u4E3A\u6A21\u677F\u53D8\u91CF\u3002\u6BCF\u4E2A\u6761\u76EE\u4F1A\u589E\u52A0\u4E00\u6B21 API \u8BF7\u6C42\u3002",
+  fetchStaff: "\u62C9\u53D6\u5236\u4F5C\u4EBA\u5458 Staff",
+  fetchStaffDesc: "\u5C06\u5236\u4F5C\u4EBA\u5458/\u4EBA\u7269\u4FE1\u606F\u66B4\u9732\u4E3A\u6A21\u677F\u53D8\u91CF\u3002\u6BCF\u4E2A\u6761\u76EE\u4F1A\u589E\u52A0\u4E00\u6B21 API \u8BF7\u6C42\u3002",
   fillFromClipboard: "\u4ECE\u526A\u8D34\u677F\u586B\u5165",
   game: "\u6E38\u620F",
   gameDesc: "\u540C\u6B65\u6E38\u620F\u6761\u76EE\u3002",
@@ -298,6 +316,8 @@ var ZH = {
   subjectType: "\u6761\u76EE\u7C7B\u578B",
   subjectTypeRequired: "\u8BF7\u9009\u62E9\u81F3\u5C11\u4E00\u4E2A\u8981\u540C\u6B65\u7684 Bangumi \u6761\u76EE\u7C7B\u578B\u3002",
   subjectTypes: "\u6761\u76EE\u7C7B\u578B",
+  templateDataSources: "\u6A21\u677F\u6570\u636E\u5F00\u5173",
+  templateDataSourcesDesc: "\u6A21\u677F\u91CC\u7528\u5230\u7684\u53D8\u91CF\u4F1A\u81EA\u52A8\u62C9\u53D6\u3002\u5F00\u542F\u8FD9\u4E9B\u9009\u9879\u4F1A\u5F3A\u5236\u989D\u5916\u62C9\u53D6\u6570\u636E\uFF0C\u589E\u52A0 API \u8BF7\u6C42\uFF0C\u540C\u6B65\u53EF\u80FD\u53D8\u6162\u3002",
   syncDirectory: "\u540C\u6B65\u76EE\u5F55",
   syncDirectoryDesc: "\u7B14\u8BB0\u4F1A\u521B\u5EFA\u5728\u8FD9\u4E2A\u6587\u4EF6\u5939\u4E0B\u3002",
   syncFailed: "Bangumi Sync \u5931\u8D25\uFF1A{{message}}",
@@ -383,6 +403,36 @@ cover: {{cover_yaml}}
 
 {{sync_block_start}}
 {{cover_image}}
+{{summary_section}}
+## Progress
+
+{{progress}}
+
+{{sync_block_end}}
+
+## Notes
+`;
+var DEFAULT_SUBJECT_NOTE_TEMPLATE_WITHOUT_SUMMARY = `---
+bangumi_id: {{bangumi_id}}
+title: {{title_json}}
+original_title: {{original_title_json}}
+type: {{type}}
+status: {{status}}
+rating: {{rating}}
+eps_total: {{eps_total}}
+progress_done: {{progress_done}}
+updated_at: {{updated_at_yaml}}
+bangumi_tags: {{bangumi_tags_json}}
+comment: {{comment_json}}
+tags:
+{{tags_yaml}}
+cover: {{cover_yaml}}
+---
+
+# {{title}}
+
+{{sync_block_start}}
+{{cover_image}}
 ## Progress
 
 {{progress}}
@@ -412,6 +462,7 @@ cover: {{cover_yaml}}
 
 {{sync_block_start}}
 {{cover_image}}
+{{summary_section}}
 ## Progress
 
 {{progress}}
@@ -425,7 +476,7 @@ var MarkdownRenderer = class {
     this.template = template;
   }
   renderSubjectNote(subject) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _A, _B;
     const bangumiSubject = subject.collection.subject;
     const title = bangumiSubject.name_cn || bangumiSubject.name;
     const cover = ((_a = bangumiSubject.images) == null ? void 0 : _a.large) || ((_b = bangumiSubject.images) == null ? void 0 : _b.common);
@@ -437,6 +488,7 @@ var MarkdownRenderer = class {
     const comment = (_f = subject.collection.comment) != null ? _f : "";
     const progressSummary = this.getProgressSummary(subject);
     const progress = this.renderEpisodeChecklist(subject);
+    const summarySection = this.renderSummarySection(bangumiSubject.summary);
     const template = this.hasSyncBlockMarkers(this.template) ? this.template : DEFAULT_SUBJECT_NOTE_TEMPLATE;
     return this.renderTemplate(template, {
       air_date: (_g = bangumiSubject.date) != null ? _g : "",
@@ -463,7 +515,27 @@ var MarkdownRenderer = class {
       progress_percent: String(progressSummary.percent),
       progress_total: String(progressSummary.total),
       rating: String(rating),
+      characters: this.renderCharacters((_k = (_j = subject.extras) == null ? void 0 : _j.characters) != null ? _k : []),
+      characters_json: JSON.stringify((_m = (_l = subject.extras) == null ? void 0 : _l.characters) != null ? _m : []),
+      relations: this.renderRelations((_o = (_n = subject.extras) == null ? void 0 : _n.relations) != null ? _o : []),
+      relations_json: JSON.stringify((_q = (_p = subject.extras) == null ? void 0 : _p.relations) != null ? _q : []),
       status,
+      staff: this.renderStaff((_s = (_r = subject.extras) == null ? void 0 : _r.staff) != null ? _s : []),
+      staff_json: JSON.stringify((_u = (_t = subject.extras) == null ? void 0 : _t.staff) != null ? _u : []),
+      subject_collection_stats: this.renderCollectionStats(
+        bangumiSubject.collection
+      ),
+      subject_collection_stats_json: JSON.stringify(
+        (_v = bangumiSubject.collection) != null ? _v : {}
+      ),
+      subject_infobox: this.renderInfobox((_w = bangumiSubject.infobox) != null ? _w : []),
+      subject_infobox_json: JSON.stringify((_x = bangumiSubject.infobox) != null ? _x : []),
+      subject_rating: this.renderSubjectRating(bangumiSubject.rating),
+      subject_rating_json: JSON.stringify((_y = bangumiSubject.rating) != null ? _y : {}),
+      subject_summary: (_z = bangumiSubject.summary) != null ? _z : "",
+      subject_tags: this.renderSubjectTags((_A = bangumiSubject.tags) != null ? _A : []),
+      subject_tags_json: JSON.stringify((_B = bangumiSubject.tags) != null ? _B : []),
+      summary_section: summarySection,
       sync_block_end: SYNC_BLOCK_END,
       sync_block_start: SYNC_BLOCK_START,
       tags_yaml: ["bangumi", subjectType, status].map((tag) => `  - ${tag}`).join("\n"),
@@ -571,6 +643,94 @@ var MarkdownRenderer = class {
   renderYamlScalar(value) {
     return value || '""';
   }
+  renderSummarySection(summary) {
+    const content = summary == null ? void 0 : summary.trim();
+    return content ? `## Summary
+
+${content}
+` : "";
+  }
+  renderSubjectTags(tags) {
+    return tags.map((tag) => {
+      const count = tag.count === void 0 ? "" : ` (${tag.count})`;
+      return `- ${tag.name}${count}`;
+    }).join("\n");
+  }
+  renderSubjectRating(rating) {
+    if (!rating) {
+      return "";
+    }
+    return [
+      rating.score === void 0 ? "" : `- Score: ${rating.score}`,
+      rating.total === void 0 ? "" : `- Total: ${rating.total}`,
+      rating.rank === void 0 ? "" : `- Rank: ${rating.rank}`
+    ].filter((line) => line).join("\n");
+  }
+  renderCollectionStats(collection) {
+    if (!collection) {
+      return "";
+    }
+    return [
+      ["Wish", collection.wish],
+      ["Collect", collection.collect],
+      ["Doing", collection.doing],
+      ["On hold", collection.on_hold],
+      ["Dropped", collection.dropped]
+    ].filter(([, value]) => value !== void 0).map(([label, value]) => `- ${label}: ${value}`).join("\n");
+  }
+  renderInfobox(infobox) {
+    return infobox.map((item) => this.renderInfoboxItem(item)).filter((line) => line).join("\n");
+  }
+  renderInfoboxItem(item) {
+    if (typeof item !== "object" || item === null) {
+      return "";
+    }
+    const value = item;
+    if (typeof value.key !== "string") {
+      return "";
+    }
+    return `- ${value.key}: ${this.renderUnknownValue(value.value)}`;
+  }
+  renderUnknownValue(value) {
+    var _a, _b;
+    if (Array.isArray(value)) {
+      return value.map((item) => this.renderUnknownValue(item)).join(", ");
+    }
+    if (typeof value === "object" && value !== null) {
+      const objectValue = value;
+      const candidate = (_b = (_a = objectValue.v) != null ? _a : objectValue.value) != null ? _b : objectValue.name;
+      return candidate === void 0 ? JSON.stringify(value) : String(candidate);
+    }
+    return value === void 0 || value === null ? "" : String(value);
+  }
+  renderStaff(staff) {
+    return staff.map((person) => this.renderPerson(person)).join("\n");
+  }
+  renderPerson(person) {
+    var _a;
+    const details = [
+      person.relation,
+      (_a = person.career) == null ? void 0 : _a.join(", "),
+      person.eps ? `eps ${person.eps}` : ""
+    ].filter((value) => value);
+    const suffix = details.length > 0 ? ` - ${details.join(" / ")}` : "";
+    return `- [${person.name}](https://bgm.tv/person/${person.id})${suffix}`;
+  }
+  renderCharacters(characters) {
+    return characters.map((character) => {
+      const actors = character.actors && character.actors.length > 0 ? ` - CV: ${character.actors.map((actor) => actor.name).join(", ")}` : "";
+      const relation = character.relation ? ` - ${character.relation}` : "";
+      return `- [${character.name}](https://bgm.tv/character/${character.id})${relation}${actors}`;
+    }).join("\n");
+  }
+  renderRelations(relations) {
+    return relations.map((relation) => {
+      const title = relation.name_cn || relation.name;
+      const details = [relation.relation, this.renderSubjectType(relation.type), relation.date].filter((value) => value).join(" / ");
+      const suffix = details ? ` - ${details}` : "";
+      return `- [${title}](https://bgm.tv/subject/${relation.id})${suffix}`;
+    }).join("\n");
+  }
   getEpisodeTitle(episode) {
     const title = episode.name_cn || episode.name || "";
     return title ? `EP${episode.sort} ${title}` : `EP${episode.sort}`;
@@ -637,6 +797,10 @@ var DEFAULT_SETTINGS = {
   includeOnHoldAndDropped: false,
   incrementalSync: true,
   dailyNoteSync: false,
+  fetchDetailedSubjectInfo: false,
+  fetchStaff: false,
+  fetchCharacters: false,
+  fetchRelations: false,
   lastSyncedAt: "",
   subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
   collectionTypes: [BANGUMI_COLLECTION_TYPES.do],
@@ -870,6 +1034,31 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         })
       );
     }
+    new import_obsidian2.Setting(containerEl).setName(t("templateDataSources")).setDesc(t("templateDataSourcesDesc")).setHeading();
+    new import_obsidian2.Setting(containerEl).setName(t("fetchDetailedSubjectInfo")).setDesc(t("fetchDetailedSubjectInfoDesc")).addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.fetchDetailedSubjectInfo).onChange(async (enabled) => {
+        this.plugin.settings.fetchDetailedSubjectInfo = enabled;
+        await this.plugin.saveSettings();
+      })
+    );
+    new import_obsidian2.Setting(containerEl).setName(t("fetchStaff")).setDesc(t("fetchStaffDesc")).addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.fetchStaff).onChange(async (enabled) => {
+        this.plugin.settings.fetchStaff = enabled;
+        await this.plugin.saveSettings();
+      })
+    );
+    new import_obsidian2.Setting(containerEl).setName(t("fetchCharacters")).setDesc(t("fetchCharactersDesc")).addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.fetchCharacters).onChange(async (enabled) => {
+        this.plugin.settings.fetchCharacters = enabled;
+        await this.plugin.saveSettings();
+      })
+    );
+    new import_obsidian2.Setting(containerEl).setName(t("fetchRelations")).setDesc(t("fetchRelationsDesc")).addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.fetchRelations).onChange(async (enabled) => {
+        this.plugin.settings.fetchRelations = enabled;
+        await this.plugin.saveSettings();
+      })
+    );
     new import_obsidian2.Setting(containerEl).setName(t("noteTemplate")).setHeading();
     const subjectTemplateSetting = new import_obsidian2.Setting(containerEl).setName(t("subjectNoteTemplate")).setDesc(t("subjectNoteTemplateDesc"));
     subjectTemplateSetting.descEl.addClass("bangumi-note-template-desc");
@@ -945,6 +1134,19 @@ var BangumiClient = class {
       `/v0/users/-/collections/${subjectId}/episodes`
     );
   }
+  async getSubjectPersons(subjectId) {
+    return this.request(`/v0/subjects/${subjectId}/persons`);
+  }
+  async getSubjectCharacters(subjectId) {
+    return this.request(
+      `/v0/subjects/${subjectId}/characters`
+    );
+  }
+  async getRelatedSubjects(subjectId) {
+    return this.request(
+      `/v0/subjects/${subjectId}/subjects`
+    );
+  }
   async searchSubjects(params) {
     var _a, _b, _c, _d;
     const search = new URLSearchParams({
@@ -995,7 +1197,14 @@ var BangumiClient = class {
       summary: subject.summary,
       images: subject.images,
       eps,
+      total_episodes: subject.total_episodes,
+      volumes: subject.volumes,
       date: (_b = subject.date) != null ? _b : subject.air_date,
+      platform: subject.platform,
+      infobox: subject.infobox,
+      tags: subject.tags,
+      nsfw: subject.nsfw,
+      series: subject.series,
       rating: subject.rating,
       collection: subject.collection
     };
@@ -1274,13 +1483,19 @@ var SyncService = class {
             );
           }
           try {
+            const extras = await this.fetchSubjectExtras(
+              client,
+              collection,
+              failures
+            );
             const result = await writer.writeSubjectNote(
               this.settings.syncDirectory,
               this.getTargetDirectory(collection),
               {
                 collection,
                 episodes,
-                episodeSyncError
+                episodeSyncError,
+                extras
               }
             );
             existingSubjectIds.add(subjectId);
@@ -1385,6 +1600,7 @@ var SyncService = class {
     };
   }
   async syncSubjectCollection(collection) {
+    var _a;
     if (!this.settings.accessToken) {
       throw new Error(t("noToken"));
     }
@@ -1396,6 +1612,7 @@ var SyncService = class {
     const subjectId = collection.subject.id;
     let episodes = [];
     let episodeSyncError;
+    const failures = [];
     try {
       episodes = await this.fetchAllEpisodeCollections(client, subjectId);
     } catch (error) {
@@ -1405,19 +1622,21 @@ var SyncService = class {
         error
       );
     }
+    const extras = await this.fetchSubjectExtras(client, collection, failures);
     const result = await writer.writeSubjectNote(
       this.settings.syncDirectory,
       this.getTargetDirectory(collection),
       {
         collection,
         episodes,
-        episodeSyncError
+        episodeSyncError,
+        extras
       }
     );
     return {
       changed: result.changed,
       path: result.file.path,
-      episodeSyncError
+      episodeSyncError: episodeSyncError != null ? episodeSyncError : (_a = extras.errors) == null ? void 0 : _a.join("; ")
     };
   }
   async fetchAllCollections(client, username, subjectType, collectionType) {
@@ -1440,6 +1659,124 @@ var SyncService = class {
       offset += page.data.length;
     }
     return collections;
+  }
+  async fetchSubjectExtras(client, collection, failures) {
+    const subjectId = collection.subject.id;
+    const title = this.getSubjectTitle(collection);
+    const extras = {};
+    const errors = [];
+    if (this.shouldFetchDetailedSubjectInfo()) {
+      try {
+        collection.subject = {
+          ...collection.subject,
+          ...await client.getSubject(subjectId)
+        };
+      } catch (error) {
+        this.recordExtraFailure(
+          failures,
+          errors,
+          collection,
+          title,
+          "fetch detailed subject info",
+          error
+        );
+      }
+    }
+    if (this.shouldFetchStaff()) {
+      try {
+        extras.staff = await client.getSubjectPersons(subjectId);
+      } catch (error) {
+        this.recordExtraFailure(
+          failures,
+          errors,
+          collection,
+          title,
+          "fetch staff",
+          error
+        );
+      }
+    }
+    if (this.shouldFetchCharacters()) {
+      try {
+        extras.characters = await client.getSubjectCharacters(subjectId);
+      } catch (error) {
+        this.recordExtraFailure(
+          failures,
+          errors,
+          collection,
+          title,
+          "fetch characters",
+          error
+        );
+      }
+    }
+    if (this.shouldFetchRelations()) {
+      try {
+        extras.relations = await client.getRelatedSubjects(subjectId);
+      } catch (error) {
+        this.recordExtraFailure(
+          failures,
+          errors,
+          collection,
+          title,
+          "fetch relations",
+          error
+        );
+      }
+    }
+    if (errors.length > 0) {
+      extras.errors = errors;
+    }
+    return extras;
+  }
+  recordExtraFailure(failures, errors, collection, title, stage, error) {
+    const message = this.getErrorMessage(error);
+    errors.push(`${stage}: ${message}`);
+    failures.push({
+      stage,
+      subjectId: collection.subject.id,
+      title,
+      subjectType: this.renderSubjectType(collection.subject.type),
+      collectionStatus: this.renderCollectionStatus(collection.type),
+      error: message
+    });
+    console.error(
+      `Bangumi Sync failed to ${stage} for subject ${collection.subject.id}`,
+      error
+    );
+  }
+  shouldFetchDetailedSubjectInfo() {
+    return this.settings.fetchDetailedSubjectInfo || this.templateUsesAny([
+      "summary_section",
+      "subject_summary",
+      "subject_infobox",
+      "subject_infobox_json",
+      "subject_tags",
+      "subject_tags_json",
+      "subject_rating",
+      "subject_rating_json",
+      "subject_collection_stats",
+      "subject_collection_stats_json"
+    ]);
+  }
+  shouldFetchStaff() {
+    return this.settings.fetchStaff || this.templateUsesAny(["staff", "staff_json"]);
+  }
+  shouldFetchCharacters() {
+    return this.settings.fetchCharacters || this.templateUsesAny(["characters", "characters_json"]);
+  }
+  shouldFetchRelations() {
+    return this.settings.fetchRelations || this.templateUsesAny(["relations", "relations_json"]);
+  }
+  templateUsesAny(variables) {
+    const template = this.getEffectiveTemplate();
+    return variables.some(
+      (variable) => template.includes(`{{${variable}}`) || template.includes(`{{ ${variable}`)
+    );
+  }
+  getEffectiveTemplate() {
+    const template = this.settings.subjectNoteTemplate;
+    return template.includes("{{sync_block_start}}") && template.includes("{{sync_block_end}}") ? template : DEFAULT_SUBJECT_NOTE_TEMPLATE;
   }
   createNoteWriter() {
     return new NoteWriter(
@@ -1795,69 +2132,116 @@ var SEARCH_SUBJECT_TYPES = [
   BANGUMI_SUBJECT_TYPES.game,
   BANGUMI_SUBJECT_TYPES.real
 ];
-var TEMPLATE_VARIABLES_CONTENT = `# Bangumi Sync Template Variables
+var TEMPLATE_VARIABLES_CONTENT = `# Bangumi Sync Template Variables / \u6A21\u677F\u53D8\u91CF
 
-The \`Subject note template\` setting supports \`{{variable_name}}\` placeholders.
+\`Subject note template\` supports \`{{variable_name}}\` placeholders.  
+\`\u6761\u76EE\u7B14\u8BB0\u6A21\u677F\` \u652F\u6301 \`{{variable_name}}\` \u5360\u4F4D\u7B26\u3002
 
-The template must include both \`{{sync_block_start}}\` and \`{{sync_block_end}}\`. On repeat syncs, the plugin updates the frontmatter and the content between those markers while keeping the rest of the note.
+The template must include both \`{{sync_block_start}}\` and \`{{sync_block_end}}\`. On repeat syncs, the plugin updates frontmatter and the content between these markers, while keeping user-written content outside the sync block.  
+\u6A21\u677F\u5FC5\u987B\u5305\u542B \`{{sync_block_start}}\` \u548C \`{{sync_block_end}}\`\u3002\u91CD\u590D\u540C\u6B65\u65F6\uFF0C\u63D2\u4EF6\u4F1A\u66F4\u65B0 frontmatter \u548C\u8FD9\u4E24\u4E2A\u6807\u8BB0\u4E4B\u95F4\u7684\u540C\u6B65\u5757\uFF0C\u5E76\u4FDD\u7559\u540C\u6B65\u5757\u4E4B\u5916\u7684\u7528\u6237\u624B\u5199\u5185\u5BB9\u3002
 
-## Identity
+## Important Behavior / \u91CD\u8981\u884C\u4E3A
 
-| Variable | Description |
-| --- | --- |
-| \`{{bangumi_id}}\` | Bangumi subject ID. |
-| \`{{title}}\` | Display title, preferring Chinese title when available. |
-| \`{{title_json}}\` | JSON/YAML-safe title string. |
-| \`{{original_title}}\` | Original Bangumi title. |
-| \`{{original_title_json}}\` | JSON/YAML-safe original title string. |
-| \`{{type}}\` | Subject type label: \`book\`, \`anime\`, \`music\`, \`game\`, or \`real\`. |
-| \`{{status}}\` | Collection status label: \`wish\`, \`collect\`, \`do\`, \`on_hold\`, or \`dropped\`. |
+- Variables already used in your template are fetched automatically when possible. For example, using \`{{summary_section}}\` or \`{{subject_summary}}\` will trigger detailed subject info fetching.
+- Settings under \`Template data toggles / \u6A21\u677F\u6570\u636E\u5F00\u5173\` force extra data fetching even if the current template does not use those variables.
+- Extra data such as staff, characters, and relations adds API requests and may slow sync.
+- If an extra API request fails, note generation continues. Markdown variables become empty strings, JSON variables become empty arrays or objects, and the failure is recorded in the sync report.
+- \`bangumi_tags\` means your personal collection tags. \`subject_tags\` means public Bangumi subject tags.
+- Bangumi v0 episode collection APIs do not return user per-episode comments, so there is no single-episode comment variable.
 
-## Collection Metadata
+- \u6A21\u677F\u91CC\u5DF2\u7ECF\u4F7F\u7528\u7684\u53D8\u91CF\u4F1A\u5C3D\u91CF\u81EA\u52A8\u62C9\u53D6\u3002\u4F8B\u5982\u4F7F\u7528 \`{{summary_section}}\` \u6216 \`{{subject_summary}}\` \u4F1A\u89E6\u53D1\u8BE6\u7EC6\u6761\u76EE\u4FE1\u606F\u62C9\u53D6\u3002
+- \`Template data toggles / \u6A21\u677F\u6570\u636E\u5F00\u5173\` \u4F1A\u5F3A\u5236\u989D\u5916\u62C9\u53D6\u6570\u636E\uFF0C\u5373\u4F7F\u5F53\u524D\u6A21\u677F\u6682\u65F6\u6CA1\u7528\u5230\u8FD9\u4E9B\u53D8\u91CF\u3002
+- Staff\u3001Characters\u3001Relations \u7B49\u6269\u5C55\u6570\u636E\u4F1A\u589E\u52A0 API \u8BF7\u6C42\uFF0C\u540C\u6B65\u53EF\u80FD\u53D8\u6162\u3002
+- \u6269\u5C55 API \u8BF7\u6C42\u5931\u8D25\u4E0D\u4F1A\u963B\u6B62\u7B14\u8BB0\u751F\u6210\u3002Markdown \u53D8\u91CF\u4F1A\u8F93\u51FA\u4E3A\u7A7A\u5B57\u7B26\u4E32\uFF0CJSON \u53D8\u91CF\u4F1A\u8F93\u51FA\u7A7A\u6570\u7EC4\u6216\u7A7A\u5BF9\u8C61\uFF0C\u5E76\u5728\u540C\u6B65\u62A5\u544A\u91CC\u8BB0\u5F55\u5931\u8D25\u539F\u56E0\u3002
+- \`bangumi_tags\` \u662F\u4F60\u7684\u4E2A\u4EBA\u6536\u85CF\u6807\u7B7E\uFF1B\`subject_tags\` \u662F Bangumi \u516C\u5171\u6761\u76EE\u6807\u7B7E\u3002
+- Bangumi v0 \u7AE0\u8282\u6536\u85CF\u63A5\u53E3\u4E0D\u8FD4\u56DE\u7528\u6237\u5355\u96C6\u8BC4\u8BBA\uFF0C\u56E0\u6B64\u6CA1\u6709\u5355\u96C6\u8BC4\u8BBA\u53D8\u91CF\u3002
 
-| Variable | Description |
-| --- | --- |
-| \`{{rating}}\` | User rating. Empty when unrated. |
-| \`{{eps_total}}\` | Total episode count from Bangumi, when available. |
-| \`{{air_date}}\` | Subject air/release date. |
-| \`{{air_date_yaml}}\` | YAML-safe air/release date. |
-| \`{{updated_at}}\` | Collection update time. |
-| \`{{updated_at_yaml}}\` | YAML-safe collection update time. |
-| \`{{bangumi_tags_json}}\` | User collection tags as a JSON array. |
-| \`{{comment}}\` | User collection comment. |
-| \`{{comment_json}}\` | JSON/YAML-safe user collection comment. |
+## Identity / \u8EAB\u4EFD\u4FE1\u606F
 
-## Progress
+| Variable / \u53D8\u91CF | English | \u4E2D\u6587 |
+| --- | --- | --- |
+| \`{{bangumi_id}}\` | Bangumi subject ID. | Bangumi \u6761\u76EE ID\u3002 |
+| \`{{title}}\` | Display title, preferring Chinese title when available. | \u663E\u793A\u6807\u9898\uFF0C\u4F18\u5148\u4E2D\u6587\u540D\u3002 |
+| \`{{title_json}}\` | JSON/YAML-safe display title. | \u9002\u5408 JSON/YAML \u7684\u663E\u793A\u6807\u9898\u3002 |
+| \`{{original_title}}\` | Original Bangumi title. | \u539F\u540D\u3002 |
+| \`{{original_title_json}}\` | JSON/YAML-safe original title. | \u9002\u5408 JSON/YAML \u7684\u539F\u540D\u3002 |
+| \`{{type}}\` | Subject type: \`book\`, \`anime\`, \`music\`, \`game\`, or \`real\`. | \u6761\u76EE\u7C7B\u578B\uFF1A\`book\`\u3001\`anime\`\u3001\`music\`\u3001\`game\`\u3001\`real\`\u3002 |
+| \`{{status}}\` | Collection status: \`wish\`, \`collect\`, \`do\`, \`on_hold\`, or \`dropped\`. | \u6536\u85CF\u72B6\u6001\uFF1A\`wish\`\u3001\`collect\`\u3001\`do\`\u3001\`on_hold\`\u3001\`dropped\`\u3002 |
 
-| Variable | Description |
-| --- | --- |
-| \`{{progress_done}}\` | Completed episode count, based on episode collection \`type > 0\`. |
-| \`{{progress_total}}\` | Total episode count, preferring subject \`eps\`, then fetched episode count. |
-| \`{{progress_percent}}\` | Integer percentage, rounded from \`done / total * 100\`. |
-| \`{{progress_available}}\` | \`true\` when episode progress was fetched and has valid episodes, otherwise \`false\`. |
-| \`{{next_episode_json}}\` | JSON/YAML-safe next unfinished episode label, or empty string. |
-| \`{{next_episode_sort}}\` | Next unfinished episode sort number, or empty string. |
-| \`{{last_done_episode_json}}\` | JSON/YAML-safe last completed episode label, or empty string. |
-| \`{{last_done_episode_sort}}\` | Last completed episode sort number, or empty string. |
-| \`{{progress}}\` | Rendered Markdown episode checklist for the sync block. |
+## User Collection / \u7528\u6237\u6536\u85CF\u4FE1\u606F
 
-## Media And Tags
+| Variable / \u53D8\u91CF | English | \u4E2D\u6587 |
+| --- | --- | --- |
+| \`{{rating}}\` | Your rating. Empty when unrated. | \u4F60\u7684\u8BC4\u5206\uFF1B\u672A\u8BC4\u5206\u65F6\u4E3A\u7A7A\u3002 |
+| \`{{updated_at}}\` | Your collection update time. | \u4F60\u7684\u6536\u85CF\u66F4\u65B0\u65F6\u95F4\u3002 |
+| \`{{updated_at_yaml}}\` | YAML-safe collection update time. | \u9002\u5408 YAML \u7684\u6536\u85CF\u66F4\u65B0\u65F6\u95F4\u3002 |
+| \`{{bangumi_tags_json}}\` | Your collection tags as JSON. | \u4F60\u7684\u6536\u85CF\u6807\u7B7E\uFF0CJSON \u6570\u7EC4\u3002 |
+| \`{{comment}}\` | Your collection comment. | \u4F60\u7684\u6536\u85CF\u77ED\u8BC4\u3002 |
+| \`{{comment_json}}\` | JSON/YAML-safe collection comment. | \u9002\u5408 JSON/YAML \u7684\u6536\u85CF\u77ED\u8BC4\u3002 |
 
-| Variable | Description |
-| --- | --- |
-| \`{{cover}}\` | Cover image URL. |
-| \`{{cover_yaml}}\` | YAML-safe cover image URL. |
-| \`{{cover_image}}\` | Markdown image syntax for the cover. |
-| \`{{tags_yaml}}\` | YAML list containing \`bangumi\`, subject type, and collection status. |
+## Subject Details / \u6761\u76EE\u8BE6\u60C5
 
-## Sync Markers
+| Variable / \u53D8\u91CF | English | \u4E2D\u6587 |
+| --- | --- | --- |
+| \`{{eps_total}}\` | Total episode count from Bangumi when available. | Bangumi \u6761\u76EE\u603B\u96C6\u6570/\u7AE0\u8282\u6570\u3002 |
+| \`{{air_date}}\` | Subject air/release date. | \u6761\u76EE\u653E\u9001/\u53D1\u552E\u65E5\u671F\u3002 |
+| \`{{air_date_yaml}}\` | YAML-safe air/release date. | \u9002\u5408 YAML \u7684\u65E5\u671F\u3002 |
+| \`{{subject_summary}}\` | Subject summary text. Auto-fetches detailed subject info. | \u6761\u76EE\u7B80\u4ECB\u3002\u4F1A\u81EA\u52A8\u62C9\u53D6\u8BE6\u7EC6\u6761\u76EE\u4FE1\u606F\u3002 |
+| \`{{summary_section}}\` | Rendered \`## Summary\` section. Empty when no summary exists. | \u6E32\u67D3\u597D\u7684 \`## Summary\` \u6BB5\u843D\uFF1B\u65E0\u7B80\u4ECB\u65F6\u4E3A\u7A7A\u3002 |
+| \`{{subject_infobox}}\` | Rendered Markdown list from Bangumi infobox. | Bangumi infobox \u6E32\u67D3\u4E3A Markdown \u5217\u8868\u3002 |
+| \`{{subject_infobox_json}}\` | Raw infobox as JSON. | \u539F\u59CB infobox\uFF0CJSON\u3002 |
+| \`{{subject_tags}}\` | Public subject tags with counts. | \u516C\u5171\u6761\u76EE\u6807\u7B7E\u53CA\u6570\u91CF\u3002 |
+| \`{{subject_tags_json}}\` | Public subject tags as JSON. | \u516C\u5171\u6761\u76EE\u6807\u7B7E\uFF0CJSON\u3002 |
+| \`{{subject_rating}}\` | Public score, total rating count, and rank. | \u516C\u5171\u8BC4\u5206\u3001\u8BC4\u5206\u4EBA\u6570\u548C\u6392\u540D\u3002 |
+| \`{{subject_rating_json}}\` | Public rating data as JSON. | \u516C\u5171\u8BC4\u5206\u6570\u636E\uFF0CJSON\u3002 |
+| \`{{subject_collection_stats}}\` | Public wish/collect/doing/on-hold/dropped counts. | \u5168\u7AD9\u6536\u85CF\u7EDF\u8BA1\u3002 |
+| \`{{subject_collection_stats_json}}\` | Public collection stats as JSON. | \u5168\u7AD9\u6536\u85CF\u7EDF\u8BA1\uFF0CJSON\u3002 |
 
-| Variable | Description |
-| --- | --- |
-| \`{{sync_block_start}}\` | Required sync block start marker. |
-| \`{{sync_block_end}}\` | Required sync block end marker. |
+## Extended Lists / \u6269\u5C55\u5217\u8868
 
-## Default Frontmatter Example
+| Variable / \u53D8\u91CF | English | \u4E2D\u6587 |
+| --- | --- | --- |
+| \`{{staff}}\` | Rendered staff/person list. Auto-fetches staff. | \u5236\u4F5C\u4EBA\u5458/\u4EBA\u7269\u5217\u8868\u3002\u4F1A\u81EA\u52A8\u62C9\u53D6 Staff\u3002 |
+| \`{{staff_json}}\` | Staff/person list as JSON. | \u5236\u4F5C\u4EBA\u5458/\u4EBA\u7269\u5217\u8868\uFF0CJSON\u3002 |
+| \`{{characters}}\` | Rendered character list with actor names when available. Auto-fetches characters. | \u89D2\u8272\u5217\u8868\uFF0C\u542B\u53EF\u7528\u7684\u58F0\u4F18/\u6F14\u5458\u3002\u4F1A\u81EA\u52A8\u62C9\u53D6 Characters\u3002 |
+| \`{{characters_json}}\` | Character list as JSON. | \u89D2\u8272\u5217\u8868\uFF0CJSON\u3002 |
+| \`{{relations}}\` | Rendered related subject list. Auto-fetches relations. | \u5173\u8054\u6761\u76EE\u5217\u8868\u3002\u4F1A\u81EA\u52A8\u62C9\u53D6 Relations\u3002 |
+| \`{{relations_json}}\` | Related subject list as JSON. | \u5173\u8054\u6761\u76EE\u5217\u8868\uFF0CJSON\u3002 |
+
+## Progress / \u8FDB\u5EA6
+
+| Variable / \u53D8\u91CF | English | \u4E2D\u6587 |
+| --- | --- | --- |
+| \`{{progress_done}}\` | Completed episode count, based on episode collection \`type > 0\`. | \u5DF2\u5B8C\u6210\u7AE0\u8282\u6570\uFF0C\u6309\u7AE0\u8282\u6536\u85CF \`type > 0\` \u7EDF\u8BA1\u3002 |
+| \`{{progress_total}}\` | Total count, preferring subject \`eps\`, then fetched episode count. | \u603B\u6570\uFF0C\u4F18\u5148\u6761\u76EE \`eps\`\uFF0C\u5426\u5219\u4F7F\u7528\u5DF2\u62C9\u53D6\u7AE0\u8282\u6570\u3002 |
+| \`{{progress_percent}}\` | Integer percentage, rounded from \`done / total * 100\`. | \u6574\u6570\u767E\u5206\u6BD4\uFF0C\u56DB\u820D\u4E94\u5165\u3002 |
+| \`{{progress_available}}\` | \`true\` when episode progress was fetched and has valid episodes. | \u6210\u529F\u62C9\u5230\u6709\u6548\u7AE0\u8282\u8FDB\u5EA6\u65F6\u4E3A \`true\`\u3002 |
+| \`{{next_episode_json}}\` | JSON/YAML-safe next unfinished episode label, or empty string. | \u4E0B\u4E00\u96C6/\u7AE0\u8282\uFF0C\u9002\u5408 JSON/YAML\uFF1B\u6CA1\u6709\u65F6\u4E3A\u7A7A\u5B57\u7B26\u4E32\u3002 |
+| \`{{next_episode_sort}}\` | Next unfinished episode sort number, or empty string. | \u4E0B\u4E00\u96C6/\u7AE0\u8282\u5E8F\u53F7\uFF1B\u6CA1\u6709\u65F6\u4E3A\u7A7A\u3002 |
+| \`{{last_done_episode_json}}\` | JSON/YAML-safe last completed episode label, or empty string. | \u6700\u540E\u5B8C\u6210\u96C6/\u7AE0\u8282\uFF0C\u9002\u5408 JSON/YAML\uFF1B\u6CA1\u6709\u65F6\u4E3A\u7A7A\u3002 |
+| \`{{last_done_episode_sort}}\` | Last completed episode sort number, or empty string. | \u6700\u540E\u5B8C\u6210\u96C6/\u7AE0\u8282\u5E8F\u53F7\uFF1B\u6CA1\u6709\u65F6\u4E3A\u7A7A\u3002 |
+| \`{{progress}}\` | Rendered Markdown episode checklist. | \u6E32\u67D3\u597D\u7684\u7AE0\u8282 checklist\u3002 |
+
+## Media And Tags / \u5A92\u4F53\u4E0E\u6807\u7B7E
+
+| Variable / \u53D8\u91CF | English | \u4E2D\u6587 |
+| --- | --- | --- |
+| \`{{cover}}\` | Cover image URL. | \u5C01\u9762 URL\u3002 |
+| \`{{cover_yaml}}\` | YAML-safe cover image URL. | \u9002\u5408 YAML \u7684\u5C01\u9762 URL\u3002 |
+| \`{{cover_image}}\` | Markdown image syntax for the cover. | \u5C01\u9762 Markdown \u56FE\u7247\u8BED\u6CD5\u3002 |
+| \`{{tags_yaml}}\` | YAML list containing \`bangumi\`, subject type, and collection status. | YAML \u6807\u7B7E\u5217\u8868\uFF0C\u5305\u542B \`bangumi\`\u3001\u6761\u76EE\u7C7B\u578B\u548C\u6536\u85CF\u72B6\u6001\u3002 |
+
+## Sync Markers / \u540C\u6B65\u6807\u8BB0
+
+| Variable / \u53D8\u91CF | English | \u4E2D\u6587 |
+| --- | --- | --- |
+| \`{{sync_block_start}}\` | Required sync block start marker. | \u5FC5\u9700\u7684\u540C\u6B65\u5757\u5F00\u59CB\u6807\u8BB0\u3002 |
+| \`{{sync_block_end}}\` | Required sync block end marker. | \u5FC5\u9700\u7684\u540C\u6B65\u5757\u7ED3\u675F\u6807\u8BB0\u3002 |
+
+## Default Frontmatter Example / \u9ED8\u8BA4 Frontmatter \u793A\u4F8B
+
+The built-in default keeps only basic lookup fields plus \`progress_done\`. More complete progress and extended subject data remain available for custom templates.  
+\u5185\u7F6E\u9ED8\u8BA4\u6A21\u677F\u53EA\u4FDD\u7559\u57FA\u7840\u68C0\u7D22\u5B57\u6BB5\u548C \`progress_done\`\u3002\u66F4\u5B8C\u6574\u7684\u8FDB\u5EA6\u5B57\u6BB5\u548C\u6269\u5C55\u6761\u76EE\u6570\u636E\u4ECD\u53EF\u5728\u81EA\u5B9A\u4E49\u6A21\u677F\u91CC\u624B\u52A8\u4F7F\u7528\u3002
 
 \`\`\`markdown
 ---
@@ -1906,8 +2290,12 @@ var BangumiSyncPlugin = class extends import_obsidian6.Plugin {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings);
     this.settings.username = "";
     this.settings.userAgent = buildUserAgent(this.manifest.version);
+    this.settings.fetchDetailedSubjectInfo = this.settings.fetchDetailedSubjectInfo === true;
+    this.settings.fetchStaff = this.settings.fetchStaff === true;
+    this.settings.fetchCharacters = this.settings.fetchCharacters === true;
+    this.settings.fetchRelations = this.settings.fetchRelations === true;
     let migrated = false;
-    if (this.settings.subjectNoteTemplate === LEGACY_DEFAULT_SUBJECT_NOTE_TEMPLATE) {
+    if (this.settings.subjectNoteTemplate === LEGACY_DEFAULT_SUBJECT_NOTE_TEMPLATE || this.settings.subjectNoteTemplate === DEFAULT_SUBJECT_NOTE_TEMPLATE_WITHOUT_SUMMARY) {
       this.settings.subjectNoteTemplate = DEFAULT_SUBJECT_NOTE_TEMPLATE;
       migrated = true;
     }

@@ -1,4 +1,11 @@
-import { BangumiSyncedSubject } from "../bangumi/types";
+import {
+	BangumiCharacter,
+	BangumiPerson,
+	BangumiRelatedSubject,
+	BangumiSubject,
+	BangumiSubjectTag,
+	BangumiSyncedSubject
+} from "../bangumi/types";
 
 export const SYNC_BLOCK_START = "<!-- bangumi-sync-start -->";
 export const SYNC_BLOCK_END = "<!-- bangumi-sync-end -->";
@@ -20,6 +27,37 @@ next_episode_sort: {{next_episode_sort}}
 last_done_episode: {{last_done_episode_json}}
 last_done_episode_sort: {{last_done_episode_sort}}
 air_date: {{air_date_yaml}}
+updated_at: {{updated_at_yaml}}
+bangumi_tags: {{bangumi_tags_json}}
+comment: {{comment_json}}
+tags:
+{{tags_yaml}}
+cover: {{cover_yaml}}
+---
+
+# {{title}}
+
+{{sync_block_start}}
+{{cover_image}}
+{{summary_section}}
+## Progress
+
+{{progress}}
+
+{{sync_block_end}}
+
+## Notes
+`;
+
+export const DEFAULT_SUBJECT_NOTE_TEMPLATE_WITHOUT_SUMMARY = `---
+bangumi_id: {{bangumi_id}}
+title: {{title_json}}
+original_title: {{original_title_json}}
+type: {{type}}
+status: {{status}}
+rating: {{rating}}
+eps_total: {{eps_total}}
+progress_done: {{progress_done}}
 updated_at: {{updated_at_yaml}}
 bangumi_tags: {{bangumi_tags_json}}
 comment: {{comment_json}}
@@ -62,6 +100,7 @@ cover: {{cover_yaml}}
 
 {{sync_block_start}}
 {{cover_image}}
+{{summary_section}}
 ## Progress
 
 {{progress}}
@@ -86,6 +125,7 @@ export class MarkdownRenderer {
 		const comment = subject.collection.comment ?? "";
 		const progressSummary = this.getProgressSummary(subject);
 		const progress = this.renderEpisodeChecklist(subject);
+		const summarySection = this.renderSummarySection(bangumiSubject.summary);
 		const template = this.hasSyncBlockMarkers(this.template)
 			? this.template
 			: DEFAULT_SUBJECT_NOTE_TEMPLATE;
@@ -115,7 +155,27 @@ export class MarkdownRenderer {
 			progress_percent: String(progressSummary.percent),
 			progress_total: String(progressSummary.total),
 			rating: String(rating),
+			characters: this.renderCharacters(subject.extras?.characters ?? []),
+			characters_json: JSON.stringify(subject.extras?.characters ?? []),
+			relations: this.renderRelations(subject.extras?.relations ?? []),
+			relations_json: JSON.stringify(subject.extras?.relations ?? []),
 			status,
+			staff: this.renderStaff(subject.extras?.staff ?? []),
+			staff_json: JSON.stringify(subject.extras?.staff ?? []),
+			subject_collection_stats: this.renderCollectionStats(
+				bangumiSubject.collection
+			),
+			subject_collection_stats_json: JSON.stringify(
+				bangumiSubject.collection ?? {}
+			),
+			subject_infobox: this.renderInfobox(bangumiSubject.infobox ?? []),
+			subject_infobox_json: JSON.stringify(bangumiSubject.infobox ?? []),
+			subject_rating: this.renderSubjectRating(bangumiSubject.rating),
+			subject_rating_json: JSON.stringify(bangumiSubject.rating ?? {}),
+			subject_summary: bangumiSubject.summary ?? "",
+			subject_tags: this.renderSubjectTags(bangumiSubject.tags ?? []),
+			subject_tags_json: JSON.stringify(bangumiSubject.tags ?? []),
+			summary_section: summarySection,
 			sync_block_end: SYNC_BLOCK_END,
 			sync_block_start: SYNC_BLOCK_START,
 			tags_yaml: ["bangumi", subjectType, status]
@@ -265,6 +325,123 @@ export class MarkdownRenderer {
 
 	private renderYamlScalar(value: string): string {
 		return value || "\"\"";
+	}
+
+	private renderSummarySection(summary?: string): string {
+		const content = summary?.trim();
+		return content ? `## Summary\n\n${content}\n` : "";
+	}
+
+	private renderSubjectTags(tags: BangumiSubjectTag[]): string {
+		return tags
+			.map((tag) => {
+				const count = tag.count === undefined ? "" : ` (${tag.count})`;
+				return `- ${tag.name}${count}`;
+			})
+			.join("\n");
+	}
+
+	private renderSubjectRating(rating?: BangumiSubject["rating"]): string {
+		if (!rating) {
+			return "";
+		}
+
+		return [
+			rating.score === undefined ? "" : `- Score: ${rating.score}`,
+			rating.total === undefined ? "" : `- Total: ${rating.total}`,
+			rating.rank === undefined ? "" : `- Rank: ${rating.rank}`
+		]
+			.filter((line) => line)
+			.join("\n");
+	}
+
+	private renderCollectionStats(collection?: BangumiSubject["collection"]): string {
+		if (!collection) {
+			return "";
+		}
+
+		return [
+			["Wish", collection.wish],
+			["Collect", collection.collect],
+			["Doing", collection.doing],
+			["On hold", collection.on_hold],
+			["Dropped", collection.dropped]
+		]
+			.filter(([, value]) => value !== undefined)
+			.map(([label, value]) => `- ${label}: ${value}`)
+			.join("\n");
+	}
+
+	private renderInfobox(infobox: unknown[]): string {
+		return infobox
+			.map((item) => this.renderInfoboxItem(item))
+			.filter((line) => line)
+			.join("\n");
+	}
+
+	private renderInfoboxItem(item: unknown): string {
+		if (typeof item !== "object" || item === null) {
+			return "";
+		}
+
+		const value = item as { key?: unknown; value?: unknown };
+		if (typeof value.key !== "string") {
+			return "";
+		}
+
+		return `- ${value.key}: ${this.renderUnknownValue(value.value)}`;
+	}
+
+	private renderUnknownValue(value: unknown): string {
+		if (Array.isArray(value)) {
+			return value.map((item) => this.renderUnknownValue(item)).join(", ");
+		}
+		if (typeof value === "object" && value !== null) {
+			const objectValue = value as { v?: unknown; value?: unknown; name?: unknown };
+			const candidate = objectValue.v ?? objectValue.value ?? objectValue.name;
+			return candidate === undefined ? JSON.stringify(value) : String(candidate);
+		}
+		return value === undefined || value === null ? "" : String(value);
+	}
+
+	private renderStaff(staff: BangumiPerson[]): string {
+		return staff.map((person) => this.renderPerson(person)).join("\n");
+	}
+
+	private renderPerson(person: BangumiPerson): string {
+		const details = [
+			person.relation,
+			person.career?.join(", "),
+			person.eps ? `eps ${person.eps}` : ""
+		].filter((value) => value);
+		const suffix = details.length > 0 ? ` - ${details.join(" / ")}` : "";
+		return `- [${person.name}](https://bgm.tv/person/${person.id})${suffix}`;
+	}
+
+	private renderCharacters(characters: BangumiCharacter[]): string {
+		return characters
+			.map((character) => {
+				const actors =
+					character.actors && character.actors.length > 0
+						? ` - CV: ${character.actors.map((actor) => actor.name).join(", ")}`
+						: "";
+				const relation = character.relation ? ` - ${character.relation}` : "";
+				return `- [${character.name}](https://bgm.tv/character/${character.id})${relation}${actors}`;
+			})
+			.join("\n");
+	}
+
+	private renderRelations(relations: BangumiRelatedSubject[]): string {
+		return relations
+			.map((relation) => {
+				const title = relation.name_cn || relation.name;
+				const details = [relation.relation, this.renderSubjectType(relation.type), relation.date]
+					.filter((value) => value)
+					.join(" / ");
+				const suffix = details ? ` - ${details}` : "";
+				return `- [${title}](https://bgm.tv/subject/${relation.id})${suffix}`;
+			})
+			.join("\n");
 	}
 
 	private getEpisodeTitle(episode: { sort: number; name?: string; name_cn?: string }): string {

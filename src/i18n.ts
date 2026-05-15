@@ -63,7 +63,19 @@ const EN = {
 		"Fetched {{count}} {{subjectType}}/{{collectionStatus}} item(s).",
 	fetchingCollections:
 		"Fetching {{subjectType}}/{{collectionStatus}} collections...",
+	fetchCharacters: "Fetch characters",
+	fetchCharactersDesc:
+		"Expose subject characters as template variables. Adds one extra API request per subject.",
 	fileNameFormat: "File name format",
+	fetchDetailedSubjectInfo: "Fetch detailed subject info",
+	fetchDetailedSubjectInfoDesc:
+		"Expose platform, volumes, total episodes, summary, infobox, public tags, public rating, and collection stats as template variables.",
+	fetchRelations: "Fetch relations",
+	fetchRelationsDesc:
+		"Expose related subjects as template variables. Adds one extra API request per subject.",
+	fetchStaff: "Fetch staff",
+	fetchStaffDesc:
+		"Expose subject staff/persons as template variables. Adds one extra API request per subject.",
 	fillFromClipboard: "Fill from clipboard",
 	game: "Games",
 	gameDesc: "Sync game subjects.",
@@ -120,6 +132,9 @@ const EN = {
 	subjectType: "Subject type",
 	subjectTypeRequired: "Select at least one Bangumi subject type to sync.",
 	subjectTypes: "Subject types",
+	templateDataSources: "Template data toggles",
+	templateDataSourcesDesc:
+		"Variables used in your template are fetched automatically. Enable these to force extra data fetching; this adds API requests and may make sync slower.",
 	syncDirectory: "Sync directory",
 	syncDirectoryDesc: "Notes will be created under this folder.",
 	syncFailed: "Bangumi Sync failed: {{message}}",
@@ -223,7 +238,19 @@ const ZH: Record<LocaleKey, string> = {
 		"已拉取 {{count}} 个 {{subjectType}}/{{collectionStatus}} 条目。",
 	fetchingCollections:
 		"正在拉取 {{subjectType}}/{{collectionStatus}} 收藏...",
+	fetchCharacters: "拉取角色信息",
+	fetchCharactersDesc:
+		"将条目角色信息暴露为模板变量。每个条目会增加一次 API 请求。",
 	fileNameFormat: "文件命名格式",
+	fetchDetailedSubjectInfo: "拉取详细条目信息",
+	fetchDetailedSubjectInfoDesc:
+		"将平台、卷数、总章节数、简介、infobox、公共标签、公共评分和收藏统计暴露为模板变量。",
+	fetchRelations: "拉取关联条目",
+	fetchRelationsDesc:
+		"将关联条目暴露为模板变量。每个条目会增加一次 API 请求。",
+	fetchStaff: "拉取制作人员 Staff",
+	fetchStaffDesc:
+		"将制作人员/人物信息暴露为模板变量。每个条目会增加一次 API 请求。",
 	fillFromClipboard: "从剪贴板填入",
 	game: "游戏",
 	gameDesc: "同步游戏条目。",
@@ -279,6 +306,9 @@ const ZH: Record<LocaleKey, string> = {
 	subjectType: "条目类型",
 	subjectTypeRequired: "请选择至少一个要同步的 Bangumi 条目类型。",
 	subjectTypes: "条目类型",
+	templateDataSources: "模板数据开关",
+	templateDataSourcesDesc:
+		"模板里用到的变量会自动拉取。开启这些选项会强制额外拉取数据，增加 API 请求，同步可能变慢。",
 	syncDirectory: "同步目录",
 	syncDirectoryDesc: "笔记会创建在这个文件夹下。",
 	syncFailed: "Bangumi Sync 失败：{{message}}",

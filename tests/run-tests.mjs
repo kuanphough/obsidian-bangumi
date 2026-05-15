@@ -67,6 +67,7 @@ import { DEFAULT_SETTINGS, BANGUMI_FILE_NAME_FORMATS } from "./src/settings.ts";
 import {
 	DEFAULT_SUBJECT_NOTE_TEMPLATE,
 	LEGACY_DEFAULT_SUBJECT_NOTE_TEMPLATE,
+	DEFAULT_SUBJECT_NOTE_TEMPLATE_WITHOUT_SUMMARY,
 	MarkdownRenderer
 } from "./src/sync/markdown-renderer.ts";
 import { NoteWriter } from "./src/sync/note-writer.ts";
@@ -141,6 +142,19 @@ function makeApp(files = [], contents = new Map(), frontmatter = new Map()) {
 }
 
 {
+	const rendered = new MarkdownRenderer().renderSubjectNote(makeSubject({
+		collection: {
+			...makeSubject().collection,
+			subject: {
+				...makeSubject().collection.subject,
+				summary: "A compact subject summary."
+			}
+		}
+	}));
+	assert.match(rendered, /## Summary\\n\\nA compact subject summary\\./);
+}
+
+{
 	const renderer = new MarkdownRenderer();
 	const next = renderer.renderSubjectNote(makeSubject());
 	const existing = \`---
@@ -206,6 +220,13 @@ handwritten\`;
 	pluginWithCustom.__data = { subjectNoteTemplate: custom };
 	await pluginWithCustom.loadSettings();
 	assert.equal(pluginWithCustom.settings.subjectNoteTemplate, custom);
+
+	const pluginWithPreSummaryDefault = new BangumiSyncPlugin();
+	pluginWithPreSummaryDefault.__data = {
+		subjectNoteTemplate: DEFAULT_SUBJECT_NOTE_TEMPLATE_WITHOUT_SUMMARY
+	};
+	await pluginWithPreSummaryDefault.loadSettings();
+	assert.equal(pluginWithPreSummaryDefault.settings.subjectNoteTemplate, DEFAULT_SUBJECT_NOTE_TEMPLATE);
 }
 `;
 

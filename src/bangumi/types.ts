@@ -42,10 +42,19 @@ export interface BangumiSubject {
 	summary?: string;
 	images?: BangumiImages;
 	eps?: number;
+	total_episodes?: number;
+	volumes?: number;
 	date?: string;
+	platform?: string;
+	infobox?: unknown[];
+	tags?: BangumiSubjectTag[];
+	nsfw?: boolean;
+	series?: boolean;
 	rating?: {
 		score?: number;
 		total?: number;
+		rank?: number;
+		count?: Record<string, number>;
 	};
 	collection?: {
 		doing?: number;
@@ -56,6 +65,11 @@ export interface BangumiSubject {
 	};
 }
 
+export interface BangumiSubjectTag {
+	name: string;
+	count?: number;
+}
+
 export interface BangumiCollection {
 	type: BangumiCollectionType;
 	rate?: number;
@@ -63,6 +77,41 @@ export interface BangumiCollection {
 	tags?: string[];
 	updated_at?: string;
 	subject: BangumiSubject;
+}
+
+export interface BangumiPerson {
+	id: number;
+	name: string;
+	type?: number;
+	career?: string[];
+	relation?: string;
+	images?: BangumiImages;
+	eps?: string;
+}
+
+export interface BangumiCharacter {
+	id: number;
+	name: string;
+	type?: number;
+	relation?: string;
+	images?: BangumiImages;
+	actors?: BangumiPerson[];
+}
+
+export interface BangumiRelatedSubject {
+	id: number;
+	type: number;
+	name: string;
+	name_cn?: string;
+	date?: string;
+	relation?: string;
+}
+
+export interface BangumiSubjectExtras {
+	staff?: BangumiPerson[];
+	characters?: BangumiCharacter[];
+	relations?: BangumiRelatedSubject[];
+	errors?: string[];
 }
 
 export interface BangumiSubjectSearchRequest {
@@ -100,4 +149,5 @@ export interface BangumiSyncedSubject {
 	collection: BangumiCollection;
 	episodes: BangumiEpisodeCollection[];
 	episodeSyncError?: string;
+	extras?: BangumiSubjectExtras;
 }

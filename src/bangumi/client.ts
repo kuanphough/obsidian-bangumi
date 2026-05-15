@@ -3,8 +3,11 @@ import { requestUrl } from "obsidian";
 import {
 	BangumiCollection,
 	BangumiCollectionType,
+	BangumiCharacter,
 	BangumiEpisodeCollection,
 	BangumiPagedResponse,
+	BangumiPerson,
+	BangumiRelatedSubject,
 	BangumiSubject,
 	BangumiSubjectSearchRequest,
 	BangumiUser
@@ -40,6 +43,13 @@ interface LegacyBangumiSubject {
 	air_date?: string;
 	rating?: BangumiSubject["rating"];
 	collection?: BangumiSubject["collection"];
+	platform?: string;
+	volumes?: number;
+	total_episodes?: number;
+	infobox?: unknown[];
+	tags?: BangumiSubject["tags"];
+	nsfw?: boolean;
+	series?: boolean;
 }
 
 export class BangumiClient {
@@ -95,6 +105,22 @@ export class BangumiClient {
 	): Promise<BangumiPagedResponse<BangumiEpisodeCollection>> {
 		return this.request<BangumiPagedResponse<BangumiEpisodeCollection>>(
 			`/v0/users/-/collections/${subjectId}/episodes`
+		);
+	}
+
+	async getSubjectPersons(subjectId: number): Promise<BangumiPerson[]> {
+		return this.request<BangumiPerson[]>(`/v0/subjects/${subjectId}/persons`);
+	}
+
+	async getSubjectCharacters(subjectId: number): Promise<BangumiCharacter[]> {
+		return this.request<BangumiCharacter[]>(
+			`/v0/subjects/${subjectId}/characters`
+		);
+	}
+
+	async getRelatedSubjects(subjectId: number): Promise<BangumiRelatedSubject[]> {
+		return this.request<BangumiRelatedSubject[]>(
+			`/v0/subjects/${subjectId}/subjects`
 		);
 	}
 
@@ -166,7 +192,14 @@ export class BangumiClient {
 			summary: subject.summary,
 			images: subject.images,
 			eps,
+			total_episodes: subject.total_episodes,
+			volumes: subject.volumes,
 			date: subject.date ?? subject.air_date,
+			platform: subject.platform,
+			infobox: subject.infobox,
+			tags: subject.tags,
+			nsfw: subject.nsfw,
+			series: subject.series,
 			rating: subject.rating,
 			collection: subject.collection
 		};
