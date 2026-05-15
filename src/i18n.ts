@@ -38,6 +38,8 @@ const EN = {
 		"Bangumi board write-back finished: {{episodes}} episode change(s). Re-sync notes to update Markdown.",
 	boardPushUnsupported:
 		"Episode write-back from the board only supports remote status do or collect.",
+	boardRating: "Rating",
+	boardRatingNone: "N/A",
 	boardRefreshItem: "Refresh item",
 	boardRefreshList: "Refresh list",
 	boardStatus: "Status",
@@ -290,6 +292,8 @@ const ZH: Record<LocaleKey, string> = {
 	boardPushFinished:
 		"Bangumi 看板写回完成：{{episodes}} 个章节变更。请重新同步笔记以更新 Markdown。",
 	boardPushUnsupported: "看板章节写回只支持远端状态为 do 或 collect 的条目。",
+	boardRating: "评分",
+	boardRatingNone: "不评分",
 	boardRefreshItem: "刷新条目",
 	boardRefreshList: "刷新列表",
 	boardStatus: "状态",

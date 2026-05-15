@@ -48,6 +48,7 @@ export class ProgressBoardView extends ItemView {
 	private episodes: BoardEpisode[] = [];
 	private remoteStatus: BangumiCollectionType | null = null;
 	private remoteComment = "";
+	private remoteRating = 0;
 	private loading = false;
 	private selectedType: BoardTypeFilter = "anime";
 
@@ -87,6 +88,7 @@ export class ProgressBoardView extends ItemView {
 		this.episodes = [];
 		this.remoteStatus = null;
 		this.remoteComment = "";
+		this.remoteRating = 0;
 		this.renderList();
 	}
 
@@ -197,6 +199,7 @@ export class ProgressBoardView extends ItemView {
 
 		this.remoteStatus = collection.type;
 		this.remoteComment = collection.comment ?? "";
+		this.remoteRating = collection.rate ?? 0;
 		this.episodes = this.toBoardEpisodes(episodeCollections);
 	}
 
@@ -383,8 +386,8 @@ export class ProgressBoardView extends ItemView {
 			return;
 		}
 
-		const comment = await this.promptStatusComment(nextType);
-		if (comment === null) {
+		const collectionInfo = await this.promptStatusCollectionInfo(nextType);
+		if (collectionInfo === null) {
 			this.renderDetail();
 			return;
 		}
@@ -395,7 +398,8 @@ export class ProgressBoardView extends ItemView {
 			await client.patchSubjectCollection({
 				subjectId: item.subjectId,
 				type: nextType,
-				comment
+				comment: collectionInfo.comment,
+				rate: collectionInfo.rating
 			});
 			const username =
 				this.plugin.settings.username || (await client.getMe()).username;
@@ -410,8 +414,14 @@ export class ProgressBoardView extends ItemView {
 			}
 
 			this.remoteStatus = remote.type;
-			this.remoteComment = remote.comment ?? comment;
-			await this.updateLocalStatus(item, remote.type, this.remoteComment);
+			this.remoteComment = remote.comment ?? collectionInfo.comment;
+			this.remoteRating = remote.rate ?? collectionInfo.rating;
+			await this.updateLocalStatus(
+				item,
+				remote.type,
+				this.remoteComment,
+				this.remoteRating
+			);
 			await this.moveLocalNote(item, remote.type);
 
 			new Notice(
@@ -438,12 +448,15 @@ export class ProgressBoardView extends ItemView {
 		}
 	}
 
-	private promptStatusComment(nextType: BangumiCollectionType): Promise<string | null> {
+	private promptStatusCollectionInfo(
+		nextType: BangumiCollectionType
+	): Promise<{ comment: string; rating: number } | null> {
 		return new Promise((resolve) => {
 			new BoardStatusCommentModal(
 				this.app,
 				collectionStatusLabel(nextType),
 				this.remoteComment,
+				this.remoteRating,
 				resolve
 			).open();
 		});
@@ -452,13 +465,17 @@ export class ProgressBoardView extends ItemView {
 	private async updateLocalStatus(
 		item: ProgressBoardItem,
 		status: BangumiCollectionType,
-		comment: string
+		comment: string,
+		rating: number
 	): Promise<void> {
 		await this.app.fileManager.processFrontMatter(item.file, (frontmatter) => {
-			frontmatter.status = collectionStatusLabel(status);
-			frontmatter.comment = comment;
+			const values = frontmatter as Record<string, unknown>;
+			values.status = collectionStatusLabel(status);
+			values.comment = comment;
+			values.rating = rating;
 		});
 		item.status = collectionStatusLabel(status);
+		item.rating = rating === 0 ? "" : String(rating);
 	}
 
 	private async moveLocalNote(
@@ -699,14 +716,19 @@ class BoardPushConfirmModal extends Modal {
 class BoardStatusCommentModal extends Modal {
 	private resolved = false;
 	private textarea: HTMLTextAreaElement | null = null;
+	private rating = 0;
 
 	constructor(
 		app: App,
 		private readonly status: string,
 		private readonly initialComment: string,
-		private readonly resolve: (comment: string | null) => void
+		initialRating: number,
+		private readonly resolve: (
+			info: { comment: string; rating: number } | null
+		) => void
 	) {
 		super(app);
+		this.rating = initialRating;
 	}
 
 	onOpen(): void {
@@ -716,6 +738,19 @@ class BoardStatusCommentModal extends Modal {
 			.setName(t("boardStatusCommentTitle", { status: this.status }))
 			.setHeading();
 		contentEl.createEl("p", { text: t("boardStatusCommentDesc") });
+		new Setting(contentEl)
+			.setName(t("boardRating"))
+			.addDropdown((dropdown) => {
+				dropdown.addOption("0", t("boardRatingNone"));
+				for (let rating = 1; rating <= 10; rating++) {
+					dropdown.addOption(String(rating), String(rating));
+				}
+				dropdown
+					.setValue(String(this.rating))
+					.onChange((value) => {
+						this.rating = Number(value);
+					});
+			});
 		this.textarea = contentEl.createEl("textarea");
 		this.textarea.value = this.initialComment;
 		this.textarea.addClass("bangumi-note-board-comment-textarea");
@@ -734,7 +769,10 @@ class BoardStatusCommentModal extends Modal {
 					.setButtonText(t("pushConfirm"))
 					.setCta()
 					.onClick(() => {
-						this.finish(this.textarea?.value ?? "");
+						this.finish({
+							comment: this.textarea?.value ?? "",
+							rating: this.rating
+						});
 						this.close();
 					})
 			);
@@ -745,9 +783,9 @@ class BoardStatusCommentModal extends Modal {
 		this.contentEl.empty();
 	}
 
-	private finish(comment: string | null): void {
+	private finish(info: { comment: string; rating: number } | null): void {
 		if (this.resolved) return;
 		this.resolved = true;
-		this.resolve(comment);
+		this.resolve(info);
 	}
 }

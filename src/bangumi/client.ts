@@ -191,12 +191,14 @@ export class BangumiClient {
 		subjectId: number;
 		type: BangumiCollectionType;
 		comment?: string;
+		rate?: number;
 	}): Promise<void> {
 		await this.request<void>(`/v0/users/-/collections/${params.subjectId}`, {
 			method: "PATCH",
 			body: {
 				type: params.type,
-				...(params.comment === undefined ? {} : { comment: params.comment })
+				...(params.comment === undefined ? {} : { comment: params.comment }),
+				...(params.rate === undefined ? {} : { rate: params.rate })
 			},
 			expectEmptyResponse: true
 		});
@@ -319,7 +321,9 @@ export class BangumiClient {
 						path
 					);
 				}
-				throw networkError ?? lastError ?? new Error("Bangumi request failed");
+				throw toError(
+					networkError ?? lastError ?? new Error("Bangumi request failed")
+				);
 			}
 
 			const delay = this.computeRetryDelay(attempt, response?.headers);
@@ -350,9 +354,9 @@ export class BangumiClient {
 			throw: false
 		});
 
-		let timer: ReturnType<typeof setTimeout> | undefined;
+		let timer: number | undefined;
 		const timeoutPromise = new Promise<never>((_, reject) => {
-			timer = setTimeout(() => {
+			timer = window.setTimeout(() => {
 				reject(new BangumiTimeoutError(path, timeoutMs));
 			}, timeoutMs);
 		});
@@ -360,7 +364,7 @@ export class BangumiClient {
 		try {
 			return await Promise.race([requestPromise, timeoutPromise]);
 		} finally {
-			if (timer !== undefined) clearTimeout(timer);
+			if (timer !== undefined) window.clearTimeout(timer);
 		}
 	}
 
@@ -437,7 +441,17 @@ export class BangumiClient {
 }
 
 function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
+	return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function toError(value: unknown): Error {
+	if (value instanceof Error) {
+		return value;
+	}
+	if (typeof value === "string") {
+		return new Error(value);
+	}
+	return new Error(JSON.stringify(value));
 }
 
 function parseRetryAfter(headers?: Record<string, string>): number | null {

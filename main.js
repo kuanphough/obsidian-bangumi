@@ -89,6 +89,8 @@ var EN = {
   boardPushChanges: "Push changes",
   boardPushFinished: "Bangumi board write-back finished: {{episodes}} episode change(s). Re-sync notes to update Markdown.",
   boardPushUnsupported: "Episode write-back from the board only supports remote status do or collect.",
+  boardRating: "Rating",
+  boardRatingNone: "N/A",
   boardRefreshItem: "Refresh item",
   boardRefreshList: "Refresh list",
   boardStatus: "Status",
@@ -298,6 +300,8 @@ var ZH = {
   boardPushChanges: "Push \u4FEE\u6539",
   boardPushFinished: "Bangumi \u770B\u677F\u5199\u56DE\u5B8C\u6210\uFF1A{{episodes}} \u4E2A\u7AE0\u8282\u53D8\u66F4\u3002\u8BF7\u91CD\u65B0\u540C\u6B65\u7B14\u8BB0\u4EE5\u66F4\u65B0 Markdown\u3002",
   boardPushUnsupported: "\u770B\u677F\u7AE0\u8282\u5199\u56DE\u53EA\u652F\u6301\u8FDC\u7AEF\u72B6\u6001\u4E3A do \u6216 collect \u7684\u6761\u76EE\u3002",
+  boardRating: "\u8BC4\u5206",
+  boardRatingNone: "\u4E0D\u8BC4\u5206",
   boardRefreshItem: "\u5237\u65B0\u6761\u76EE",
   boardRefreshList: "\u5237\u65B0\u5217\u8868",
   boardStatus: "\u72B6\u6001",
@@ -860,7 +864,7 @@ ${content}
     if (typeof value === "object" && value !== null) {
       const objectValue = value;
       const candidate = (_b = (_a = objectValue.v) != null ? _a : objectValue.value) != null ? _b : objectValue.name;
-      return candidate === void 0 ? JSON.stringify(value) : String(candidate);
+      return candidate === void 0 ? JSON.stringify(value) : this.renderUnknownValue(candidate);
     }
     return value === void 0 || value === null ? "" : String(value);
   }
@@ -1465,7 +1469,8 @@ var BangumiClient = class {
       method: "PATCH",
       body: {
         type: params.type,
-        ...params.comment === void 0 ? {} : { comment: params.comment }
+        ...params.comment === void 0 ? {} : { comment: params.comment },
+        ...params.rate === void 0 ? {} : { rate: params.rate }
       },
       expectEmptyResponse: true
     });
@@ -1557,7 +1562,9 @@ var BangumiClient = class {
             path
           );
         }
-        throw (_b = networkError != null ? networkError : lastError) != null ? _b : new Error("Bangumi request failed");
+        throw toError(
+          (_b = networkError != null ? networkError : lastError) != null ? _b : new Error("Bangumi request failed")
+        );
       }
       const delay = this.computeRetryDelay(attempt, response == null ? void 0 : response.headers);
       lastError = networkError != null ? networkError : response;
@@ -1581,14 +1588,14 @@ var BangumiClient = class {
     });
     let timer;
     const timeoutPromise = new Promise((_, reject) => {
-      timer = setTimeout(() => {
+      timer = window.setTimeout(() => {
         reject(new BangumiTimeoutError(path, timeoutMs));
       }, timeoutMs);
     });
     try {
       return await Promise.race([requestPromise, timeoutPromise]);
     } finally {
-      if (timer !== void 0) clearTimeout(timer);
+      if (timer !== void 0) window.clearTimeout(timer);
     }
   }
   computeRetryDelay(attempt, headers) {
@@ -1653,7 +1660,16 @@ var BangumiClient = class {
   }
 };
 function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+function toError(value) {
+  if (value instanceof Error) {
+    return value;
+  }
+  if (typeof value === "string") {
+    return new Error(value);
+  }
+  return new Error(JSON.stringify(value));
 }
 function parseRetryAfter(headers) {
   var _a;
@@ -1691,7 +1707,7 @@ var import_obsidian7 = require("obsidian");
 // src/utils/concurrency.ts
 async function mapWithConcurrency(items, concurrency, worker) {
   const limit = Math.max(1, Math.floor(concurrency));
-  const results = new Array(items.length);
+  const results = [];
   let nextIndex = 0;
   async function runWorker() {
     for (; ; ) {
@@ -3158,6 +3174,7 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
     this.episodes = [];
     this.remoteStatus = null;
     this.remoteComment = "";
+    this.remoteRating = 0;
     this.loading = false;
     this.selectedType = "anime";
   }
@@ -3185,6 +3202,7 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
     this.episodes = [];
     this.remoteStatus = null;
     this.remoteComment = "";
+    this.remoteRating = 0;
     this.renderList();
   }
   renderList() {
@@ -3262,7 +3280,7 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
     return BOARD_TYPE_FILTERS.includes(value) ? value : "all";
   }
   async loadItemEpisodes(item) {
-    var _a;
+    var _a, _b;
     const client = this.plugin.getBangumiClient();
     const username = this.plugin.settings.username || (await client.getMe()).username;
     const [collection, episodeCollections] = await Promise.all([
@@ -3271,6 +3289,7 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
     ]);
     this.remoteStatus = collection.type;
     this.remoteComment = (_a = collection.comment) != null ? _a : "";
+    this.remoteRating = (_b = collection.rate) != null ? _b : 0;
     this.episodes = this.toBoardEpisodes(episodeCollections);
   }
   renderDetail() {
@@ -3410,7 +3429,7 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
     }
   }
   async changeStatus(nextType) {
-    var _a;
+    var _a, _b;
     if (!this.plugin.settings.enableWriteBack) {
       new import_obsidian11.Notice(t("pushWriteBackDisabled"));
       this.renderDetail();
@@ -3421,8 +3440,8 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
       this.renderDetail();
       return;
     }
-    const comment = await this.promptStatusComment(nextType);
-    if (comment === null) {
+    const collectionInfo = await this.promptStatusCollectionInfo(nextType);
+    if (collectionInfo === null) {
       this.renderDetail();
       return;
     }
@@ -3432,7 +3451,8 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
       await client.patchSubjectCollection({
         subjectId: item.subjectId,
         type: nextType,
-        comment
+        comment: collectionInfo.comment,
+        rate: collectionInfo.rating
       });
       const username = this.plugin.settings.username || (await client.getMe()).username;
       const remote = await client.getSubjectCollection(item.subjectId, username);
@@ -3445,8 +3465,14 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
         );
       }
       this.remoteStatus = remote.type;
-      this.remoteComment = (_a = remote.comment) != null ? _a : comment;
-      await this.updateLocalStatus(item, remote.type, this.remoteComment);
+      this.remoteComment = (_a = remote.comment) != null ? _a : collectionInfo.comment;
+      this.remoteRating = (_b = remote.rate) != null ? _b : collectionInfo.rating;
+      await this.updateLocalStatus(
+        item,
+        remote.type,
+        this.remoteComment,
+        this.remoteRating
+      );
       await this.moveLocalNote(item, remote.type);
       new import_obsidian11.Notice(
         t("boardStatusFinished", {
@@ -3471,22 +3497,26 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
       this.renderDetail();
     }
   }
-  promptStatusComment(nextType) {
+  promptStatusCollectionInfo(nextType) {
     return new Promise((resolve) => {
       new BoardStatusCommentModal(
         this.app,
         collectionStatusLabel(nextType),
         this.remoteComment,
+        this.remoteRating,
         resolve
       ).open();
     });
   }
-  async updateLocalStatus(item, status, comment) {
+  async updateLocalStatus(item, status, comment, rating) {
     await this.app.fileManager.processFrontMatter(item.file, (frontmatter) => {
-      frontmatter.status = collectionStatusLabel(status);
-      frontmatter.comment = comment;
+      const values = frontmatter;
+      values.status = collectionStatusLabel(status);
+      values.comment = comment;
+      values.rating = rating;
     });
     item.status = collectionStatusLabel(status);
+    item.rating = rating === 0 ? "" : String(rating);
   }
   async moveLocalNote(item, status) {
     var _a;
@@ -3672,19 +3702,30 @@ var BoardPushConfirmModal = class extends import_obsidian11.Modal {
   }
 };
 var BoardStatusCommentModal = class extends import_obsidian11.Modal {
-  constructor(app, status, initialComment, resolve) {
+  constructor(app, status, initialComment, initialRating, resolve) {
     super(app);
     this.status = status;
     this.initialComment = initialComment;
     this.resolve = resolve;
     this.resolved = false;
     this.textarea = null;
+    this.rating = 0;
+    this.rating = initialRating;
   }
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
     new import_obsidian11.Setting(contentEl).setName(t("boardStatusCommentTitle", { status: this.status })).setHeading();
     contentEl.createEl("p", { text: t("boardStatusCommentDesc") });
+    new import_obsidian11.Setting(contentEl).setName(t("boardRating")).addDropdown((dropdown) => {
+      dropdown.addOption("0", t("boardRatingNone"));
+      for (let rating = 1; rating <= 10; rating++) {
+        dropdown.addOption(String(rating), String(rating));
+      }
+      dropdown.setValue(String(this.rating)).onChange((value) => {
+        this.rating = Number(value);
+      });
+    });
     this.textarea = contentEl.createEl("textarea");
     this.textarea.value = this.initialComment;
     this.textarea.addClass("bangumi-note-board-comment-textarea");
@@ -3696,7 +3737,10 @@ var BoardStatusCommentModal = class extends import_obsidian11.Modal {
     ).addButton(
       (button) => button.setButtonText(t("pushConfirm")).setCta().onClick(() => {
         var _a, _b;
-        this.finish((_b = (_a = this.textarea) == null ? void 0 : _a.value) != null ? _b : "");
+        this.finish({
+          comment: (_b = (_a = this.textarea) == null ? void 0 : _a.value) != null ? _b : "",
+          rating: this.rating
+        });
         this.close();
       })
     );
@@ -3705,10 +3749,10 @@ var BoardStatusCommentModal = class extends import_obsidian11.Modal {
     this.finish(null);
     this.contentEl.empty();
   }
-  finish(comment) {
+  finish(info) {
     if (this.resolved) return;
     this.resolved = true;
-    this.resolve(comment);
+    this.resolve(info);
   }
 };
 
@@ -3936,7 +3980,7 @@ var BangumiSyncPlugin = class extends import_obsidian12.Plugin {
         active: true
       });
     }
-    this.app.workspace.revealLeaf(leaf);
+    await this.app.workspace.revealLeaf(leaf);
   }
   async loadSettings() {
     const loadedData = await this.loadData();

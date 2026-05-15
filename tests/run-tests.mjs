@@ -80,6 +80,7 @@ requestUrl.handler = null;
 const entry = `
 import assert from "node:assert/strict";
 import { TFile, requestUrl } from "obsidian";
+globalThis.window = globalThis.window ?? globalThis;
 import BangumiSyncPlugin from "./src/main.ts";
 import { BangumiClient, BangumiApiError, BangumiTimeoutError } from "./src/bangumi/client.ts";
 import { mapWithConcurrency } from "./src/utils/concurrency.ts";
@@ -173,7 +174,8 @@ function makeApp(files = [], contents = new Map(), frontmatter = new Map()) {
 	}).patchSubjectCollection({
 		subjectId: 123,
 		type: BANGUMI_COLLECTION_TYPES.onHold,
-		comment: "paused here"
+		comment: "paused here",
+		rate: 7
 	});
 	assert.deepEqual(
 		requestUrl.calls.map((call) => [call.method, call.url, call.body]),
@@ -181,7 +183,7 @@ function makeApp(files = [], contents = new Map(), frontmatter = new Map()) {
 			[
 				"PATCH",
 				"https://api.bgm.tv/v0/users/-/collections/123",
-				'{"type":4,"comment":"paused here"}'
+				'{"type":4,"comment":"paused here","rate":7}'
 			]
 		]
 	);

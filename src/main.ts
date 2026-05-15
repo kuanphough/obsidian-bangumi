@@ -279,7 +279,7 @@ export default class BangumiSyncPlugin extends Plugin {
 				active: true
 			});
 		}
-		this.app.workspace.revealLeaf(leaf);
+		await this.app.workspace.revealLeaf(leaf);
 	}
 
 	async loadSettings(): Promise<void> {

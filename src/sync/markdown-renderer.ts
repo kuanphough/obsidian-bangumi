@@ -402,7 +402,9 @@ export class MarkdownRenderer {
 		if (typeof value === "object" && value !== null) {
 			const objectValue = value as { v?: unknown; value?: unknown; name?: unknown };
 			const candidate = objectValue.v ?? objectValue.value ?? objectValue.name;
-			return candidate === undefined ? JSON.stringify(value) : String(candidate);
+			return candidate === undefined
+				? JSON.stringify(value)
+				: this.renderUnknownValue(candidate);
 		}
 		return value === undefined || value === null ? "" : String(value);
 	}
