@@ -543,6 +543,18 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
+			.setName(t("enableWriteBack"))
+			.setDesc(t("enableWriteBackDesc"))
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.enableWriteBack)
+					.onChange(async (enabled) => {
+						this.plugin.settings.enableWriteBack = enabled;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
 			.setName(t("lastSyncedAt"))
 			.setDesc(
 				formatLocalDateTime(this.plugin.settings.lastSyncedAt) ||

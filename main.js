@@ -23,7 +23,7 @@ __export(main_exports, {
   default: () => BangumiSyncPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian10 = require("obsidian");
+var import_obsidian12 = require("obsidian");
 
 // src/settings.ts
 var import_obsidian2 = require("obsidian");
@@ -76,6 +76,29 @@ var EN = {
   apiServerError: "Bangumi API server error ({{status}}). Try syncing again later.{{detail}}",
   apiUnauthorized: "Bangumi API unauthorized ({{status}}). Check whether the access token is valid or expired.{{detail}}",
   bangumiSync: "Bangumi Sync",
+  boardBackToList: "Back to list",
+  boardChangeSummary: "Will mark done: {{done}}, mark undone: {{undone}}.",
+  boardDesc: "Manage in-progress Bangumi subjects from synced notes.",
+  boardDiscardChanges: "Discard changes",
+  boardEmpty: "No in-progress Bangumi notes found in the sync directory.",
+  boardFilterEmpty: "No in-progress subjects match this type filter.",
+  boardLoadFailed: "Could not load board item: {{message}}",
+  boardLoading: "Loading episode progress...",
+  boardNoEpisodes: "No episode progress data available.",
+  boardProgress: "{{done}}/{{total}}",
+  boardPushChanges: "Push changes",
+  boardPushFinished: "Bangumi board write-back finished: {{episodes}} episode change(s). Re-sync notes to update Markdown.",
+  boardPushUnsupported: "Episode write-back from the board only supports remote status do or collect.",
+  boardRefreshItem: "Refresh item",
+  boardRefreshList: "Refresh list",
+  boardStatus: "Status",
+  boardStatusCommentDesc: "This comment will be saved to your Bangumi collection together with the status change.",
+  boardStatusCommentTitle: "Comment for {{status}}",
+  boardStatusDesc: "Changing status writes to Bangumi after you confirm a comment.",
+  boardStatusFinished: "Bangumi status changed to {{status}}.",
+  boardStatusStarted: "Writing Bangumi status...",
+  boardTitle: "Bangumi Board",
+  boardTypeAll: "All types",
   books: "Books",
   booksDesc: "Sync book, manga, and related reading subjects.",
   byCollectionStatus: "By collection status",
@@ -150,6 +173,7 @@ var EN = {
   onAirNoteFailed: "On Air note update failed: {{message}}",
   onAirNoteUnchanged: "On Air note is unchanged: {{path}}",
   onAirNoteUpdated: "On Air note updated: {{path}}",
+  openBoard: "Open Bangumi board",
   openTokenPage: "Open token page",
   progressStarted: "Bangumi Sync started.",
   progressUnavailableReport: "Progress content was not fetched",
@@ -161,13 +185,17 @@ var EN = {
   pushConfirmTitle: "Confirm Bangumi write-back",
   pushCurrentNote: "Push current note to Bangumi",
   pushFailed: "Bangumi write-back failed: {{message}}",
-  pushFinished: "Bangumi write-back finished: {{episodes}} episode change(s), status changed: {{statusChanged}}.{{resync}}",
+  pushEpisodeVerifyFailed: "Bangumi did not confirm these episode changes after write-back: {{ids}}. Try pushing again later.",
+  pushFinished: "Bangumi write-back finished: {{episodes}} episode change(s), final status: {{finalStatus}}.{{moved}}{{resync}}",
   pushFinishedResync: " Re-sync this note to reflect the latest Bangumi status.",
   pushInvalidNote: "Current note is not a valid Bangumi subject note.",
+  pushMoved: " Moved note to {{path}}.",
+  pushMoveTargetExists: "Write-back succeeded, but the note could not be moved because the target file already exists: {{path}}",
   pushNoActiveFile: "Open a Bangumi subject note before pushing.",
   pushNoChanges: "No Bangumi write-back changes detected.",
   pushStarted: "Pushing current note to Bangumi...",
-  pushStatusUnsupported: "Write-back only supports notes whose status is do or collect.",
+  pushStatusUnsupported: "Write-back only supports notes whose status is wish, do, collect, on_hold, or dropped.",
+  pushStatusVerifyFailed: "Bangumi did not confirm the status change. Expected {{expected}}, actual {{actual}}.",
   pushUnknownEpisodes: "Some bgm-ep markers do not belong to this subject. Re-sync this note before pushing: {{ids}}",
   pushWriteBackDisabled: "Enable write-back to Bangumi in plugin settings first.",
   realLife: "Real life",
@@ -257,6 +285,29 @@ var ZH = {
   apiServerError: "Bangumi API \u670D\u52A1\u7AEF\u9519\u8BEF\uFF08{{status}}\uFF09\u3002\u8BF7\u7A0D\u540E\u518D\u8BD5\u3002{{detail}}",
   apiUnauthorized: "Bangumi API \u672A\u6388\u6743\uFF08{{status}}\uFF09\u3002\u8BF7\u68C0\u67E5 access token \u662F\u5426\u6709\u6548\u6216\u5DF2\u8FC7\u671F\u3002{{detail}}",
   bangumiSync: "Bangumi Sync",
+  boardBackToList: "\u8FD4\u56DE\u5217\u8868",
+  boardChangeSummary: "\u5C06\u6807\u8BB0\u5B8C\u6210\uFF1A{{done}}\uFF0C\u53D6\u6D88\u5B8C\u6210\uFF1A{{undone}}\u3002",
+  boardDesc: "\u96C6\u4E2D\u7BA1\u7406\u5DF2\u540C\u6B65\u7B14\u8BB0\u91CC\u7684\u8FDB\u884C\u4E2D Bangumi \u6761\u76EE\u3002",
+  boardDiscardChanges: "\u653E\u5F03\u4FEE\u6539",
+  boardEmpty: "\u540C\u6B65\u76EE\u5F55\u91CC\u6CA1\u6709\u627E\u5230\u8FDB\u884C\u4E2D\u7684 Bangumi \u7B14\u8BB0\u3002",
+  boardFilterEmpty: "\u5F53\u524D\u7C7B\u578B\u7B5B\u9009\u4E0B\u6CA1\u6709\u8FDB\u884C\u4E2D\u6761\u76EE\u3002",
+  boardLoadFailed: "\u65E0\u6CD5\u52A0\u8F7D\u770B\u677F\u6761\u76EE\uFF1A{{message}}",
+  boardLoading: "\u6B63\u5728\u52A0\u8F7D\u7AE0\u8282\u8FDB\u5EA6...",
+  boardNoEpisodes: "\u6CA1\u6709\u53EF\u7528\u7684\u7AE0\u8282\u8FDB\u5EA6\u6570\u636E\u3002",
+  boardProgress: "{{done}}/{{total}}",
+  boardPushChanges: "Push \u4FEE\u6539",
+  boardPushFinished: "Bangumi \u770B\u677F\u5199\u56DE\u5B8C\u6210\uFF1A{{episodes}} \u4E2A\u7AE0\u8282\u53D8\u66F4\u3002\u8BF7\u91CD\u65B0\u540C\u6B65\u7B14\u8BB0\u4EE5\u66F4\u65B0 Markdown\u3002",
+  boardPushUnsupported: "\u770B\u677F\u7AE0\u8282\u5199\u56DE\u53EA\u652F\u6301\u8FDC\u7AEF\u72B6\u6001\u4E3A do \u6216 collect \u7684\u6761\u76EE\u3002",
+  boardRefreshItem: "\u5237\u65B0\u6761\u76EE",
+  boardRefreshList: "\u5237\u65B0\u5217\u8868",
+  boardStatus: "\u72B6\u6001",
+  boardStatusCommentDesc: "\u8FD9\u6761\u8BC4\u8BBA\u4F1A\u548C\u72B6\u6001\u53D8\u66F4\u4E00\u8D77\u4FDD\u5B58\u5230\u4F60\u7684 Bangumi \u6536\u85CF\u91CC\u3002",
+  boardStatusCommentTitle: "{{status}} \u7684\u6536\u85CF\u8BC4\u8BBA",
+  boardStatusDesc: "\u4FEE\u6539\u72B6\u6001\u4F1A\u5728\u4F60\u786E\u8BA4\u8BC4\u8BBA\u540E\u5199\u5165 Bangumi\u3002",
+  boardStatusFinished: "Bangumi \u72B6\u6001\u5DF2\u6539\u4E3A {{status}}\u3002",
+  boardStatusStarted: "\u6B63\u5728\u5199\u5165 Bangumi \u72B6\u6001...",
+  boardTitle: "Bangumi \u770B\u677F",
+  boardTypeAll: "\u5168\u90E8\u7C7B\u578B",
   books: "\u4E66\u7C4D",
   booksDesc: "\u540C\u6B65\u4E66\u7C4D\u3001\u6F2B\u753B\u53CA\u76F8\u5173\u9605\u8BFB\u6761\u76EE\u3002",
   byCollectionStatus: "\u6309\u6536\u85CF\u72B6\u6001\u5206\u7C7B",
@@ -331,6 +382,7 @@ var ZH = {
   onAirNoteFailed: "\u6BCF\u65E5\u653E\u9001\u7B14\u8BB0\u66F4\u65B0\u5931\u8D25\uFF1A{{message}}",
   onAirNoteUnchanged: "\u6BCF\u65E5\u653E\u9001\u7B14\u8BB0\u6CA1\u6709\u53D8\u5316\uFF1A{{path}}",
   onAirNoteUpdated: "\u6BCF\u65E5\u653E\u9001\u7B14\u8BB0\u5DF2\u66F4\u65B0\uFF1A{{path}}",
+  openBoard: "\u6253\u5F00 Bangumi \u770B\u677F",
   openTokenPage: "\u6253\u5F00 token \u9875\u9762",
   progressStarted: "Bangumi Sync \u5DF2\u5F00\u59CB\u3002",
   progressUnavailableReport: "\u6CA1\u62C9\u5230\u8FDB\u5EA6\u5185\u5BB9",
@@ -342,13 +394,17 @@ var ZH = {
   pushConfirmTitle: "\u786E\u8BA4\u5199\u56DE Bangumi",
   pushCurrentNote: "Push \u5F53\u524D\u7B14\u8BB0\u5230 Bangumi",
   pushFailed: "Bangumi \u5199\u56DE\u5931\u8D25\uFF1A{{message}}",
-  pushFinished: "Bangumi \u5199\u56DE\u5B8C\u6210\uFF1A{{episodes}} \u4E2A\u7AE0\u8282\u53D8\u66F4\uFF0C\u72B6\u6001\u5DF2\u4FEE\u6539\uFF1A{{statusChanged}}\u3002{{resync}}",
+  pushEpisodeVerifyFailed: "Bangumi \u5199\u56DE\u540E\u6CA1\u6709\u786E\u8BA4\u8FD9\u4E9B\u7AE0\u8282\u53D8\u66F4\uFF1A{{ids}}\u3002\u8BF7\u7A0D\u540E\u518D\u8BD5\u4E00\u6B21\u3002",
+  pushFinished: "Bangumi \u5199\u56DE\u5B8C\u6210\uFF1A{{episodes}} \u4E2A\u7AE0\u8282\u53D8\u66F4\uFF0C\u6700\u7EC8\u72B6\u6001\uFF1A{{finalStatus}}\u3002{{moved}}{{resync}}",
   pushFinishedResync: "\u8BF7\u91CD\u65B0\u540C\u6B65\u8FD9\u6761\u7B14\u8BB0\uFF0C\u4EE5\u53CD\u6620\u6700\u65B0 Bangumi \u72B6\u6001\u3002",
   pushInvalidNote: "\u5F53\u524D\u7B14\u8BB0\u4E0D\u662F\u6709\u6548\u7684 Bangumi \u6761\u76EE\u7B14\u8BB0\u3002",
+  pushMoved: "\u5DF2\u79FB\u52A8\u7B14\u8BB0\u5230 {{path}}\u3002",
+  pushMoveTargetExists: "\u5199\u56DE\u5DF2\u7ECF\u6210\u529F\uFF0C\u4F46\u65E0\u6CD5\u79FB\u52A8\u7B14\u8BB0\uFF0C\u56E0\u4E3A\u76EE\u6807\u6587\u4EF6\u5DF2\u5B58\u5728\uFF1A{{path}}",
   pushNoActiveFile: "\u8BF7\u5148\u6253\u5F00\u4E00\u6761 Bangumi \u6761\u76EE\u7B14\u8BB0\u3002",
   pushNoChanges: "\u6CA1\u6709\u68C0\u6D4B\u5230\u9700\u8981\u5199\u56DE Bangumi \u7684\u53D8\u66F4\u3002",
   pushStarted: "\u6B63\u5728 Push \u5F53\u524D\u7B14\u8BB0\u5230 Bangumi...",
-  pushStatusUnsupported: "\u5199\u56DE\u53EA\u652F\u6301 status \u4E3A do \u6216 collect \u7684\u7B14\u8BB0\u3002",
+  pushStatusUnsupported: "\u5199\u56DE\u53EA\u652F\u6301 status \u4E3A wish\u3001do\u3001collect\u3001on_hold \u6216 dropped \u7684\u7B14\u8BB0\u3002",
+  pushStatusVerifyFailed: "Bangumi \u6CA1\u6709\u786E\u8BA4\u72B6\u6001\u53D8\u66F4\u3002\u671F\u671B {{expected}}\uFF0C\u5B9E\u9645 {{actual}}\u3002",
   pushUnknownEpisodes: "\u6709\u4E9B bgm-ep \u6807\u8BB0\u4E0D\u5C5E\u4E8E\u5F53\u524D\u6761\u76EE\u3002\u8BF7\u5148\u91CD\u65B0\u540C\u6B65\u8FD9\u6761\u7B14\u8BB0\u518D Push\uFF1A{{ids}}",
   pushWriteBackDisabled: "\u8BF7\u5148\u5728\u63D2\u4EF6\u8BBE\u7F6E\u4E2D\u542F\u7528\u5199\u56DE Bangumi\u3002",
   realLife: "\u4E09\u6B21\u5143",
@@ -1201,6 +1257,12 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         await this.plugin.saveSettings();
       })
     );
+    new import_obsidian2.Setting(containerEl).setName(t("enableWriteBack")).setDesc(t("enableWriteBackDesc")).addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.enableWriteBack).onChange(async (enabled) => {
+        this.plugin.settings.enableWriteBack = enabled;
+        await this.plugin.saveSettings();
+      })
+    );
     new import_obsidian2.Setting(containerEl).setName(t("lastSyncedAt")).setDesc(
       formatLocalDateTime(this.plugin.settings.lastSyncedAt) || t("neverSynced")
     ).addButton(
@@ -1402,8 +1464,10 @@ var BangumiClient = class {
     await this.request(`/v0/users/-/collections/${params.subjectId}`, {
       method: "PATCH",
       body: {
-        type: params.type
-      }
+        type: params.type,
+        ...params.comment === void 0 ? {} : { comment: params.comment }
+      },
+      expectEmptyResponse: true
     });
   }
   async patchSubjectEpisodeCollections(params) {
@@ -1417,7 +1481,8 @@ var BangumiClient = class {
         body: {
           episode_id: params.episodeIds,
           type: params.type
-        }
+        },
+        expectEmptyResponse: true
       }
     );
   }
@@ -1428,7 +1493,8 @@ var BangumiClient = class {
         method: "PUT",
         body: {
           type: params.type
-        }
+        },
+        expectEmptyResponse: true
       }
     );
   }
@@ -1477,6 +1543,9 @@ var BangumiClient = class {
         networkError = error;
       }
       if (response && response.status >= 200 && response.status < 300) {
+        if (options.expectEmptyResponse) {
+          return void 0;
+        }
         return response.json;
       }
       const isRetriable = networkError !== void 0 || response !== void 0 && RETRIABLE_STATUS_CODES.has(response.status);
@@ -2521,13 +2590,11 @@ var PushService = class {
     }
     const content = await this.app.vault.read(file);
     const syncBlock = this.extractSyncBlock(content);
-    const localItems = this.parseChecklist(syncBlock);
-    if (localItems.length === 0) {
-      throw new Error(t("pushChecklistMissing"));
-    }
+    const localItems = this.supportsEpisodePush(localCollectionType) ? this.parseChecklist(syncBlock) : [];
+    const username = this.settings.username || (await this.client.getMe()).username;
     const [remoteEpisodes, remoteCollection] = await Promise.all([
-      this.fetchAllSubjectEpisodeCollections(subjectId),
-      this.client.getSubjectCollection(subjectId)
+      this.supportsEpisodePush(localCollectionType) ? this.fetchAllSubjectEpisodeCollections(subjectId) : Promise.resolve([]),
+      this.client.getSubjectCollection(subjectId, username)
     ]);
     const remoteEpisodeMap = /* @__PURE__ */ new Map();
     for (const item of remoteEpisodes) {
@@ -2564,9 +2631,11 @@ var PushService = class {
     return {
       file,
       subjectId,
+      username,
       localStatus,
       localCollectionType,
       remoteCollectionType: remoteCollection.type,
+      subjectType: remoteCollection.subject.type,
       markDone,
       markUndone,
       unknownEpisodeIds
@@ -2587,17 +2656,24 @@ var PushService = class {
         type: 0
       });
     }
+    await this.verifyEpisodeChanges(preview);
     const remoteAfterEpisodes = await this.client.getSubjectCollection(
-      preview.subjectId
+      preview.subjectId,
+      preview.username
     );
     const serverChangedStatus = remoteAfterEpisodes.type !== preview.remoteCollectionType && remoteAfterEpisodes.type !== preview.localCollectionType;
     if (serverChangedStatus) {
+      const movedPath2 = await this.moveNoteForFinalStatus(
+        preview,
+        remoteAfterEpisodes.type
+      );
       return {
         changedEpisodes: preview.markDone.length + preview.markUndone.length,
         statusChanged: false,
         remoteStatusChanged: true,
         finalStatus: collectionStatusLabel(remoteAfterEpisodes.type),
-        shouldResync: true
+        shouldResync: true,
+        movedPath: movedPath2
       };
     }
     let statusChanged = false;
@@ -2607,16 +2683,69 @@ var PushService = class {
         subjectId: preview.subjectId,
         type: preview.localCollectionType
       });
+      const remoteAfterStatus = await this.client.getSubjectCollection(
+        preview.subjectId,
+        preview.username
+      );
+      if (remoteAfterStatus.type !== preview.localCollectionType) {
+        throw new Error(
+          t("pushStatusVerifyFailed", {
+            expected: collectionStatusLabel(preview.localCollectionType),
+            actual: collectionStatusLabel(remoteAfterStatus.type)
+          })
+        );
+      }
       statusChanged = true;
-      finalCollectionType = preview.localCollectionType;
+      finalCollectionType = remoteAfterStatus.type;
     }
+    const movedPath = await this.moveNoteForFinalStatus(
+      preview,
+      finalCollectionType
+    );
     return {
       changedEpisodes: preview.markDone.length + preview.markUndone.length,
       statusChanged,
       remoteStatusChanged: false,
       finalStatus: collectionStatusLabel(finalCollectionType),
-      shouldResync: statusChanged
+      shouldResync: statusChanged,
+      movedPath
     };
+  }
+  async verifyEpisodeChanges(preview) {
+    var _a;
+    const expected = /* @__PURE__ */ new Map();
+    for (const change of preview.markDone) {
+      expected.set(change.episodeId, true);
+    }
+    for (const change of preview.markUndone) {
+      expected.set(change.episodeId, false);
+    }
+    if (expected.size === 0) {
+      return;
+    }
+    const remoteEpisodes = await this.fetchAllSubjectEpisodeCollections(
+      preview.subjectId
+    );
+    const remoteEpisodeMap = /* @__PURE__ */ new Map();
+    for (const item of remoteEpisodes) {
+      const episodeId = (_a = item.episode) == null ? void 0 : _a.id;
+      if (typeof episodeId === "number") {
+        remoteEpisodeMap.set(episodeId, item.type > 0);
+      }
+    }
+    const failedIds = [];
+    for (const [episodeId, expectedChecked] of expected) {
+      if (remoteEpisodeMap.get(episodeId) !== expectedChecked) {
+        failedIds.push(episodeId);
+      }
+    }
+    if (failedIds.length > 0) {
+      throw new Error(
+        t("pushEpisodeVerifyFailed", {
+          ids: failedIds.join(", ")
+        })
+      );
+    }
   }
   hasChanges(preview) {
     return preview.markDone.length > 0 || preview.markUndone.length > 0 || preview.unknownEpisodeIds.length > 0 || preview.remoteCollectionType !== preview.localCollectionType;
@@ -2650,13 +2779,70 @@ var PushService = class {
     return items;
   }
   parseWritableStatus(status) {
+    if (status === "wish") {
+      return BANGUMI_COLLECTION_TYPES.wish;
+    }
     if (status === "do") {
       return BANGUMI_COLLECTION_TYPES.do;
     }
     if (status === "collect") {
       return BANGUMI_COLLECTION_TYPES.collect;
     }
+    if (status === "on_hold") {
+      return BANGUMI_COLLECTION_TYPES.onHold;
+    }
+    if (status === "dropped") {
+      return BANGUMI_COLLECTION_TYPES.dropped;
+    }
     return null;
+  }
+  supportsEpisodePush(type) {
+    return type === BANGUMI_COLLECTION_TYPES.do || type === BANGUMI_COLLECTION_TYPES.collect;
+  }
+  async moveNoteForFinalStatus(preview, finalCollectionType) {
+    var _a;
+    if (this.settings.storageLayout === BANGUMI_STORAGE_LAYOUTS.flat) {
+      return void 0;
+    }
+    const targetDirectory = (0, import_obsidian8.normalizePath)(
+      this.getTargetDirectory(preview.subjectType, finalCollectionType)
+    );
+    await this.ensureFolder(targetDirectory);
+    const fileName = (_a = preview.file.path.split("/").pop()) != null ? _a : preview.file.name;
+    const targetPath = (0, import_obsidian8.normalizePath)(`${targetDirectory}/${fileName}`);
+    if ((0, import_obsidian8.normalizePath)(preview.file.path) === targetPath) {
+      return void 0;
+    }
+    const existing = this.app.vault.getAbstractFileByPath(targetPath);
+    if (existing instanceof import_obsidian8.TFile && existing !== preview.file) {
+      throw new Error(t("pushMoveTargetExists", { path: targetPath }));
+    }
+    await this.app.vault.rename(preview.file, targetPath);
+    return targetPath;
+  }
+  getTargetDirectory(subjectTypeValue, collectionType) {
+    const root = this.settings.syncDirectory;
+    const subjectType = subjectTypeLabel(subjectTypeValue);
+    const collectionStatus = collectionStatusLabel(collectionType);
+    switch (this.settings.storageLayout) {
+      case BANGUMI_STORAGE_LAYOUTS.subjectThenCollection:
+        return `${root}/${subjectType}/${collectionStatus}`;
+      case BANGUMI_STORAGE_LAYOUTS.collectionThenSubject:
+        return `${root}/${collectionStatus}/${subjectType}`;
+      case BANGUMI_STORAGE_LAYOUTS.flat:
+      default:
+        return root;
+    }
+  }
+  async ensureFolder(path) {
+    const parts = path.split("/").filter(Boolean);
+    let current = "";
+    for (const part of parts) {
+      current = current ? `${current}/${part}` : part;
+      if (!this.app.vault.getAbstractFileByPath(current)) {
+        await this.app.vault.createFolder(current);
+      }
+    }
   }
   fetchAllSubjectEpisodeCollections(subjectId) {
     return this.client.getAllSubjectEpisodeCollections(subjectId);
@@ -2890,6 +3076,642 @@ ${existingContent}`;
   }
 };
 
+// src/progress-board-view.ts
+var import_obsidian11 = require("obsidian");
+
+// src/sync/progress-board-service.ts
+var import_obsidian10 = require("obsidian");
+var ProgressBoardService = class {
+  constructor(app, syncDirectory) {
+    this.app = app;
+    this.syncDirectory = syncDirectory;
+  }
+  listDoingItems() {
+    var _a;
+    const directory = (0, import_obsidian10.normalizePath)(this.syncDirectory || "Bangumi");
+    const items = [];
+    for (const file of this.app.vault.getMarkdownFiles()) {
+      if (!this.isInsideDirectory(file, directory)) {
+        continue;
+      }
+      const frontmatter = (_a = this.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter;
+      if (typeof frontmatter !== "object" || frontmatter === null) {
+        continue;
+      }
+      const values = frontmatter;
+      if (values.status !== "do") {
+        continue;
+      }
+      const subjectId = Number(values.bangumi_id);
+      if (!Number.isInteger(subjectId) || subjectId <= 0) {
+        continue;
+      }
+      items.push({
+        file,
+        path: file.path,
+        subjectId,
+        title: this.readString(values.title) || file.basename,
+        type: this.readString(values.type),
+        status: "do",
+        progressDone: this.readNumber(values.progress_done),
+        epsTotal: this.readNumber(values.eps_total),
+        rating: this.readString(values.rating)
+      });
+    }
+    return items.sort((left, right) => left.title.localeCompare(right.title));
+  }
+  isInsideDirectory(file, directory) {
+    var _a;
+    return file.path.startsWith(`${directory}/`) || ((_a = file.parent) == null ? void 0 : _a.path) === directory;
+  }
+  readString(value) {
+    if (typeof value === "string") {
+      return value;
+    }
+    if (typeof value === "number") {
+      return String(value);
+    }
+    return "";
+  }
+  readNumber(value) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+};
+
+// src/progress-board-view.ts
+var VIEW_TYPE_BANGUMI_BOARD = "bangumi-progress-board";
+var BOARD_TYPE_FILTERS = ["all", "anime", "book", "music", "game", "real"];
+var BOARD_STATUS_OPTIONS = [
+  { type: BANGUMI_COLLECTION_TYPES.wish, label: "wish" },
+  { type: BANGUMI_COLLECTION_TYPES.do, label: "do" },
+  { type: BANGUMI_COLLECTION_TYPES.collect, label: "collect" },
+  { type: BANGUMI_COLLECTION_TYPES.onHold, label: "on_hold" },
+  { type: BANGUMI_COLLECTION_TYPES.dropped, label: "dropped" }
+];
+var ProgressBoardView = class extends import_obsidian11.ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    this.plugin = plugin;
+    this.items = [];
+    this.selectedItem = null;
+    this.episodes = [];
+    this.remoteStatus = null;
+    this.remoteComment = "";
+    this.loading = false;
+    this.selectedType = "anime";
+  }
+  getViewType() {
+    return VIEW_TYPE_BANGUMI_BOARD;
+  }
+  getDisplayText() {
+    return t("boardTitle");
+  }
+  getIcon() {
+    return "layout-grid";
+  }
+  async onOpen() {
+    this.refreshList();
+  }
+  async onClose() {
+    this.contentEl.empty();
+  }
+  refreshList() {
+    this.items = new ProgressBoardService(
+      this.app,
+      this.plugin.settings.syncDirectory
+    ).listDoingItems();
+    this.selectedItem = null;
+    this.episodes = [];
+    this.remoteStatus = null;
+    this.remoteComment = "";
+    this.renderList();
+  }
+  renderList() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("bangumi-note-board");
+    new import_obsidian11.Setting(contentEl).setName(t("boardTitle")).addDropdown((dropdown) => {
+      for (const type of BOARD_TYPE_FILTERS) {
+        dropdown.addOption(type, this.getTypeFilterLabel(type));
+      }
+      dropdown.setValue(this.selectedType).onChange((value) => {
+        this.selectedType = this.normalizeTypeFilter(value);
+        this.renderList();
+      });
+    }).addButton(
+      (button) => button.setButtonText(t("boardRefreshList")).onClick(() => this.refreshList())
+    );
+    const visibleItems = this.getVisibleItems();
+    if (visibleItems.length === 0) {
+      contentEl.createDiv({
+        cls: "bangumi-note-board-empty",
+        text: this.items.length === 0 ? t("boardEmpty") : t("boardFilterEmpty")
+      });
+      return;
+    }
+    const listEl = contentEl.createDiv({ cls: "bangumi-note-board-list" });
+    for (const item of visibleItems) {
+      const button = listEl.createEl("button", {
+        cls: "bangumi-note-board-item"
+      });
+      button.type = "button";
+      const titleRow = button.createDiv({
+        cls: "bangumi-note-board-item-title-row"
+      });
+      titleRow.createDiv({
+        cls: "bangumi-note-board-item-title",
+        text: item.title
+      });
+      this.renderTypeBadge(titleRow, item.type);
+      button.addEventListener("click", () => {
+        void this.openItem(item);
+      });
+    }
+  }
+  async openItem(item) {
+    if (!this.plugin.settings.accessToken) {
+      new import_obsidian11.Notice(t("noToken"));
+      return;
+    }
+    this.selectedItem = item;
+    this.loading = true;
+    this.renderDetail();
+    try {
+      await this.loadItemEpisodes(item);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("unknownError");
+      new import_obsidian11.Notice(t("boardLoadFailed", { message }));
+      this.episodes = [];
+      this.remoteStatus = null;
+    } finally {
+      this.loading = false;
+      this.renderDetail();
+    }
+  }
+  getVisibleItems() {
+    if (this.selectedType === "all") {
+      return this.items;
+    }
+    return this.items.filter((item) => item.type === this.selectedType);
+  }
+  getTypeFilterLabel(type) {
+    return type === "all" ? t("boardTypeAll") : type;
+  }
+  normalizeTypeFilter(value) {
+    return BOARD_TYPE_FILTERS.includes(value) ? value : "all";
+  }
+  async loadItemEpisodes(item) {
+    var _a;
+    const client = this.plugin.getBangumiClient();
+    const username = this.plugin.settings.username || (await client.getMe()).username;
+    const [collection, episodeCollections] = await Promise.all([
+      client.getSubjectCollection(item.subjectId, username),
+      client.getAllSubjectEpisodeCollections(item.subjectId)
+    ]);
+    this.remoteStatus = collection.type;
+    this.remoteComment = (_a = collection.comment) != null ? _a : "";
+    this.episodes = this.toBoardEpisodes(episodeCollections);
+  }
+  renderDetail() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("bangumi-note-board");
+    const item = this.selectedItem;
+    if (!item) {
+      this.renderList();
+      return;
+    }
+    new import_obsidian11.Setting(contentEl).setName(item.title).addButton(
+      (button) => button.setButtonText(t("boardBackToList")).onClick(() => this.renderList())
+    ).addButton(
+      (button) => button.setButtonText(t("boardRefreshItem")).onClick(() => {
+        void this.openItem(item);
+      })
+    );
+    if (this.loading) {
+      contentEl.createDiv({
+        cls: "bangumi-note-board-empty",
+        text: t("boardLoading")
+      });
+      return;
+    }
+    new import_obsidian11.Setting(contentEl).setName(t("boardStatus")).addDropdown((dropdown) => {
+      var _a;
+      for (const option of BOARD_STATUS_OPTIONS) {
+        dropdown.addOption(String(option.type), option.label);
+      }
+      dropdown.setValue(String((_a = this.remoteStatus) != null ? _a : BANGUMI_COLLECTION_TYPES.do)).onChange((value) => {
+        void this.changeStatus(Number(value));
+      });
+    });
+    if (this.episodes.length === 0) {
+      contentEl.createDiv({
+        cls: "bangumi-note-board-empty",
+        text: t("boardNoEpisodes")
+      });
+      return;
+    }
+    contentEl.createDiv({
+      cls: "bangumi-note-board-progress",
+      text: t("boardProgress", {
+        done: this.countLocalDone(),
+        total: this.episodes.length
+      })
+    });
+    const gridEl = contentEl.createDiv({ cls: "bangumi-note-board-grid" });
+    for (const episode of this.episodes) {
+      const cell = gridEl.createEl("button", {
+        cls: `bangumi-note-board-cell${episode.localChecked ? " is-done" : ""}${episode.localChecked !== episode.remoteChecked ? " is-changed" : ""}`,
+        text: `EP${episode.sort}`
+      });
+      cell.type = "button";
+      cell.title = this.renderEpisodeTitle(episode);
+      cell.addEventListener("click", () => {
+        episode.localChecked = !episode.localChecked;
+        this.renderDetail();
+      });
+    }
+    const summary = this.getChanges();
+    contentEl.createDiv({
+      cls: "bangumi-note-board-summary",
+      text: t("boardChangeSummary", {
+        done: summary.markDone.length,
+        undone: summary.markUndone.length
+      })
+    });
+    new import_obsidian11.Setting(contentEl).addButton(
+      (button) => button.setButtonText(t("boardDiscardChanges")).onClick(() => {
+        for (const episode of this.episodes) {
+          episode.localChecked = episode.remoteChecked;
+        }
+        this.renderDetail();
+      })
+    ).addButton(
+      (button) => button.setButtonText(t("boardPushChanges")).setCta().setDisabled(!this.canPush() || this.getChangeCount() === 0).onClick(() => {
+        void this.pushChanges();
+      })
+    );
+    if (!this.canPush()) {
+      contentEl.createDiv({
+        cls: "bangumi-note-board-warning",
+        text: t("boardPushUnsupported")
+      });
+    }
+  }
+  async pushChanges() {
+    if (!this.plugin.settings.enableWriteBack) {
+      new import_obsidian11.Notice(t("pushWriteBackDisabled"));
+      return;
+    }
+    const item = this.selectedItem;
+    if (!item) {
+      return;
+    }
+    const changes = this.getChanges();
+    if (changes.markDone.length === 0 && changes.markUndone.length === 0) {
+      new import_obsidian11.Notice(t("pushNoChanges"));
+      return;
+    }
+    const confirmed = await this.confirmPush(changes);
+    if (!confirmed) {
+      new import_obsidian11.Notice(t("pushCancelled"));
+      return;
+    }
+    try {
+      const client = this.plugin.getBangumiClient();
+      new import_obsidian11.Notice(t("pushStarted"));
+      if (changes.markDone.length > 0) {
+        await client.patchSubjectEpisodeCollections({
+          subjectId: item.subjectId,
+          episodeIds: changes.markDone.map((episode) => episode.id),
+          type: 2
+        });
+      }
+      if (changes.markUndone.length > 0) {
+        await client.patchSubjectEpisodeCollections({
+          subjectId: item.subjectId,
+          episodeIds: changes.markUndone.map((episode) => episode.id),
+          type: 0
+        });
+      }
+      await this.reloadAndVerify(item, changes);
+      this.updateListProgress(item);
+      new import_obsidian11.Notice(
+        t("boardPushFinished", {
+          episodes: changes.markDone.length + changes.markUndone.length
+        })
+      );
+      this.renderDetail();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("unknownError");
+      new import_obsidian11.Notice(t("pushFailed", { message }));
+      console.error(error);
+    }
+  }
+  async changeStatus(nextType) {
+    var _a;
+    if (!this.plugin.settings.enableWriteBack) {
+      new import_obsidian11.Notice(t("pushWriteBackDisabled"));
+      this.renderDetail();
+      return;
+    }
+    const item = this.selectedItem;
+    if (!item || this.remoteStatus === null || nextType === this.remoteStatus) {
+      this.renderDetail();
+      return;
+    }
+    const comment = await this.promptStatusComment(nextType);
+    if (comment === null) {
+      this.renderDetail();
+      return;
+    }
+    try {
+      const client = this.plugin.getBangumiClient();
+      new import_obsidian11.Notice(t("boardStatusStarted"));
+      await client.patchSubjectCollection({
+        subjectId: item.subjectId,
+        type: nextType,
+        comment
+      });
+      const username = this.plugin.settings.username || (await client.getMe()).username;
+      const remote = await client.getSubjectCollection(item.subjectId, username);
+      if (remote.type !== nextType) {
+        throw new Error(
+          t("pushStatusVerifyFailed", {
+            expected: collectionStatusLabel(nextType),
+            actual: collectionStatusLabel(remote.type)
+          })
+        );
+      }
+      this.remoteStatus = remote.type;
+      this.remoteComment = (_a = remote.comment) != null ? _a : comment;
+      await this.updateLocalStatus(item, remote.type, this.remoteComment);
+      await this.moveLocalNote(item, remote.type);
+      new import_obsidian11.Notice(
+        t("boardStatusFinished", {
+          status: collectionStatusLabel(remote.type)
+        })
+      );
+      if (remote.type !== BANGUMI_COLLECTION_TYPES.do) {
+        this.items = this.items.filter(
+          (entry) => entry.subjectId !== item.subjectId
+        );
+        this.selectedItem = null;
+        this.episodes = [];
+        this.renderList();
+      } else {
+        item.status = "do";
+        this.renderDetail();
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("unknownError");
+      new import_obsidian11.Notice(t("pushFailed", { message }));
+      console.error(error);
+      this.renderDetail();
+    }
+  }
+  promptStatusComment(nextType) {
+    return new Promise((resolve) => {
+      new BoardStatusCommentModal(
+        this.app,
+        collectionStatusLabel(nextType),
+        this.remoteComment,
+        resolve
+      ).open();
+    });
+  }
+  async updateLocalStatus(item, status, comment) {
+    await this.app.fileManager.processFrontMatter(item.file, (frontmatter) => {
+      frontmatter.status = collectionStatusLabel(status);
+      frontmatter.comment = comment;
+    });
+    item.status = collectionStatusLabel(status);
+  }
+  async moveLocalNote(item, status) {
+    var _a;
+    if (this.plugin.settings.storageLayout === BANGUMI_STORAGE_LAYOUTS.flat) {
+      return;
+    }
+    const targetDirectory = (0, import_obsidian11.normalizePath)(
+      this.getTargetDirectory(item.type, collectionStatusLabel(status))
+    );
+    await this.ensureFolder(targetDirectory);
+    const fileName = (_a = item.file.path.split("/").pop()) != null ? _a : item.file.name;
+    const targetPath = (0, import_obsidian11.normalizePath)(`${targetDirectory}/${fileName}`);
+    if ((0, import_obsidian11.normalizePath)(item.file.path) === targetPath) {
+      return;
+    }
+    const existing = this.app.vault.getAbstractFileByPath(targetPath);
+    if (existing) {
+      throw new Error(t("pushMoveTargetExists", { path: targetPath }));
+    }
+    await this.app.vault.rename(item.file, targetPath);
+    item.path = targetPath;
+  }
+  getTargetDirectory(type, status) {
+    const root = this.plugin.settings.syncDirectory;
+    switch (this.plugin.settings.storageLayout) {
+      case BANGUMI_STORAGE_LAYOUTS.subjectThenCollection:
+        return `${root}/${type}/${status}`;
+      case BANGUMI_STORAGE_LAYOUTS.collectionThenSubject:
+        return `${root}/${status}/${type}`;
+      case BANGUMI_STORAGE_LAYOUTS.flat:
+      default:
+        return root;
+    }
+  }
+  async ensureFolder(path) {
+    const parts = path.split("/").filter(Boolean);
+    let current = "";
+    for (const part of parts) {
+      current = current ? `${current}/${part}` : part;
+      if (!this.app.vault.getAbstractFileByPath(current)) {
+        await this.app.vault.createFolder(current);
+      }
+    }
+  }
+  async reloadAndVerify(item, changes) {
+    const client = this.plugin.getBangumiClient();
+    const episodeCollections = await client.getAllSubjectEpisodeCollections(
+      item.subjectId
+    );
+    const nextEpisodes = this.toBoardEpisodes(episodeCollections);
+    const remoteMap = new Map(
+      nextEpisodes.map((episode) => [episode.id, episode.remoteChecked])
+    );
+    const failedIds = [];
+    for (const episode of changes.markDone) {
+      if (remoteMap.get(episode.id) !== true) failedIds.push(episode.id);
+    }
+    for (const episode of changes.markUndone) {
+      if (remoteMap.get(episode.id) !== false) failedIds.push(episode.id);
+    }
+    if (failedIds.length > 0) {
+      throw new Error(t("pushEpisodeVerifyFailed", { ids: failedIds.join(", ") }));
+    }
+    this.episodes = nextEpisodes;
+  }
+  updateListProgress(item) {
+    const current = this.items.find((entry) => entry.subjectId === item.subjectId);
+    if (current) {
+      current.progressDone = this.countLocalDone();
+      current.epsTotal = this.episodes.length;
+    }
+    item.progressDone = this.countLocalDone();
+    item.epsTotal = this.episodes.length;
+  }
+  toBoardEpisodes(episodeCollections) {
+    return episodeCollections.filter((item) => item.episode !== null).sort((left, right) => {
+      var _a, _b, _c, _d;
+      const leftSort = (_b = (_a = left.episode) == null ? void 0 : _a.sort) != null ? _b : 0;
+      const rightSort = (_d = (_c = right.episode) == null ? void 0 : _c.sort) != null ? _d : 0;
+      return leftSort - rightSort;
+    }).map((item) => {
+      var _a;
+      const episode = item.episode;
+      const checked = item.type > 0;
+      return {
+        id: episode.id,
+        sort: episode.sort,
+        title: episode.name_cn || episode.name || "",
+        airdate: (_a = episode.airdate) != null ? _a : "",
+        remoteChecked: checked,
+        localChecked: checked
+      };
+    });
+  }
+  getChanges() {
+    return {
+      markDone: this.episodes.filter(
+        (episode) => episode.localChecked && !episode.remoteChecked
+      ),
+      markUndone: this.episodes.filter(
+        (episode) => !episode.localChecked && episode.remoteChecked
+      )
+    };
+  }
+  getChangeCount() {
+    const changes = this.getChanges();
+    return changes.markDone.length + changes.markUndone.length;
+  }
+  canPush() {
+    return this.remoteStatus === BANGUMI_COLLECTION_TYPES.do || this.remoteStatus === BANGUMI_COLLECTION_TYPES.collect;
+  }
+  countLocalDone() {
+    return this.episodes.filter((episode) => episode.localChecked).length;
+  }
+  renderTypeBadge(parent, type) {
+    const label = type || "unknown";
+    parent.createSpan({
+      cls: `bangumi-note-board-type-badge is-${this.toBadgeClass(label)}`,
+      text: label
+    });
+  }
+  toBadgeClass(value) {
+    return value.replace(/[^a-z0-9_-]/gi, "-").toLowerCase();
+  }
+  renderEpisodeTitle(episode) {
+    return [
+      `EP${episode.sort}`,
+      episode.title,
+      episode.airdate,
+      `bgm-ep:${episode.id}`
+    ].filter(Boolean).join(" \xB7 ");
+  }
+  confirmPush(changes) {
+    return new Promise((resolve) => {
+      new BoardPushConfirmModal(this.app, changes, resolve).open();
+    });
+  }
+};
+var BoardPushConfirmModal = class extends import_obsidian11.Modal {
+  constructor(app, changes, resolve) {
+    super(app);
+    this.changes = changes;
+    this.resolve = resolve;
+    this.resolved = false;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    new import_obsidian11.Setting(contentEl).setName(t("pushConfirmTitle")).setHeading();
+    contentEl.createEl("p", { text: t("pushConfirmDesc") });
+    const lines = [
+      `Mark done: ${this.changes.markDone.length}`,
+      ...this.changes.markDone.map(
+        (episode) => `  - EP${episode.sort} ${episode.title} (bgm-ep:${episode.id})`
+      ),
+      `Mark undone: ${this.changes.markUndone.length}`,
+      ...this.changes.markUndone.map(
+        (episode) => `  - EP${episode.sort} ${episode.title} (bgm-ep:${episode.id})`
+      )
+    ];
+    const previewEl = contentEl.createEl("pre", { text: lines.join("\n") });
+    previewEl.addClass("bangumi-note-push-preview");
+    new import_obsidian11.Setting(contentEl).addButton(
+      (button) => button.setButtonText(t("pushCancel")).onClick(() => {
+        this.finish(false);
+        this.close();
+      })
+    ).addButton(
+      (button) => button.setButtonText(t("pushConfirm")).setCta().onClick(() => {
+        this.finish(true);
+        this.close();
+      })
+    );
+  }
+  onClose() {
+    this.finish(false);
+    this.contentEl.empty();
+  }
+  finish(confirmed) {
+    if (this.resolved) return;
+    this.resolved = true;
+    this.resolve(confirmed);
+  }
+};
+var BoardStatusCommentModal = class extends import_obsidian11.Modal {
+  constructor(app, status, initialComment, resolve) {
+    super(app);
+    this.status = status;
+    this.initialComment = initialComment;
+    this.resolve = resolve;
+    this.resolved = false;
+    this.textarea = null;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    new import_obsidian11.Setting(contentEl).setName(t("boardStatusCommentTitle", { status: this.status })).setHeading();
+    contentEl.createEl("p", { text: t("boardStatusCommentDesc") });
+    this.textarea = contentEl.createEl("textarea");
+    this.textarea.value = this.initialComment;
+    this.textarea.addClass("bangumi-note-board-comment-textarea");
+    new import_obsidian11.Setting(contentEl).addButton(
+      (button) => button.setButtonText(t("pushCancel")).onClick(() => {
+        this.finish(null);
+        this.close();
+      })
+    ).addButton(
+      (button) => button.setButtonText(t("pushConfirm")).setCta().onClick(() => {
+        var _a, _b;
+        this.finish((_b = (_a = this.textarea) == null ? void 0 : _a.value) != null ? _b : "");
+        this.close();
+      })
+    );
+  }
+  onClose() {
+    this.finish(null);
+    this.contentEl.empty();
+  }
+  finish(comment) {
+    if (this.resolved) return;
+    this.resolved = true;
+    this.resolve(comment);
+  }
+};
+
 // src/main.ts
 var ACCESS_TOKEN_CREATE_URL = "https://next.bgm.tv/demo/access-token/create";
 var TEMPLATE_VARIABLES_FILE_NAME = "Template Variables.md";
@@ -3030,7 +3852,7 @@ cover: {{cover_yaml}}
 ---
 \`\`\`
 `;
-var BangumiSyncPlugin = class extends import_obsidian10.Plugin {
+var BangumiSyncPlugin = class extends import_obsidian12.Plugin {
   constructor() {
     super(...arguments);
     this.cachedClient = null;
@@ -3050,11 +3872,18 @@ var BangumiSyncPlugin = class extends import_obsidian10.Plugin {
   }
   async onload() {
     await this.loadSettings();
+    this.registerView(
+      VIEW_TYPE_BANGUMI_BOARD,
+      (leaf) => new ProgressBoardView(leaf, this)
+    );
     this.addRibbonIcon("refresh-cw", t("syncRibbon"), () => {
       void this.syncNow();
     });
     this.addRibbonIcon("calendar-days", t("updateOnAirNote"), () => {
       void this.updateOnAirNote();
+    });
+    this.addRibbonIcon("layout-grid", t("openBoard"), () => {
+      void this.openProgressBoard();
     });
     this.addCommand({
       id: "sync-now",
@@ -3077,7 +3906,37 @@ var BangumiSyncPlugin = class extends import_obsidian10.Plugin {
         void this.updateOnAirNote();
       }
     });
+    this.addCommand({
+      id: "open-board",
+      name: t("openBoard"),
+      callback: () => {
+        void this.openProgressBoard();
+      }
+    });
+    this.addCommand({
+      id: "push-current-note-to-bangumi",
+      name: t("pushCurrentNote"),
+      callback: () => {
+        void this.pushCurrentNoteToBangumi();
+      }
+    });
     this.addSettingTab(new BangumiSyncSettingTab(this.app, this));
+  }
+  async openProgressBoard() {
+    var _a;
+    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_BANGUMI_BOARD);
+    let leaf = (_a = leaves[0]) != null ? _a : null;
+    if (!leaf) {
+      leaf = this.app.workspace.getRightLeaf(false);
+      if (!leaf) {
+        return;
+      }
+      await leaf.setViewState({
+        type: VIEW_TYPE_BANGUMI_BOARD,
+        active: true
+      });
+    }
+    this.app.workspace.revealLeaf(leaf);
   }
   async loadSettings() {
     const loadedData = await this.loadData();
@@ -3104,56 +3963,56 @@ var BangumiSyncPlugin = class extends import_obsidian10.Plugin {
   }
   async openTemplateVariablesDoc() {
     try {
-      const directory = (0, import_obsidian10.normalizePath)(this.settings.syncDirectory || "Bangumi");
+      const directory = (0, import_obsidian12.normalizePath)(this.settings.syncDirectory || "Bangumi");
       await ensureFolder(this.app, directory);
-      const path = (0, import_obsidian10.normalizePath)(`${directory}/${TEMPLATE_VARIABLES_FILE_NAME}`);
+      const path = (0, import_obsidian12.normalizePath)(`${directory}/${TEMPLATE_VARIABLES_FILE_NAME}`);
       const existing = this.app.vault.getAbstractFileByPath(path);
-      const file = existing instanceof import_obsidian10.TFile ? existing : await this.app.vault.create(path, TEMPLATE_VARIABLES_CONTENT);
+      const file = existing instanceof import_obsidian12.TFile ? existing : await this.app.vault.create(path, TEMPLATE_VARIABLES_CONTENT);
       await this.app.workspace.getLeaf(false).openFile(file);
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian10.Notice(t("templateVariablesDocFailed", { message }));
+      new import_obsidian12.Notice(t("templateVariablesDocFailed", { message }));
       console.error(error);
     }
   }
   openAccessTokenPage() {
     window.open(ACCESS_TOKEN_CREATE_URL);
-    new import_obsidian10.Notice(t("tokenPageOpened"));
+    new import_obsidian12.Notice(t("tokenPageOpened"));
   }
   async fillAccessTokenFromClipboard() {
     try {
       const text = await navigator.clipboard.readText();
       const token = this.normalizeAccessToken(text);
       if (!token) {
-        new import_obsidian10.Notice(t("clipboardTokenMissing"));
+        new import_obsidian12.Notice(t("clipboardTokenMissing"));
         return;
       }
       this.settings.accessToken = token;
       await this.saveSettings();
-      new import_obsidian10.Notice(t("clipboardTokenFilled"));
+      new import_obsidian12.Notice(t("clipboardTokenFilled"));
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian10.Notice(t("clipboardTokenFailed", { message }));
+      new import_obsidian12.Notice(t("clipboardTokenFailed", { message }));
       console.error(error);
     }
   }
   async testAccessToken() {
     if (!this.settings.accessToken) {
-      new import_obsidian10.Notice(t("noToken"));
+      new import_obsidian12.Notice(t("noToken"));
       return;
     }
     try {
       const user = await this.getBangumiClient().getMe();
-      new import_obsidian10.Notice(t("testTokenSucceeded", { username: user.username }));
+      new import_obsidian12.Notice(t("testTokenSucceeded", { username: user.username }));
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian10.Notice(t("testTokenFailed", { message }));
+      new import_obsidian12.Notice(t("testTokenFailed", { message }));
       console.error(error);
     }
   }
   openSyncOneSubjectModal() {
     if (!this.settings.accessToken) {
-      new import_obsidian10.Notice(t("noToken"));
+      new import_obsidian12.Notice(t("noToken"));
       return;
     }
     const client = this.getBangumiClient();
@@ -3190,12 +4049,12 @@ var BangumiSyncPlugin = class extends import_obsidian10.Plugin {
         );
         const collectionType = await this.chooseLocalCollectionType(subject);
         if (collectionType === null) {
-          new import_obsidian10.Notice(t("syncOneSubjectCancelled"));
+          new import_obsidian12.Notice(t("syncOneSubjectCancelled"));
           return;
         }
         collection = this.createLocalCollection(subject, collectionType);
       }
-      new import_obsidian10.Notice(
+      new import_obsidian12.Notice(
         t("syncOneSubjectStarted", {
           title: this.getSubjectTitle(collection.subject)
         })
@@ -3206,18 +4065,18 @@ var BangumiSyncPlugin = class extends import_obsidian10.Plugin {
         () => this.getBangumiClient()
       ).syncSubjectCollection(collection);
       const title = this.getSubjectTitle(collection.subject);
-      new import_obsidian10.Notice(
+      new import_obsidian12.Notice(
         t(result.changed ? "syncOneSubjectUpdated" : "syncOneSubjectUnchanged", {
           title,
           path: result.path
         })
       );
       if (result.episodeSyncError) {
-        new import_obsidian10.Notice(t("syncOneSubjectProgressMissing"));
+        new import_obsidian12.Notice(t("syncOneSubjectProgressMissing"));
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian10.Notice(t("syncOneSubjectFailed", { message }));
+      new import_obsidian12.Notice(t("syncOneSubjectFailed", { message }));
       console.error(error);
     }
   }
@@ -3346,11 +4205,11 @@ var BangumiSyncPlugin = class extends import_obsidian10.Plugin {
   }
   async pushCurrentNoteToBangumi() {
     if (!this.settings.enableWriteBack) {
-      new import_obsidian10.Notice(t("pushWriteBackDisabled"));
+      new import_obsidian12.Notice(t("pushWriteBackDisabled"));
       return;
     }
     if (!this.settings.accessToken) {
-      new import_obsidian10.Notice(t("noToken"));
+      new import_obsidian12.Notice(t("noToken"));
       return;
     }
     try {
@@ -3361,7 +4220,7 @@ var BangumiSyncPlugin = class extends import_obsidian10.Plugin {
       );
       const preview = await service.prepareCurrentNotePush();
       if (preview.unknownEpisodeIds.length > 0) {
-        new import_obsidian10.Notice(
+        new import_obsidian12.Notice(
           t("pushUnknownEpisodes", {
             ids: preview.unknownEpisodeIds.join(", ")
           })
@@ -3369,26 +4228,27 @@ var BangumiSyncPlugin = class extends import_obsidian10.Plugin {
         return;
       }
       if (!service.hasChanges(preview)) {
-        new import_obsidian10.Notice(t("pushNoChanges"));
+        new import_obsidian12.Notice(t("pushNoChanges"));
         return;
       }
       const confirmed = await this.confirmPush(preview);
       if (!confirmed) {
-        new import_obsidian10.Notice(t("pushCancelled"));
+        new import_obsidian12.Notice(t("pushCancelled"));
         return;
       }
-      new import_obsidian10.Notice(t("pushStarted"));
+      new import_obsidian12.Notice(t("pushStarted"));
       const result = await service.executePreparedPush(preview);
-      new import_obsidian10.Notice(
+      new import_obsidian12.Notice(
         t("pushFinished", {
           episodes: result.changedEpisodes,
-          statusChanged: result.statusChanged ? "yes" : "no",
-          resync: result.shouldResync ? t("pushFinishedResync") : ""
+          finalStatus: result.finalStatus,
+          resync: result.shouldResync ? t("pushFinishedResync") : "",
+          moved: result.movedPath ? t("pushMoved", { path: result.movedPath }) : ""
         })
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian10.Notice(t("pushFailed", { message }));
+      new import_obsidian12.Notice(t("pushFailed", { message }));
       console.error(error);
     }
   }
@@ -3399,10 +4259,10 @@ var BangumiSyncPlugin = class extends import_obsidian10.Plugin {
         this.settings,
         () => this.getBangumiClient()
       ).update();
-      new import_obsidian10.Notice(result.message);
+      new import_obsidian12.Notice(result.message);
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian10.Notice(t("onAirNoteFailed", { message }));
+      new import_obsidian12.Notice(t("onAirNoteFailed", { message }));
       console.error(error);
     }
   }
@@ -3420,7 +4280,7 @@ var BangumiSyncPlugin = class extends import_obsidian10.Plugin {
       ).sync({
         onProgress: (progress) => {
           if (progress.stage === "start" || progress.stage === "summary" || progress.stage === "warning") {
-            new import_obsidian10.Notice(progress.message);
+            new import_obsidian12.Notice(progress.message);
           }
         }
       });
@@ -3432,22 +4292,22 @@ var BangumiSyncPlugin = class extends import_obsidian10.Plugin {
             this.settings,
             () => this.getBangumiClient()
           ).update();
-          new import_obsidian10.Notice(onAirResult.message);
+          new import_obsidian12.Notice(onAirResult.message);
         } catch (error) {
           const message = error instanceof Error ? error.message : t("unknownError");
-          new import_obsidian10.Notice(t("onAirNoteFailed", { message }));
+          new import_obsidian12.Notice(t("onAirNoteFailed", { message }));
           console.error(error);
         }
       }
-      new import_obsidian10.Notice(result.message);
+      new import_obsidian12.Notice(result.message);
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian10.Notice(t("syncFailed", { message }));
+      new import_obsidian12.Notice(t("syncFailed", { message }));
       console.error(error);
     }
   }
 };
-var PushConfirmModal = class extends import_obsidian10.Modal {
+var PushConfirmModal = class extends import_obsidian12.Modal {
   constructor(app, preview, resolve) {
     super(app);
     this.preview = preview;
@@ -3457,13 +4317,13 @@ var PushConfirmModal = class extends import_obsidian10.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
-    new import_obsidian10.Setting(contentEl).setName(t("pushConfirmTitle")).setHeading();
+    new import_obsidian12.Setting(contentEl).setName(t("pushConfirmTitle")).setHeading();
     contentEl.createEl("p", { text: t("pushConfirmDesc") });
     const previewEl = contentEl.createEl("pre", {
       text: renderPushPreview(this.preview)
     });
     previewEl.addClass("bangumi-note-push-preview");
-    new import_obsidian10.Setting(contentEl).addButton(
+    new import_obsidian12.Setting(contentEl).addButton(
       (button) => button.setButtonText(t("pushCancel")).onClick(() => {
         this.finish(false);
         this.close();
@@ -3487,7 +4347,7 @@ var PushConfirmModal = class extends import_obsidian10.Modal {
     this.resolve(confirmed);
   }
 };
-var SubjectLookupModal = class extends import_obsidian10.SuggestModal {
+var SubjectLookupModal = class extends import_obsidian12.SuggestModal {
   constructor(app, client, parseSubjectId, onChoose) {
     super(app);
     this.client = client;
@@ -3515,7 +4375,7 @@ var SubjectLookupModal = class extends import_obsidian10.SuggestModal {
       return page.data.map((subject) => ({ kind: "subject", subject }));
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian10.Notice(t("syncOneSubjectFailed", { message }));
+      new import_obsidian12.Notice(t("syncOneSubjectFailed", { message }));
       console.error(error);
       return [];
     }
@@ -3547,7 +4407,7 @@ var SubjectLookupModal = class extends import_obsidian10.SuggestModal {
     this.onChoose(suggestion);
   }
 };
-var CollectionStatusModal = class extends import_obsidian10.SuggestModal {
+var CollectionStatusModal = class extends import_obsidian12.SuggestModal {
   constructor(app, subject, resolve) {
     super(app);
     this.subject = subject;

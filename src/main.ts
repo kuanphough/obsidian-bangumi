@@ -6,6 +6,7 @@ import {
 	Setting,
 	SuggestModal,
 	TFile,
+	WorkspaceLeaf,
 	normalizePath
 } from "obsidian";
 
@@ -35,6 +36,10 @@ import {
 import { SyncService } from "./sync/sync-service";
 import { PushPreview, PushService } from "./sync/push-service";
 import { OnAirService } from "./sync/on-air-service";
+import {
+	ProgressBoardView,
+	VIEW_TYPE_BANGUMI_BOARD
+} from "./progress-board-view";
 
 const ACCESS_TOKEN_CREATE_URL = "https://next.bgm.tv/demo/access-token/create";
 const TEMPLATE_VARIABLES_FILE_NAME = "Template Variables.md";
@@ -201,12 +206,21 @@ export default class BangumiSyncPlugin extends Plugin {
 	async onload(): Promise<void> {
 		await this.loadSettings();
 
+		this.registerView(
+			VIEW_TYPE_BANGUMI_BOARD,
+			(leaf) => new ProgressBoardView(leaf, this)
+		);
+
 		this.addRibbonIcon("refresh-cw", t("syncRibbon"), () => {
 			void this.syncNow();
 		});
 
 		this.addRibbonIcon("calendar-days", t("updateOnAirNote"), () => {
 			void this.updateOnAirNote();
+		});
+
+		this.addRibbonIcon("layout-grid", t("openBoard"), () => {
+			void this.openProgressBoard();
 		});
 
 		this.addCommand({
@@ -233,7 +247,39 @@ export default class BangumiSyncPlugin extends Plugin {
 			}
 		});
 
+		this.addCommand({
+			id: "open-board",
+			name: t("openBoard"),
+			callback: () => {
+				void this.openProgressBoard();
+			}
+		});
+
+		this.addCommand({
+			id: "push-current-note-to-bangumi",
+			name: t("pushCurrentNote"),
+			callback: () => {
+				void this.pushCurrentNoteToBangumi();
+			}
+		});
+
 		this.addSettingTab(new BangumiSyncSettingTab(this.app, this));
+	}
+
+	async openProgressBoard(): Promise<void> {
+		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_BANGUMI_BOARD);
+		let leaf: WorkspaceLeaf | null = leaves[0] ?? null;
+		if (!leaf) {
+			leaf = this.app.workspace.getRightLeaf(false);
+			if (!leaf) {
+				return;
+			}
+			await leaf.setViewState({
+				type: VIEW_TYPE_BANGUMI_BOARD,
+				active: true
+			});
+		}
+		this.app.workspace.revealLeaf(leaf);
 	}
 
 	async loadSettings(): Promise<void> {
@@ -616,8 +662,11 @@ export default class BangumiSyncPlugin extends Plugin {
 			new Notice(
 				t("pushFinished", {
 					episodes: result.changedEpisodes,
-					statusChanged: result.statusChanged ? "yes" : "no",
-					resync: result.shouldResync ? t("pushFinishedResync") : ""
+					finalStatus: result.finalStatus,
+					resync: result.shouldResync ? t("pushFinishedResync") : "",
+					moved: result.movedPath
+						? t("pushMoved", { path: result.movedPath })
+						: ""
 				})
 			);
 		} catch (error) {
@@ -914,4 +963,3 @@ function renderPushPreview(preview: PushPreview): string {
 
 	return lines.join("\n");
 }
-

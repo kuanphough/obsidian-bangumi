@@ -22,3 +22,143 @@
 	max-height: 320px;
 	overflow: auto;
 }
+
+.bangumi-note-board {
+	padding: 8px 0;
+}
+
+.bangumi-note-board-empty,
+.bangumi-note-board-warning,
+.bangumi-note-board-progress,
+.bangumi-note-board-summary {
+	color: var(--text-muted);
+	padding: 8px 0;
+}
+
+.bangumi-note-board-warning {
+	color: var(--text-warning);
+}
+
+.bangumi-note-board-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.bangumi-note-board-item {
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	color: var(--text-normal);
+	cursor: pointer;
+	padding: 8px;
+	text-align: left;
+	width: 100%;
+}
+
+.bangumi-note-board-item:hover,
+.bangumi-note-board-item:focus {
+	background: var(--background-modifier-hover);
+}
+
+.bangumi-note-board-item-title-row {
+	align-items: center;
+	display: flex;
+	gap: 8px;
+	justify-content: space-between;
+}
+
+.bangumi-note-board-item-title {
+	flex: 1 1 auto;
+	font-weight: 600;
+	line-height: 1.35;
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.bangumi-note-board-type-badge {
+	background: var(--background-modifier-border);
+	border: 1px solid var(--background-modifier-border-hover);
+	border-radius: 999px;
+	color: var(--text-muted);
+	flex: 0 0 auto;
+	font-size: var(--font-ui-smaller);
+	font-weight: 600;
+	line-height: 1;
+	padding: 4px 7px;
+	text-transform: lowercase;
+}
+
+.bangumi-note-board-type-badge.is-anime {
+	background: rgba(var(--color-blue-rgb), 0.14);
+	border-color: rgba(var(--color-blue-rgb), 0.28);
+	color: var(--color-blue);
+}
+
+.bangumi-note-board-type-badge.is-book {
+	background: rgba(var(--color-green-rgb), 0.14);
+	border-color: rgba(var(--color-green-rgb), 0.28);
+	color: var(--color-green);
+}
+
+.bangumi-note-board-type-badge.is-game {
+	background: rgba(var(--color-orange-rgb), 0.14);
+	border-color: rgba(var(--color-orange-rgb), 0.28);
+	color: var(--color-orange);
+}
+
+.bangumi-note-board-type-badge.is-music {
+	background: rgba(var(--color-purple-rgb), 0.14);
+	border-color: rgba(var(--color-purple-rgb), 0.28);
+	color: var(--color-purple);
+}
+
+.bangumi-note-board-type-badge.is-real {
+	background: rgba(var(--color-cyan-rgb), 0.14);
+	border-color: rgba(var(--color-cyan-rgb), 0.28);
+	color: var(--color-cyan);
+}
+
+.bangumi-note-board-grid {
+	display: grid;
+	gap: 6px;
+	grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+	margin: 10px 0;
+	max-height: 52vh;
+	overflow: auto;
+	padding-right: 2px;
+}
+
+.bangumi-note-board-cell {
+	aspect-ratio: 1.25;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	color: var(--text-muted);
+	cursor: pointer;
+	font-size: var(--font-ui-smaller);
+	font-weight: 600;
+	min-width: 0;
+}
+
+.bangumi-note-board-cell:hover,
+.bangumi-note-board-cell:focus {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.bangumi-note-board-cell.is-done {
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.bangumi-note-board-cell.is-changed {
+	box-shadow: 0 0 0 2px var(--text-accent);
+}
+
+.bangumi-note-board-comment-textarea {
+	box-sizing: border-box;
+	min-height: 120px;
+	width: 100%;
+}

@@ -23,6 +23,32 @@ const EN = {
 	apiUnauthorized:
 		"Bangumi API unauthorized ({{status}}). Check whether the access token is valid or expired.{{detail}}",
 	bangumiSync: "Bangumi Sync",
+	boardBackToList: "Back to list",
+	boardChangeSummary: "Will mark done: {{done}}, mark undone: {{undone}}.",
+	boardDesc: "Manage in-progress Bangumi subjects from synced notes.",
+	boardDiscardChanges: "Discard changes",
+	boardEmpty: "No in-progress Bangumi notes found in the sync directory.",
+	boardFilterEmpty: "No in-progress subjects match this type filter.",
+	boardLoadFailed: "Could not load board item: {{message}}",
+	boardLoading: "Loading episode progress...",
+	boardNoEpisodes: "No episode progress data available.",
+	boardProgress: "{{done}}/{{total}}",
+	boardPushChanges: "Push changes",
+	boardPushFinished:
+		"Bangumi board write-back finished: {{episodes}} episode change(s). Re-sync notes to update Markdown.",
+	boardPushUnsupported:
+		"Episode write-back from the board only supports remote status do or collect.",
+	boardRefreshItem: "Refresh item",
+	boardRefreshList: "Refresh list",
+	boardStatus: "Status",
+	boardStatusCommentDesc:
+		"This comment will be saved to your Bangumi collection together with the status change.",
+	boardStatusCommentTitle: "Comment for {{status}}",
+	boardStatusDesc: "Changing status writes to Bangumi after you confirm a comment.",
+	boardStatusFinished: "Bangumi status changed to {{status}}.",
+	boardStatusStarted: "Writing Bangumi status...",
+	boardTitle: "Bangumi Board",
+	boardTypeAll: "All types",
 	books: "Books",
 	booksDesc: "Sync book, manga, and related reading subjects.",
 	byCollectionStatus: "By collection status",
@@ -114,6 +140,7 @@ const EN = {
 	onAirNoteFailed: "On Air note update failed: {{message}}",
 	onAirNoteUnchanged: "On Air note is unchanged: {{path}}",
 	onAirNoteUpdated: "On Air note updated: {{path}}",
+	openBoard: "Open Bangumi board",
 	openTokenPage: "Open token page",
 	progressStarted: "Bangumi Sync started.",
 	progressUnavailableReport: "Progress content was not fetched",
@@ -127,15 +154,22 @@ const EN = {
 	pushConfirmTitle: "Confirm Bangumi write-back",
 	pushCurrentNote: "Push current note to Bangumi",
 	pushFailed: "Bangumi write-back failed: {{message}}",
+	pushEpisodeVerifyFailed:
+		"Bangumi did not confirm these episode changes after write-back: {{ids}}. Try pushing again later.",
 	pushFinished:
-		"Bangumi write-back finished: {{episodes}} episode change(s), status changed: {{statusChanged}}.{{resync}}",
+		"Bangumi write-back finished: {{episodes}} episode change(s), final status: {{finalStatus}}.{{moved}}{{resync}}",
 	pushFinishedResync: " Re-sync this note to reflect the latest Bangumi status.",
 	pushInvalidNote: "Current note is not a valid Bangumi subject note.",
+	pushMoved: " Moved note to {{path}}.",
+	pushMoveTargetExists:
+		"Write-back succeeded, but the note could not be moved because the target file already exists: {{path}}",
 	pushNoActiveFile: "Open a Bangumi subject note before pushing.",
 	pushNoChanges: "No Bangumi write-back changes detected.",
 	pushStarted: "Pushing current note to Bangumi...",
 	pushStatusUnsupported:
-		"Write-back only supports notes whose status is do or collect.",
+		"Write-back only supports notes whose status is wish, do, collect, on_hold, or dropped.",
+	pushStatusVerifyFailed:
+		"Bangumi did not confirm the status change. Expected {{expected}}, actual {{actual}}.",
 	pushUnknownEpisodes:
 		"Some bgm-ep markers do not belong to this subject. Re-sync this note before pushing: {{ids}}",
 	pushWriteBackDisabled:
@@ -242,6 +276,31 @@ const ZH: Record<LocaleKey, string> = {
 	apiUnauthorized:
 		"Bangumi API 未授权（{{status}}）。请检查 access token 是否有效或已过期。{{detail}}",
 	bangumiSync: "Bangumi Sync",
+	boardBackToList: "返回列表",
+	boardChangeSummary: "将标记完成：{{done}}，取消完成：{{undone}}。",
+	boardDesc: "集中管理已同步笔记里的进行中 Bangumi 条目。",
+	boardDiscardChanges: "放弃修改",
+	boardEmpty: "同步目录里没有找到进行中的 Bangumi 笔记。",
+	boardFilterEmpty: "当前类型筛选下没有进行中条目。",
+	boardLoadFailed: "无法加载看板条目：{{message}}",
+	boardLoading: "正在加载章节进度...",
+	boardNoEpisodes: "没有可用的章节进度数据。",
+	boardProgress: "{{done}}/{{total}}",
+	boardPushChanges: "Push 修改",
+	boardPushFinished:
+		"Bangumi 看板写回完成：{{episodes}} 个章节变更。请重新同步笔记以更新 Markdown。",
+	boardPushUnsupported: "看板章节写回只支持远端状态为 do 或 collect 的条目。",
+	boardRefreshItem: "刷新条目",
+	boardRefreshList: "刷新列表",
+	boardStatus: "状态",
+	boardStatusCommentDesc:
+		"这条评论会和状态变更一起保存到你的 Bangumi 收藏里。",
+	boardStatusCommentTitle: "{{status}} 的收藏评论",
+	boardStatusDesc: "修改状态会在你确认评论后写入 Bangumi。",
+	boardStatusFinished: "Bangumi 状态已改为 {{status}}。",
+	boardStatusStarted: "正在写入 Bangumi 状态...",
+	boardTitle: "Bangumi 看板",
+	boardTypeAll: "全部类型",
 	books: "书籍",
 	booksDesc: "同步书籍、漫画及相关阅读条目。",
 	byCollectionStatus: "按收藏状态分类",
@@ -332,6 +391,7 @@ const ZH: Record<LocaleKey, string> = {
 	onAirNoteFailed: "每日放送笔记更新失败：{{message}}",
 	onAirNoteUnchanged: "每日放送笔记没有变化：{{path}}",
 	onAirNoteUpdated: "每日放送笔记已更新：{{path}}",
+	openBoard: "打开 Bangumi 看板",
 	openTokenPage: "打开 token 页面",
 	progressStarted: "Bangumi Sync 已开始。",
 	progressUnavailableReport: "没拉到进度内容",
@@ -345,14 +405,22 @@ const ZH: Record<LocaleKey, string> = {
 	pushConfirmTitle: "确认写回 Bangumi",
 	pushCurrentNote: "Push 当前笔记到 Bangumi",
 	pushFailed: "Bangumi 写回失败：{{message}}",
+	pushEpisodeVerifyFailed:
+		"Bangumi 写回后没有确认这些章节变更：{{ids}}。请稍后再试一次。",
 	pushFinished:
-		"Bangumi 写回完成：{{episodes}} 个章节变更，状态已修改：{{statusChanged}}。{{resync}}",
+		"Bangumi 写回完成：{{episodes}} 个章节变更，最终状态：{{finalStatus}}。{{moved}}{{resync}}",
 	pushFinishedResync: "请重新同步这条笔记，以反映最新 Bangumi 状态。",
 	pushInvalidNote: "当前笔记不是有效的 Bangumi 条目笔记。",
+	pushMoved: "已移动笔记到 {{path}}。",
+	pushMoveTargetExists:
+		"写回已经成功，但无法移动笔记，因为目标文件已存在：{{path}}",
 	pushNoActiveFile: "请先打开一条 Bangumi 条目笔记。",
 	pushNoChanges: "没有检测到需要写回 Bangumi 的变更。",
 	pushStarted: "正在 Push 当前笔记到 Bangumi...",
-	pushStatusUnsupported: "写回只支持 status 为 do 或 collect 的笔记。",
+	pushStatusUnsupported:
+		"写回只支持 status 为 wish、do、collect、on_hold 或 dropped 的笔记。",
+	pushStatusVerifyFailed:
+		"Bangumi 没有确认状态变更。期望 {{expected}}，实际 {{actual}}。",
 	pushUnknownEpisodes:
 		"有些 bgm-ep 标记不属于当前条目。请先重新同步这条笔记再 Push：{{ids}}",
 	pushWriteBackDisabled: "请先在插件设置中启用写回 Bangumi。",

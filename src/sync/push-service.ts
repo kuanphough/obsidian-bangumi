@@ -1,13 +1,16 @@
-import { App, TFile } from "obsidian";
+import { App, TFile, normalizePath } from "obsidian";
 
 import { BangumiClient } from "../bangumi/client";
-import { collectionStatusLabel } from "../bangumi/labels";
+import { collectionStatusLabel, subjectTypeLabel } from "../bangumi/labels";
 import {
 	BANGUMI_COLLECTION_TYPES,
 	BangumiCollectionType,
 	BangumiEpisodeCollection
 } from "../bangumi/types";
-import type { BangumiSyncSettings } from "../settings";
+import {
+	BANGUMI_STORAGE_LAYOUTS,
+	type BangumiSyncSettings
+} from "../settings";
 import { t } from "../i18n";
 import { SYNC_BLOCK_END, SYNC_BLOCK_START } from "./markdown-renderer";
 
@@ -22,9 +25,11 @@ export interface PushEpisodeChange {
 export interface PushPreview {
 	file: TFile;
 	subjectId: number;
-	localStatus: "do" | "collect";
+	username: string;
+	localStatus: string;
 	localCollectionType: BangumiCollectionType;
 	remoteCollectionType: BangumiCollectionType;
+	subjectType: number;
 	markDone: PushEpisodeChange[];
 	markUndone: PushEpisodeChange[];
 	unknownEpisodeIds: number[];
@@ -36,6 +41,7 @@ export interface PushResult {
 	remoteStatusChanged: boolean;
 	finalStatus: string;
 	shouldResync: boolean;
+	movedPath?: string;
 }
 
 interface ParsedChecklistItem {
@@ -81,14 +87,16 @@ export class PushService {
 
 		const content = await this.app.vault.read(file);
 		const syncBlock = this.extractSyncBlock(content);
-		const localItems = this.parseChecklist(syncBlock);
-		if (localItems.length === 0) {
-			throw new Error(t("pushChecklistMissing"));
-		}
+		const localItems = this.supportsEpisodePush(localCollectionType)
+			? this.parseChecklist(syncBlock)
+			: [];
 
+		const username = this.settings.username || (await this.client.getMe()).username;
 		const [remoteEpisodes, remoteCollection] = await Promise.all([
-			this.fetchAllSubjectEpisodeCollections(subjectId),
-			this.client.getSubjectCollection(subjectId)
+			this.supportsEpisodePush(localCollectionType)
+				? this.fetchAllSubjectEpisodeCollections(subjectId)
+				: Promise.resolve([]),
+			this.client.getSubjectCollection(subjectId, username)
 		]);
 		const remoteEpisodeMap = new Map<number, boolean>();
 		for (const item of remoteEpisodes) {
@@ -128,9 +136,11 @@ export class PushService {
 		return {
 			file,
 			subjectId,
-			localStatus: localStatus as "do" | "collect",
+			username,
+			localStatus,
 			localCollectionType,
 			remoteCollectionType: remoteCollection.type,
+			subjectType: remoteCollection.subject.type,
 			markDone,
 			markUndone,
 			unknownEpisodeIds
@@ -154,21 +164,29 @@ export class PushService {
 			});
 		}
 
+		await this.verifyEpisodeChanges(preview);
+
 		const remoteAfterEpisodes = await this.client.getSubjectCollection(
-			preview.subjectId
+			preview.subjectId,
+			preview.username
 		);
 		const serverChangedStatus =
 			remoteAfterEpisodes.type !== preview.remoteCollectionType &&
 			remoteAfterEpisodes.type !== preview.localCollectionType;
 
 		if (serverChangedStatus) {
+			const movedPath = await this.moveNoteForFinalStatus(
+				preview,
+				remoteAfterEpisodes.type
+			);
 			return {
 				changedEpisodes:
 					preview.markDone.length + preview.markUndone.length,
 				statusChanged: false,
 				remoteStatusChanged: true,
 				finalStatus: collectionStatusLabel(remoteAfterEpisodes.type),
-				shouldResync: true
+				shouldResync: true,
+				movedPath
 			};
 		}
 
@@ -179,17 +197,73 @@ export class PushService {
 				subjectId: preview.subjectId,
 				type: preview.localCollectionType
 			});
+			const remoteAfterStatus = await this.client.getSubjectCollection(
+				preview.subjectId,
+				preview.username
+			);
+			if (remoteAfterStatus.type !== preview.localCollectionType) {
+				throw new Error(
+					t("pushStatusVerifyFailed", {
+						expected: collectionStatusLabel(preview.localCollectionType),
+						actual: collectionStatusLabel(remoteAfterStatus.type)
+					})
+				);
+			}
 			statusChanged = true;
-			finalCollectionType = preview.localCollectionType;
+			finalCollectionType = remoteAfterStatus.type;
 		}
+
+		const movedPath = await this.moveNoteForFinalStatus(
+			preview,
+			finalCollectionType
+		);
 
 		return {
 			changedEpisodes: preview.markDone.length + preview.markUndone.length,
 			statusChanged,
 			remoteStatusChanged: false,
 			finalStatus: collectionStatusLabel(finalCollectionType),
-			shouldResync: statusChanged
+			shouldResync: statusChanged,
+			movedPath
 		};
+	}
+
+	private async verifyEpisodeChanges(preview: PushPreview): Promise<void> {
+		const expected = new Map<number, boolean>();
+		for (const change of preview.markDone) {
+			expected.set(change.episodeId, true);
+		}
+		for (const change of preview.markUndone) {
+			expected.set(change.episodeId, false);
+		}
+		if (expected.size === 0) {
+			return;
+		}
+
+		const remoteEpisodes = await this.fetchAllSubjectEpisodeCollections(
+			preview.subjectId
+		);
+		const remoteEpisodeMap = new Map<number, boolean>();
+		for (const item of remoteEpisodes) {
+			const episodeId = item.episode?.id;
+			if (typeof episodeId === "number") {
+				remoteEpisodeMap.set(episodeId, item.type > 0);
+			}
+		}
+
+		const failedIds: number[] = [];
+		for (const [episodeId, expectedChecked] of expected) {
+			if (remoteEpisodeMap.get(episodeId) !== expectedChecked) {
+				failedIds.push(episodeId);
+			}
+		}
+		if (failedIds.length > 0) {
+			throw new Error(
+				t("pushEpisodeVerifyFailed", {
+					ids: failedIds.join(", ")
+				})
+			);
+		}
 	}
 
 	hasChanges(preview: PushPreview): boolean {
@@ -238,13 +312,88 @@ export class PushService {
 	private parseWritableStatus(
 		status: string
 	): BangumiCollectionType | null {
+		if (status === "wish") {
+			return BANGUMI_COLLECTION_TYPES.wish;
+		}
 		if (status === "do") {
 			return BANGUMI_COLLECTION_TYPES.do;
 		}
 		if (status === "collect") {
 			return BANGUMI_COLLECTION_TYPES.collect;
 		}
+		if (status === "on_hold") {
+			return BANGUMI_COLLECTION_TYPES.onHold;
+		}
+		if (status === "dropped") {
+			return BANGUMI_COLLECTION_TYPES.dropped;
+		}
 		return null;
+	}
+
+	private supportsEpisodePush(type: BangumiCollectionType): boolean {
+		return (
+			type === BANGUMI_COLLECTION_TYPES.do ||
+			type === BANGUMI_COLLECTION_TYPES.collect
+		);
+	}
+
+	private async moveNoteForFinalStatus(
+		preview: PushPreview,
+		finalCollectionType: BangumiCollectionType
+	): Promise<string | undefined> {
+		if (this.settings.storageLayout === BANGUMI_STORAGE_LAYOUTS.flat) {
+			return undefined;
+		}
+
+		const targetDirectory = normalizePath(
+			this.getTargetDirectory(preview.subjectType, finalCollectionType)
+		);
+		await this.ensureFolder(targetDirectory);
+
+		const fileName = preview.file.path.split("/").pop() ?? preview.file.name;
+		const targetPath = normalizePath(`${targetDirectory}/${fileName}`);
+		if (normalizePath(preview.file.path) === targetPath) {
+			return undefined;
+		}
+
+		const existing = this.app.vault.getAbstractFileByPath(targetPath);
+		if (existing instanceof TFile && existing !== preview.file) {
+			throw new Error(t("pushMoveTargetExists", { path: targetPath }));
+		}
+
+		await this.app.vault.rename(preview.file, targetPath);
+		return targetPath;
+	}
+
+	private getTargetDirectory(
+		subjectTypeValue: number,
+		collectionType: BangumiCollectionType
+	): string {
+		const root = this.settings.syncDirectory;
+		const subjectType = subjectTypeLabel(subjectTypeValue);
+		const collectionStatus = collectionStatusLabel(collectionType);
+
+		switch (this.settings.storageLayout) {
+			case BANGUMI_STORAGE_LAYOUTS.subjectThenCollection:
+				return `${root}/${subjectType}/${collectionStatus}`;
+			case BANGUMI_STORAGE_LAYOUTS.collectionThenSubject:
+				return `${root}/${collectionStatus}/${subjectType}`;
+			case BANGUMI_STORAGE_LAYOUTS.flat:
+			default:
+				return root;
+		}
+	}
+
+	private async ensureFolder(path: string): Promise<void> {
+		const parts = path.split("/").filter(Boolean);
+		let current = "";
+
+		for (const part of parts) {
+			current = current ? `${current}/${part}` : part;
+			if (!this.app.vault.getAbstractFileByPath(current)) {
+				await this.app.vault.createFolder(current);
+			}
+		}
 	}
 
 	private fetchAllSubjectEpisodeCollections(

@@ -190,12 +190,15 @@ export class BangumiClient {
 	async patchSubjectCollection(params: {
 		subjectId: number;
 		type: BangumiCollectionType;
+		comment?: string;
 	}): Promise<void> {
 		await this.request<void>(`/v0/users/-/collections/${params.subjectId}`, {
 			method: "PATCH",
 			body: {
-				type: params.type
-			}
+				type: params.type,
+				...(params.comment === undefined ? {} : { comment: params.comment })
+			},
+			expectEmptyResponse: true
 		});
 	}
 
@@ -215,7 +218,8 @@ export class BangumiClient {
 				body: {
 					episode_id: params.episodeIds,
 					type: params.type
-				}
+				},
+				expectEmptyResponse: true
 			}
 		);
 	}
@@ -230,7 +234,8 @@ export class BangumiClient {
 				method: "PUT",
 				body: {
 					type: params.type
-				}
+				},
+				expectEmptyResponse: true
 			}
 		);
 	}
@@ -277,6 +282,7 @@ export class BangumiClient {
 		options: {
 			method?: "GET" | "POST" | "PATCH" | "PUT";
 			body?: unknown;
+			expectEmptyResponse?: boolean;
 		} = {}
 	): Promise<T> {
 		const maxRetries = this.options.maxRetries ?? DEFAULT_MAX_RETRIES;
@@ -294,6 +300,9 @@ export class BangumiClient {
 			}
 
 			if (response && response.status >= 200 && response.status < 300) {
+				if (options.expectEmptyResponse) {
+					return undefined as T;
+				}
 				return response.json as T;
 			}
 
