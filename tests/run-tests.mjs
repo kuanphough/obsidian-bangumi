@@ -34,6 +34,18 @@ export class Plugin {
 }
 export class PluginSettingTab {}
 export class Setting {}
+export class Modal {
+	constructor(app) {
+		this.app = app;
+		this.contentEl = { empty() {}, createDiv() {}, createEl() {} };
+	}
+	open() {}
+	close() {}
+}
+export class SuggestModal extends Modal {
+	setPlaceholder() {}
+}
+export class TextComponent {}
 export function normalizePath(path) {
 	return path.replace(/\\\\/g, "/").replace(/\\/+/g, "/").replace(/\\/$/, "");
 }

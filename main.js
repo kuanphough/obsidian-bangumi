@@ -167,6 +167,22 @@ var EN = {
   syncFinished: "Bangumi Sync finished for {{username}}: {{written}} note(s) synced, {{skipped}} skipped, {{incrementalSkipped}} unchanged, {{failed}} issue(s).{{reportCreated}}",
   syncGroupProgress: "{{subjectType}}/{{collectionStatus}} {{current}}/{{total}}: {{written}} synced, {{unchanged}} unchanged, {{skipped}} skipped.",
   syncNow: "Sync now",
+  syncOneSubject: "Sync one subject",
+  syncOneSubjectCancelled: "Single subject sync cancelled.",
+  syncOneSubjectChoosePlaceholder: "Choose a Bangumi subject",
+  syncOneSubjectDirectOption: "Sync bgm-{{id}} directly",
+  syncOneSubjectFailed: "Single subject sync failed: {{message}}",
+  syncOneSubjectInput: "Subject",
+  syncOneSubjectInputDesc: "Enter a Bangumi URL, subject ID, Chinese title, original title, or title keyword.",
+  syncOneSubjectInputPlaceholder: "Subject URL, ID, or title keyword",
+  syncOneSubjectInputRequired: "Enter a subject URL, ID, or title keyword.",
+  syncOneSubjectNoResults: "No Bangumi subjects found for: {{query}}",
+  syncOneSubjectProgressMissing: "Progress content was not fetched.",
+  syncOneSubjectStarted: "Syncing {{title}}...",
+  syncOneSubjectStatusOption: "{{status}} for {{title}}",
+  syncOneSubjectStatusPlaceholder: "This subject is not in your collection. Choose a local status.",
+  syncOneSubjectUnchanged: "{{title}} is unchanged: {{path}}",
+  syncOneSubjectUpdated: "{{title}} synced: {{path}}",
   syncRibbon: "Sync Bangumi",
   syncedAt: "Synced at",
   titleIdFormat: "Title [bgm-id]",
@@ -288,6 +304,22 @@ var ZH = {
   syncFinished: "Bangumi Sync \u5B8C\u6210\uFF1A\u7528\u6237 {{username}}\uFF0C\u540C\u6B65 {{written}} \u6761\uFF0C\u8DF3\u8FC7 {{skipped}} \u6761\uFF0C\u672A\u53D8\u5316 {{incrementalSkipped}} \u6761\uFF0C\u95EE\u9898 {{failed}} \u4E2A\u3002{{reportCreated}}",
   syncGroupProgress: "{{subjectType}}/{{collectionStatus}} {{current}}/{{total}}\uFF1A\u540C\u6B65 {{written}} \u6761\uFF0C\u672A\u53D8\u5316 {{unchanged}} \u6761\uFF0C\u8DF3\u8FC7 {{skipped}} \u6761\u3002",
   syncNow: "\u7ACB\u5373\u540C\u6B65",
+  syncOneSubject: "\u5355\u72EC\u540C\u6B65\u6761\u76EE",
+  syncOneSubjectCancelled: "\u5DF2\u53D6\u6D88\u5355\u72EC\u540C\u6B65\u3002",
+  syncOneSubjectChoosePlaceholder: "\u9009\u62E9\u4E00\u4E2A Bangumi \u6761\u76EE",
+  syncOneSubjectDirectOption: "\u76F4\u63A5\u540C\u6B65 bgm-{{id}}",
+  syncOneSubjectFailed: "\u5355\u72EC\u540C\u6B65\u5931\u8D25\uFF1A{{message}}",
+  syncOneSubjectInput: "\u6761\u76EE",
+  syncOneSubjectInputDesc: "\u8F93\u5165 Bangumi \u7F51\u5740\u3001\u6761\u76EE ID\u3001\u4E2D\u6587\u540D\u3001\u539F\u540D\u6216\u6807\u9898\u5173\u952E\u8BCD\u3002",
+  syncOneSubjectInputPlaceholder: "\u6761\u76EE\u7F51\u5740\u3001ID \u6216\u6807\u9898\u5173\u952E\u8BCD",
+  syncOneSubjectInputRequired: "\u8BF7\u8F93\u5165\u6761\u76EE\u7F51\u5740\u3001ID \u6216\u6807\u9898\u5173\u952E\u8BCD\u3002",
+  syncOneSubjectNoResults: "\u6CA1\u6709\u627E\u5230\u76F8\u5173 Bangumi \u6761\u76EE\uFF1A{{query}}",
+  syncOneSubjectProgressMissing: "\u6CA1\u6709\u62C9\u5230\u8FDB\u5EA6\u5185\u5BB9\u3002",
+  syncOneSubjectStarted: "\u6B63\u5728\u540C\u6B65 {{title}}...",
+  syncOneSubjectStatusOption: "{{title}}\uFF1A{{status}}",
+  syncOneSubjectStatusPlaceholder: "\u8FD9\u4E2A\u6761\u76EE\u4E0D\u5728\u4F60\u7684\u6536\u85CF\u91CC\uFF0C\u8BF7\u9009\u62E9\u4E00\u4E2A\u672C\u5730\u72B6\u6001\u3002",
+  syncOneSubjectUnchanged: "{{title}} \u6CA1\u6709\u53D8\u5316\uFF1A{{path}}",
+  syncOneSubjectUpdated: "{{title}} \u5DF2\u540C\u6B65\uFF1A{{path}}",
   syncRibbon: "\u540C\u6B65 Bangumi",
   syncedAt: "\u540C\u6B65\u65F6\u95F4",
   titleIdFormat: "\u6807\u9898 [bgm-id]",
@@ -738,7 +770,11 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         void this.plugin.testAccessToken();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("syncDirectory")).setDesc(t("syncDirectoryDesc")).addText(
+    new import_obsidian2.Setting(containerEl).setName(t("syncDirectory")).setDesc(t("syncDirectoryDesc")).addButton(
+      (button) => button.setButtonText(t("syncOneSubject")).onClick(() => {
+        this.plugin.openSyncOneSubjectModal();
+      })
+    ).addText(
       (text) => text.setPlaceholder("Bangumi").setValue(this.plugin.settings.syncDirectory).onChange(async (value) => {
         this.plugin.settings.syncDirectory = value.trim() || "Bangumi";
         await this.plugin.saveSettings();
@@ -862,6 +898,14 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
 
 // src/bangumi/client.ts
 var import_obsidian3 = require("obsidian");
+var BangumiApiError = class extends Error {
+  constructor(message, status, path) {
+    super(message);
+    this.status = status;
+    this.path = path;
+    this.name = "BangumiApiError";
+  }
+};
 var BangumiClient = class {
   constructor(options) {
     this.options = options;
@@ -882,26 +926,79 @@ var BangumiClient = class {
       `/v0/users/${encodeURIComponent(params.username)}/collections?${search.toString()}`
     );
   }
+  async getSubject(subjectId) {
+    return this.request(`/v0/subjects/${subjectId}`);
+  }
+  async getLegacySubject(subjectId) {
+    const subject = await this.request(
+      `/subject/${subjectId}?responseGroup=large`
+    );
+    return this.normalizeLegacySubject(subject);
+  }
+  async getSubjectCollection(subjectId, username = "-") {
+    return this.request(
+      `/v0/users/${encodeURIComponent(username)}/collections/${subjectId}`
+    );
+  }
   async getSubjectEpisodeCollections(subjectId) {
     return this.request(
       `/v0/users/-/collections/${subjectId}/episodes`
     );
   }
-  async request(path) {
+  async searchSubjects(params) {
+    var _a, _b, _c, _d;
+    const search = new URLSearchParams({
+      limit: String((_a = params.limit) != null ? _a : 20),
+      offset: String((_b = params.offset) != null ? _b : 0)
+    });
+    return this.request(
+      `/v0/search/subjects?${search.toString()}`,
+      {
+        method: "POST",
+        body: {
+          keyword: params.keyword,
+          sort: (_c = params.sort) != null ? _c : "match",
+          filter: (_d = params.filter) != null ? _d : {}
+        }
+      }
+    );
+  }
+  async request(path, options = {}) {
+    var _a;
     const response = await (0, import_obsidian3.requestUrl)({
       url: `${this.baseUrl}${path}`,
-      method: "GET",
+      method: (_a = options.method) != null ? _a : "GET",
       headers: {
         Authorization: `Bearer ${this.options.accessToken}`,
-        "User-Agent": this.options.userAgent
-      }
+        "User-Agent": this.options.userAgent,
+        ...options.body === void 0 ? {} : { "Content-Type": "application/json" }
+      },
+      body: options.body === void 0 ? void 0 : JSON.stringify(options.body)
     });
     if (response.status < 200 || response.status >= 300) {
-      throw new Error(
-        this.buildErrorMessage(response.status, path, response.text)
+      throw new BangumiApiError(
+        this.buildErrorMessage(response.status, path, response.text),
+        response.status,
+        path
       );
     }
     return response.json;
+  }
+  normalizeLegacySubject(subject) {
+    var _a, _b;
+    const eps = typeof subject.eps === "number" ? subject.eps : (_a = subject.eps_count) != null ? _a : Array.isArray(subject.eps) ? subject.eps.length : void 0;
+    return {
+      id: subject.id,
+      type: subject.type,
+      name: subject.name,
+      name_cn: subject.name_cn,
+      summary: subject.summary,
+      images: subject.images,
+      eps,
+      date: (_b = subject.date) != null ? _b : subject.air_date,
+      rating: subject.rating,
+      collection: subject.collection
+    };
   }
   buildErrorMessage(status, path, detail) {
     const detailText = detail.trim() ? ` Detail: ${detail.trim()}` : "";
@@ -1095,11 +1192,7 @@ var SyncService = class {
       stage: "user",
       message: t("connectedAs", { username })
     });
-    const writer = new NoteWriter(
-      this.app,
-      new MarkdownRenderer(this.settings.subjectNoteTemplate),
-      this.settings.fileNameFormat
-    );
+    const writer = this.createNoteWriter();
     const existingSubjectIds = this.getExistingSubjectIds();
     const seenSubjectIds = /* @__PURE__ */ new Set();
     const failures = [];
@@ -1291,6 +1384,42 @@ var SyncService = class {
       message
     };
   }
+  async syncSubjectCollection(collection) {
+    if (!this.settings.accessToken) {
+      throw new Error(t("noToken"));
+    }
+    const client = new BangumiClient({
+      accessToken: this.settings.accessToken,
+      userAgent: this.settings.userAgent
+    });
+    const writer = this.createNoteWriter();
+    const subjectId = collection.subject.id;
+    let episodes = [];
+    let episodeSyncError;
+    try {
+      episodes = await this.fetchAllEpisodeCollections(client, subjectId);
+    } catch (error) {
+      episodeSyncError = this.getErrorMessage(error);
+      console.error(
+        `Bangumi Sync failed to fetch episodes for subject ${subjectId}`,
+        error
+      );
+    }
+    const result = await writer.writeSubjectNote(
+      this.settings.syncDirectory,
+      this.getTargetDirectory(collection),
+      {
+        collection,
+        episodes,
+        episodeSyncError
+      }
+    );
+    return {
+      changed: result.changed,
+      path: result.file.path,
+      episodeSyncError
+    };
+  }
   async fetchAllCollections(client, username, subjectType, collectionType) {
     const collections = [];
     let offset = 0;
@@ -1311,6 +1440,13 @@ var SyncService = class {
       offset += page.data.length;
     }
     return collections;
+  }
+  createNoteWriter() {
+    return new NoteWriter(
+      this.app,
+      new MarkdownRenderer(this.settings.subjectNoteTemplate),
+      this.settings.fileNameFormat
+    );
   }
   async validateDailyNoteSyncTarget(failures, options) {
     if (!this.settings.dailyNoteSync) {
@@ -1652,6 +1788,13 @@ var SyncService = class {
 // src/main.ts
 var ACCESS_TOKEN_CREATE_URL = "https://next.bgm.tv/demo/access-token/create";
 var TEMPLATE_VARIABLES_FILE_NAME = "Template Variables.md";
+var SEARCH_SUBJECT_TYPES = [
+  BANGUMI_SUBJECT_TYPES.book,
+  BANGUMI_SUBJECT_TYPES.anime,
+  BANGUMI_SUBJECT_TYPES.music,
+  BANGUMI_SUBJECT_TYPES.game,
+  BANGUMI_SUBJECT_TYPES.real
+];
 var TEMPLATE_VARIABLES_CONTENT = `# Bangumi Sync Template Variables
 
 The \`Subject note template\` setting supports \`{{variable_name}}\` placeholders.
@@ -1748,6 +1891,13 @@ var BangumiSyncPlugin = class extends import_obsidian6.Plugin {
         void this.syncNow();
       }
     });
+    this.addCommand({
+      id: "sync-one-subject",
+      name: t("syncOneSubject"),
+      callback: () => {
+        this.openSyncOneSubjectModal();
+      }
+    });
     this.addSettingTab(new BangumiSyncSettingTab(this.app, this));
   }
   async loadSettings() {
@@ -1823,6 +1973,198 @@ var BangumiSyncPlugin = class extends import_obsidian6.Plugin {
       console.error(error);
     }
   }
+  openSyncOneSubjectModal() {
+    if (!this.settings.accessToken) {
+      new import_obsidian6.Notice(t("noToken"));
+      return;
+    }
+    const client = new BangumiClient({
+      accessToken: this.settings.accessToken,
+      userAgent: this.settings.userAgent
+    });
+    new SubjectLookupModal(
+      this.app,
+      client,
+      (input) => this.parseSubjectId(input),
+      (suggestion) => {
+        if (suggestion.kind === "direct") {
+          void this.syncOneSubjectById(client, suggestion.subjectId);
+          return;
+        }
+        void this.syncOneSubjectById(client, suggestion.subject.id, suggestion.subject);
+      }
+    ).open();
+  }
+  async syncOneSubjectById(client, subjectId, searchSubject) {
+    try {
+      let collection;
+      try {
+        collection = await this.fetchSubjectCollection(
+          client,
+          subjectId,
+          searchSubject == null ? void 0 : searchSubject.type
+        );
+      } catch (error) {
+        if (!this.isBangumiNotFound(error)) {
+          throw error;
+        }
+        const subject = await this.fetchSubjectForLocalCollection(
+          client,
+          subjectId,
+          searchSubject
+        );
+        const collectionType = await this.chooseLocalCollectionType(subject);
+        if (collectionType === null) {
+          new import_obsidian6.Notice(t("syncOneSubjectCancelled"));
+          return;
+        }
+        collection = this.createLocalCollection(subject, collectionType);
+      }
+      new import_obsidian6.Notice(
+        t("syncOneSubjectStarted", {
+          title: this.getSubjectTitle(collection.subject)
+        })
+      );
+      const result = await new SyncService(
+        this.app,
+        this.settings
+      ).syncSubjectCollection(collection);
+      const title = this.getSubjectTitle(collection.subject);
+      new import_obsidian6.Notice(
+        t(result.changed ? "syncOneSubjectUpdated" : "syncOneSubjectUnchanged", {
+          title,
+          path: result.path
+        })
+      );
+      if (result.episodeSyncError) {
+        new import_obsidian6.Notice(t("syncOneSubjectProgressMissing"));
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("unknownError");
+      new import_obsidian6.Notice(t("syncOneSubjectFailed", { message }));
+      console.error(error);
+    }
+  }
+  async fetchSubjectCollection(client, subjectId, preferredSubjectType) {
+    const username = this.settings.username || (await client.getMe()).username || "-";
+    const attempts = [
+      this.getSubjectCollectionOrNull(client, subjectId, username)
+    ];
+    if (username !== "-") {
+      attempts.push(this.getSubjectCollectionOrNull(client, subjectId));
+    }
+    attempts.push(
+      this.findSubjectCollectionInLists(
+        client,
+        username,
+        subjectId,
+        preferredSubjectType
+      )
+    );
+    const results = await Promise.all(attempts);
+    const collection = results.find(
+      (result) => result !== null
+    );
+    if (collection) {
+      return collection;
+    }
+    throw new BangumiApiError(
+      t("apiNotFound", {
+        status: 404,
+        path: `/v0/users/${username}/collections/${subjectId}`,
+        detail: ""
+      }),
+      404,
+      `/v0/users/${username}/collections/${subjectId}`
+    );
+  }
+  async getSubjectCollectionOrNull(client, subjectId, username) {
+    try {
+      return await client.getSubjectCollection(subjectId, username);
+    } catch (error) {
+      if (!this.isBangumiNotFound(error)) {
+        throw error;
+      }
+      return null;
+    }
+  }
+  async findSubjectCollectionInLists(client, username, subjectId, preferredSubjectType) {
+    const subjectTypes = preferredSubjectType ? [preferredSubjectType] : SEARCH_SUBJECT_TYPES;
+    for (const subjectType of subjectTypes) {
+      for (const collectionType of Object.values(
+        BANGUMI_COLLECTION_TYPES
+      )) {
+        const page = await client.getCollections({
+          username,
+          subjectType,
+          collectionType,
+          limit: 50,
+          offset: 0
+        });
+        const match = page.data.find(
+          (collection) => collection.subject.id === subjectId
+        );
+        if (match) {
+          return match;
+        }
+      }
+    }
+    return null;
+  }
+  parseSubjectId(input) {
+    const match = input.match(/(?:subject\/|^)(\d+)(?:[/?#].*)?$/);
+    if (!match) {
+      return null;
+    }
+    const subjectId = Number(match[1]);
+    return Number.isInteger(subjectId) && subjectId > 0 ? subjectId : null;
+  }
+  async fetchSubjectForLocalCollection(client, subjectId, searchSubject) {
+    try {
+      return await client.getSubject(subjectId);
+    } catch (error) {
+      if (!this.isBangumiNotFound(error)) {
+        throw error;
+      }
+      console.error(
+        `Bangumi Sync failed to fetch v0 subject ${subjectId}, trying legacy subject API`,
+        error
+      );
+    }
+    try {
+      return await client.getLegacySubject(subjectId);
+    } catch (error) {
+      if (searchSubject) {
+        console.error(
+          `Bangumi Sync failed to fetch legacy subject ${subjectId}, falling back to search result`,
+          error
+        );
+        return searchSubject;
+      }
+      throw error;
+    }
+  }
+  isBangumiNotFound(error) {
+    return typeof error === "object" && error !== null && "status" in error && error.status === 404;
+  }
+  chooseLocalCollectionType(subject) {
+    return new Promise((resolve) => {
+      new CollectionStatusModal(this.app, subject, resolve).open();
+    });
+  }
+  createLocalCollection(subject, type) {
+    return {
+      type,
+      rate: 0,
+      comment: "",
+      tags: [],
+      updated_at: "",
+      subject
+    };
+  }
+  getSubjectTitle(subject) {
+    return subject.name_cn || subject.name;
+  }
   normalizeAccessToken(value) {
     return value.trim().replace(/^Bearer\s+/i, "").trim();
   }
@@ -1854,3 +2196,116 @@ var BangumiSyncPlugin = class extends import_obsidian6.Plugin {
     }
   }
 };
+var SubjectLookupModal = class extends import_obsidian6.SuggestModal {
+  constructor(app, client, parseSubjectId, onChoose) {
+    super(app);
+    this.client = client;
+    this.parseSubjectId = parseSubjectId;
+    this.onChoose = onChoose;
+    this.setPlaceholder(t("syncOneSubjectInputPlaceholder"));
+  }
+  async getSuggestions(query) {
+    const normalizedQuery = query.trim();
+    if (!normalizedQuery) {
+      return [];
+    }
+    const subjectId = this.parseSubjectId(normalizedQuery);
+    if (subjectId !== null) {
+      return [{ kind: "direct", subjectId, query: normalizedQuery }];
+    }
+    try {
+      const page = await this.client.searchSubjects({
+        keyword: normalizedQuery,
+        sort: "match",
+        filter: { type: SEARCH_SUBJECT_TYPES },
+        limit: 20,
+        offset: 0
+      });
+      return page.data.map((subject) => ({ kind: "subject", subject }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("unknownError");
+      new import_obsidian6.Notice(t("syncOneSubjectFailed", { message }));
+      console.error(error);
+      return [];
+    }
+  }
+  renderSuggestion(suggestion, el) {
+    var _a;
+    if (suggestion.kind === "direct") {
+      el.createDiv({
+        text: t("syncOneSubjectDirectOption", {
+          id: suggestion.subjectId
+        })
+      });
+      el.createEl("small", { text: suggestion.query });
+      return;
+    }
+    const subject = suggestion.subject;
+    const title = subject.name_cn || subject.name;
+    const original = subject.name_cn && subject.name_cn !== subject.name ? ` / ${subject.name}` : "";
+    const metadata = [
+      subject.date,
+      ((_a = subject.rating) == null ? void 0 : _a.score) ? `score ${subject.rating.score}` : "",
+      `bgm-${subject.id}`,
+      `\u{1F3F7} ${renderSubjectType(subject.type)}`
+    ].filter((value) => value);
+    el.createDiv({ text: `${title}${original}` });
+    el.createEl("small", { text: metadata.join(" \xB7 ") });
+  }
+  onChooseSuggestion(suggestion) {
+    this.onChoose(suggestion);
+  }
+};
+var CollectionStatusModal = class extends import_obsidian6.SuggestModal {
+  constructor(app, subject, resolve) {
+    super(app);
+    this.subject = subject;
+    this.resolve = resolve;
+    this.selected = false;
+    this.setPlaceholder(t("syncOneSubjectStatusPlaceholder"));
+  }
+  getSuggestions(query) {
+    const options = [
+      { type: BANGUMI_COLLECTION_TYPES.wish, label: "wish" },
+      { type: BANGUMI_COLLECTION_TYPES.do, label: "do" },
+      { type: BANGUMI_COLLECTION_TYPES.collect, label: "collect" },
+      { type: BANGUMI_COLLECTION_TYPES.onHold, label: "on_hold" },
+      { type: BANGUMI_COLLECTION_TYPES.dropped, label: "dropped" }
+    ];
+    const normalizedQuery = query.trim().toLowerCase();
+    return normalizedQuery ? options.filter((option) => option.label.includes(normalizedQuery)) : options;
+  }
+  renderSuggestion(option, el) {
+    el.createDiv({
+      text: t("syncOneSubjectStatusOption", {
+        status: option.label,
+        title: this.subject.name_cn || this.subject.name
+      })
+    });
+  }
+  onChooseSuggestion(option) {
+    this.selected = true;
+    this.resolve(option.type);
+  }
+  onClose() {
+    if (!this.selected) {
+      this.resolve(null);
+    }
+  }
+};
+function renderSubjectType(type) {
+  switch (type) {
+    case BANGUMI_SUBJECT_TYPES.book:
+      return "book";
+    case BANGUMI_SUBJECT_TYPES.anime:
+      return "anime";
+    case BANGUMI_SUBJECT_TYPES.music:
+      return "music";
+    case BANGUMI_SUBJECT_TYPES.game:
+      return "game";
+    case BANGUMI_SUBJECT_TYPES.real:
+      return "real";
+    default:
+      return String(type);
+  }
+}

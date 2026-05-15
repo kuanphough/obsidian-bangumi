@@ -57,6 +57,12 @@ export interface SyncOptions {
 	onProgress?: (progress: SyncProgress) => void;
 }
 
+export interface SyncSingleSubjectResult {
+	changed: boolean;
+	path: string;
+	episodeSyncError?: string;
+}
+
 const PAGE_LIMIT = 50;
 const REPORT_FILE_NAME = "Bangumi Sync Report.md";
 const DAILY_SYNC_BLOCK_START = "<!-- bangumi-daily-sync-start -->";
@@ -155,11 +161,7 @@ export class SyncService {
 			message: t("connectedAs", { username })
 		});
 
-		const writer = new NoteWriter(
-			this.app,
-			new MarkdownRenderer(this.settings.subjectNoteTemplate),
-			this.settings.fileNameFormat
-		);
+		const writer = this.createNoteWriter();
 		const existingSubjectIds = this.getExistingSubjectIds();
 		const seenSubjectIds = new Set<number>();
 		const failures: SyncFailure[] = [];
@@ -373,6 +375,49 @@ export class SyncService {
 		};
 	}
 
+	async syncSubjectCollection(
+		collection: BangumiCollection
+	): Promise<SyncSingleSubjectResult> {
+		if (!this.settings.accessToken) {
+			throw new Error(t("noToken"));
+		}
+
+		const client = new BangumiClient({
+			accessToken: this.settings.accessToken,
+			userAgent: this.settings.userAgent
+		});
+		const writer = this.createNoteWriter();
+		const subjectId = collection.subject.id;
+		let episodes: BangumiEpisodeCollection[] = [];
+		let episodeSyncError: string | undefined;
+
+		try {
+			episodes = await this.fetchAllEpisodeCollections(client, subjectId);
+		} catch (error) {
+			episodeSyncError = this.getErrorMessage(error);
+			console.error(
+				`Bangumi Sync failed to fetch episodes for subject ${subjectId}`,
+				error
+			);
+		}
+
+		const result = await writer.writeSubjectNote(
+			this.settings.syncDirectory,
+			this.getTargetDirectory(collection),
+			{
+				collection,
+				episodes,
+				episodeSyncError
+			}
+		);
+
+		return {
+			changed: result.changed,
+			path: result.file.path,
+			episodeSyncError
+		};
+	}
+
 	private async fetchAllCollections(
 		client: BangumiClient,
 		username: string,
@@ -402,6 +447,14 @@ export class SyncService {
 		}
 
 		return collections;
+	}
+
+	private createNoteWriter(): NoteWriter {
+		return new NoteWriter(
+			this.app,
+			new MarkdownRenderer(this.settings.subjectNoteTemplate),
+			this.settings.fileNameFormat
+		);
 	}
 
 	private async validateDailyNoteSyncTarget(

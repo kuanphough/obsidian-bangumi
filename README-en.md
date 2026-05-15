@@ -14,6 +14,7 @@ Bangumi Sync is an Obsidian plugin for turning Bangumi collections into local no
 - Sync rating, tags, comment, cover, episode checklist, and lightweight `progress_done`.
 - Preserve handwritten content outside the generated sync block.
 - Optionally write newly synced in-progress subjects to today's Daily Note.
+- Search and sync a single subject by Bangumi URL, ID, Chinese title, original title, or title keyword.
 - Customize subject note templates and frontmatter fields.
 - Generate `Bangumi Sync Report.md` when issues occur.
 
@@ -22,6 +23,10 @@ Bangumi Sync is an Obsidian plugin for turning Bangumi collections into local no
 ### Basic Features
 
 ![Basic features](image/79c60d80-5b63-4ac7-8885-ee75eff7727e.png)
+
+### Simple Sync
+
+![alt text](image/de0025940082ab730ed0bbf17674b85c.png)
 
 ### Category-based Sync
 
@@ -40,6 +45,13 @@ Bangumi Sync is an Obsidian plugin for turning Bangumi collections into local no
 ![alt text](image/QQ_1778751638574.png)
 
 ## Installation
+
+### Obsidian Community Plugins
+
+1. Open Obsidian settings.
+2. Go to `Community plugins` and make sure restricted mode is off.
+3. Click `Browse` and search for `bangumi`.
+4. Install and enable the plugin.
 
 ### Manual Installation
 
@@ -68,6 +80,7 @@ BRAT is intended for testing development builds. After a stable release is avail
 4. Click `Test token` to verify the configuration.
 5. Choose sync directory, storage layout, file name format, subject types, and collection statuses.
 6. Click the ribbon icon or run `Bangumi Sync: Sync now`.
+7. To sync one subject, run `Bangumi Sync: Sync one subject` or click `Sync one subject` in settings.
 
 The plugin automatically syncs the Bangumi account that owns the saved token. Username is not required. `User-Agent` is generated from the plugin version.
 
@@ -90,6 +103,18 @@ Keep the token private. It authorizes the plugin to read your Bangumi account da
 | `Daily note sync` | Write newly added or updated in-progress subjects to today's Daily Note block. |
 | `Subject note template` | Customize the Markdown template for subject notes. |
 
+## Sync One Subject
+
+Run `Bangumi Sync: Sync one subject`, or click `Sync one subject` in settings. The command opens a search picker where you can enter:
+
+- A Bangumi subject URL, for example `https://bgm.tv/subject/543189`
+- A Bangumi subject ID, for example `543189`
+- A Chinese title, original title, or title keyword
+
+URLs and IDs show a direct sync option. Keywords search books, anime, music, games, and real-life subjects. Search results include year, score, `bgm-id`, and a subject type tag.
+
+If the subject is already in your Bangumi collection, the plugin uses the real collection status, rating, tags, and comment. If it is not collected, the plugin asks you to choose a local status for note generation and folder classification. This local status is not written back to Bangumi.
+
 ## Sync Behavior
 
 - Repeat syncs update frontmatter and the block between `<!-- bangumi-sync-start -->` and `<!-- bangumi-sync-end -->`.
@@ -97,6 +122,7 @@ Keep the token private. It authorizes the plugin to read your Bangumi account da
 - Full sync compares rendered content before writing, so unchanged files are not touched.
 - Episode progress failures do not block note generation; reports show that progress content was not fetched.
 - One failed subject does not stop the whole sync. Issues are summarized at the end.
+- When syncing one subject, the plugin checks whether the subject is already collected first. For uncollected subjects, there may be a short wait before the local-status picker appears.
 
 ## Note Template
 

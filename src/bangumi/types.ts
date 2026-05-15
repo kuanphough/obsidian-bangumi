@@ -65,6 +65,16 @@ export interface BangumiCollection {
 	subject: BangumiSubject;
 }
 
+export interface BangumiSubjectSearchRequest {
+	keyword: string;
+	sort?: "match" | "heat" | "rank" | "score";
+	filter?: {
+		type?: number[];
+	};
+	limit?: number;
+	offset?: number;
+}
+
 export interface BangumiPagedResponse<T> {
 	total: number;
 	limit: number;

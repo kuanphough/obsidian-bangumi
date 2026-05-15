@@ -246,6 +246,13 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName(t("syncDirectory"))
 			.setDesc(t("syncDirectoryDesc"))
+			.addButton((button) =>
+				button
+					.setButtonText(t("syncOneSubject"))
+					.onClick(() => {
+						this.plugin.openSyncOneSubjectModal();
+					})
+			)
 			.addText((text) =>
 				text
 					.setPlaceholder("Bangumi")
