@@ -6,6 +6,7 @@ import {
 	BangumiSubjectTag,
 	BangumiSyncedSubject
 } from "../bangumi/types";
+import { collectionStatusLabel, subjectTypeLabel } from "../bangumi/labels";
 
 export const SYNC_BLOCK_START = "<!-- bangumi-sync-start -->";
 export const SYNC_BLOCK_END = "<!-- bangumi-sync-end -->";
@@ -119,8 +120,8 @@ export class MarkdownRenderer {
 		const cover = bangumiSubject.images?.large || bangumiSubject.images?.common;
 		const rating = subject.collection.rate ?? "";
 		const updatedAt = subject.collection.updated_at ?? "";
-		const status = this.renderCollectionStatus(subject.collection.type);
-		const subjectType = this.renderSubjectType(bangumiSubject.type);
+		const status = collectionStatusLabel(subject.collection.type);
+		const subjectType = subjectTypeLabel(bangumiSubject.type);
 		const tags = subject.collection.tags ?? [];
 		const comment = subject.collection.comment ?? "";
 		const progressSummary = this.getProgressSummary(subject);
@@ -437,7 +438,7 @@ export class MarkdownRenderer {
 		return relations
 			.map((relation) => {
 				const title = relation.name_cn || relation.name;
-				const details = [relation.relation, this.renderSubjectType(relation.type), relation.date]
+				const details = [relation.relation, subjectTypeLabel(relation.type), relation.date]
 					.filter((value) => value)
 					.join(" / ");
 				const suffix = details ? ` - ${details}` : "";
@@ -451,37 +452,4 @@ export class MarkdownRenderer {
 		return title ? `EP${episode.sort} ${title}` : `EP${episode.sort}`;
 	}
 
-	private renderCollectionStatus(type: number): string {
-		switch (type) {
-			case 1:
-				return "wish";
-			case 2:
-				return "collect";
-			case 3:
-				return "do";
-			case 4:
-				return "on_hold";
-			case 5:
-				return "dropped";
-			default:
-				return String(type);
-		}
-	}
-
-	private renderSubjectType(type: number): string {
-		switch (type) {
-			case 1:
-				return "book";
-			case 2:
-				return "anime";
-			case 3:
-				return "music";
-			case 4:
-				return "game";
-			case 6:
-				return "real";
-			default:
-				return String(type);
-		}
-	}
 }

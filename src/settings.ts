@@ -36,7 +36,12 @@ export interface BangumiSyncSettings {
 	collectionTypes: BangumiCollectionType[];
 	subjectNoteTemplate: string;
 	userAgent: string;
+	syncConcurrency: number;
 }
+
+export const SYNC_CONCURRENCY_MIN = 1;
+export const SYNC_CONCURRENCY_MAX = 8;
+export const SYNC_CONCURRENCY_DEFAULT = 4;
 
 export const BANGUMI_STORAGE_LAYOUTS = {
 	flat: "flat",
@@ -58,6 +63,147 @@ export type BangumiFileNameFormat =
 
 export function buildUserAgent(version: string): string {
 	return `Kuanphough/bangumi-note/${version} (Obsidian Plugin)`;
+}
+
+const STRING_SETTING_KEYS = [
+	"accessToken",
+	"oauthClientId",
+	"oauthClientSecret",
+	"oauthRedirectUri",
+	"oauthAuthorizationCode",
+	"oauthState",
+	"username",
+	"syncDirectory",
+	"lastSyncedAt",
+	"subjectNoteTemplate",
+	"userAgent"
+] as const satisfies ReadonlyArray<keyof BangumiSyncSettings>;
+
+const BOOLEAN_SETTING_KEYS = [
+	"includeOnHoldAndDropped",
+	"incrementalSync",
+	"dailyNoteSync",
+	"enableOnAirNote",
+	"enableWriteBack",
+	"fetchDetailedSubjectInfo",
+	"fetchStaff",
+	"fetchCharacters",
+	"fetchRelations"
+] as const satisfies ReadonlyArray<keyof BangumiSyncSettings>;
+
+export interface SettingsSanitizeResult {
+	settings: Partial<BangumiSyncSettings>;
+	invalidFields: string[];
+}
+
+export function sanitizeLoadedSettings(
+	loaded: unknown
+): SettingsSanitizeResult {
+	const result: Partial<BangumiSyncSettings> = {};
+	const invalid: string[] = [];
+
+	if (typeof loaded !== "object" || loaded === null) {
+		if (loaded !== undefined) invalid.push("(root: not an object)");
+		return { settings: result, invalidFields: invalid };
+	}
+
+	const obj = loaded as Record<string, unknown>;
+
+	for (const key of STRING_SETTING_KEYS) {
+		if (!(key in obj)) continue;
+		const value = obj[key];
+		if (typeof value === "string") {
+			(result as Record<string, unknown>)[key] = value;
+		} else {
+			invalid.push(key);
+		}
+	}
+
+	for (const key of BOOLEAN_SETTING_KEYS) {
+		if (!(key in obj)) continue;
+		const value = obj[key];
+		if (typeof value === "boolean") {
+			(result as Record<string, unknown>)[key] = value;
+		} else {
+			invalid.push(key);
+		}
+	}
+
+	if ("storageLayout" in obj) {
+		const value = obj.storageLayout;
+		const allowed = Object.values(BANGUMI_STORAGE_LAYOUTS) as string[];
+		if (typeof value === "string" && allowed.includes(value)) {
+			result.storageLayout = value as BangumiStorageLayout;
+		} else {
+			invalid.push("storageLayout");
+		}
+	}
+
+	if ("fileNameFormat" in obj) {
+		const value = obj.fileNameFormat;
+		const allowed = Object.values(BANGUMI_FILE_NAME_FORMATS) as string[];
+		if (typeof value === "string" && allowed.includes(value)) {
+			result.fileNameFormat = value as BangumiFileNameFormat;
+		} else {
+			invalid.push("fileNameFormat");
+		}
+	}
+
+	if ("subjectTypes" in obj) {
+		const sanitized = sanitizeNumberEnumArray(
+			obj.subjectTypes,
+			Object.values(BANGUMI_SUBJECT_TYPES) as number[]
+		);
+		if (sanitized) {
+			result.subjectTypes = sanitized.values as BangumiSubjectType[];
+			if (sanitized.dropped) invalid.push("subjectTypes");
+		} else {
+			invalid.push("subjectTypes");
+		}
+	}
+
+	if ("collectionTypes" in obj) {
+		const sanitized = sanitizeNumberEnumArray(
+			obj.collectionTypes,
+			Object.values(BANGUMI_COLLECTION_TYPES) as number[]
+		);
+		if (sanitized) {
+			result.collectionTypes = sanitized.values as BangumiCollectionType[];
+			if (sanitized.dropped) invalid.push("collectionTypes");
+		} else {
+			invalid.push("collectionTypes");
+		}
+	}
+
+	if ("syncConcurrency" in obj) {
+		const value = obj.syncConcurrency;
+		if (
+			typeof value === "number" &&
+			Number.isInteger(value) &&
+			value >= SYNC_CONCURRENCY_MIN &&
+			value <= SYNC_CONCURRENCY_MAX
+		) {
+			result.syncConcurrency = value;
+		} else {
+			invalid.push("syncConcurrency");
+		}
+	}
+
+	return { settings: result, invalidFields: invalid };
+}
+
+function sanitizeNumberEnumArray(
+	value: unknown,
+	allowed: number[]
+): { values: number[]; dropped: boolean } | null {
+	if (!Array.isArray(value)) return null;
+	const filtered = value.filter(
+		(item): item is number =>
+			typeof item === "number" && allowed.includes(item)
+	);
+	const deduped = Array.from(new Set(filtered));
+	if (deduped.length === 0 && value.length > 0) return null;
+	return { values: deduped, dropped: deduped.length !== value.length };
 }
 
 export const DEFAULT_SETTINGS: BangumiSyncSettings = {
@@ -84,7 +230,8 @@ export const DEFAULT_SETTINGS: BangumiSyncSettings = {
 	subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
 	collectionTypes: [BANGUMI_COLLECTION_TYPES.do],
 	subjectNoteTemplate: DEFAULT_SUBJECT_NOTE_TEMPLATE,
-	userAgent: buildUserAgent("0.1.3")
+	userAgent: buildUserAgent("0.1.3"),
+	syncConcurrency: SYNC_CONCURRENCY_DEFAULT
 };
 
 const SUBJECT_OPTIONS: Array<{
@@ -331,6 +478,20 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 						this.plugin.settings.incrementalSync = enabled;
 						await this.plugin.saveSettings();
 						this.display();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(t("syncConcurrency"))
+			.setDesc(t("syncConcurrencyDesc"))
+			.addSlider((slider) =>
+				slider
+					.setLimits(SYNC_CONCURRENCY_MIN, SYNC_CONCURRENCY_MAX, 1)
+					.setValue(this.plugin.settings.syncConcurrency)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						this.plugin.settings.syncConcurrency = value;
+						await this.plugin.saveSettings();
 					})
 			);
 

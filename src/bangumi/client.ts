@@ -1,4 +1,4 @@
-import { requestUrl } from "obsidian";
+import { requestUrl, RequestUrlResponse } from "obsidian";
 
 import {
 	BangumiCollection,
@@ -18,6 +18,23 @@ import { t } from "../i18n";
 export interface BangumiClientOptions {
 	accessToken: string;
 	userAgent: string;
+	requestTimeoutMs?: number;
+	maxRetries?: number;
+	retryBaseDelayMs?: number;
+	maxRetryDelayMs?: number;
+}
+
+const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
+const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_RETRY_BASE_DELAY_MS = 1000;
+const DEFAULT_MAX_RETRY_DELAY_MS = 30_000;
+const RETRIABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+
+export class BangumiTimeoutError extends Error {
+	constructor(readonly path: string, readonly timeoutMs: number) {
+		super(`Bangumi request timed out after ${timeoutMs}ms: ${path}`);
+		this.name = "BangumiTimeoutError";
+	}
 }
 
 export class BangumiApiError extends Error {
@@ -83,6 +100,54 @@ export class BangumiClient {
 		return this.request<BangumiPagedResponse<BangumiCollection>>(
 			`/v0/users/${encodeURIComponent(params.username)}/collections?${search.toString()}`
 		);
+	}
+
+	async getAllUserCollections(params: {
+		username: string;
+		subjectType: number;
+		collectionType: BangumiCollectionType;
+		pageSize?: number;
+	}): Promise<BangumiCollection[]> {
+		const limit = params.pageSize ?? 50;
+		const collected: BangumiCollection[] = [];
+		let offset = 0;
+		let total = Number.POSITIVE_INFINITY;
+
+		while (offset < total) {
+			const page = await this.getCollections({
+				username: params.username,
+				subjectType: params.subjectType,
+				collectionType: params.collectionType,
+				limit,
+				offset
+			});
+			total = page.total;
+			collected.push(...page.data);
+			if (page.data.length === 0) break;
+			offset += page.data.length;
+		}
+		return collected;
+	}
+
+	async getAllSubjectEpisodeCollections(
+		subjectId: number,
+		pageSize = 50
+	): Promise<BangumiEpisodeCollection[]> {
+		const collected: BangumiEpisodeCollection[] = [];
+		let offset = 0;
+		let total = Number.POSITIVE_INFINITY;
+
+		while (offset < total) {
+			const page = await this.getSubjectEpisodeCollections(subjectId, {
+				limit: pageSize,
+				offset
+			});
+			total = page.total;
+			collected.push(...page.data);
+			if (page.data.length === 0) break;
+			offset += page.data.length;
+		}
+		return collected;
 	}
 
 	async getSubject(subjectId: number): Promise<BangumiSubject> {
@@ -214,7 +279,54 @@ export class BangumiClient {
 			body?: unknown;
 		} = {}
 	): Promise<T> {
-		const response = await requestUrl({
+		const maxRetries = this.options.maxRetries ?? DEFAULT_MAX_RETRIES;
+		let attempt = 0;
+		let lastError: unknown;
+
+		for (;;) {
+			let response: RequestUrlResponse | undefined;
+			let networkError: unknown;
+
+			try {
+				response = await this.executeWithTimeout(path, options);
+			} catch (error) {
+				networkError = error;
+			}
+
+			if (response && response.status >= 200 && response.status < 300) {
+				return response.json as T;
+			}
+
+			const isRetriable =
+				networkError !== undefined ||
+				(response !== undefined &&
+					RETRIABLE_STATUS_CODES.has(response.status));
+
+			if (attempt >= maxRetries || !isRetriable) {
+				if (response) {
+					throw new BangumiApiError(
+						this.buildErrorMessage(response.status, path, response.text),
+						response.status,
+						path
+					);
+				}
+				throw networkError ?? lastError ?? new Error("Bangumi request failed");
+			}
+
+			const delay = this.computeRetryDelay(attempt, response?.headers);
+			lastError = networkError ?? response;
+			await sleep(delay);
+			attempt++;
+		}
+	}
+
+	private async executeWithTimeout(
+		path: string,
+		options: { method?: string; body?: unknown }
+	): Promise<RequestUrlResponse> {
+		const timeoutMs =
+			this.options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+		const requestPromise = requestUrl({
 			url: `${this.baseUrl}${path}`,
 			method: options.method ?? "GET",
 			headers: {
@@ -225,18 +337,38 @@ export class BangumiClient {
 					: { "Content-Type": "application/json" })
 			},
 			body:
-				options.body === undefined ? undefined : JSON.stringify(options.body)
+				options.body === undefined ? undefined : JSON.stringify(options.body),
+			throw: false
 		});
 
-		if (response.status < 200 || response.status >= 300) {
-			throw new BangumiApiError(
-				this.buildErrorMessage(response.status, path, response.text),
-				response.status,
-				path
-			);
-		}
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const timeoutPromise = new Promise<never>((_, reject) => {
+			timer = setTimeout(() => {
+				reject(new BangumiTimeoutError(path, timeoutMs));
+			}, timeoutMs);
+		});
 
-		return response.json as T;
+		try {
+			return await Promise.race([requestPromise, timeoutPromise]);
+		} finally {
+			if (timer !== undefined) clearTimeout(timer);
+		}
+	}
+
+	private computeRetryDelay(
+		attempt: number,
+		headers?: Record<string, string>
+	): number {
+		const maxDelay =
+			this.options.maxRetryDelayMs ?? DEFAULT_MAX_RETRY_DELAY_MS;
+		const retryAfter = parseRetryAfter(headers);
+		if (retryAfter !== null) {
+			return Math.min(retryAfter, maxDelay);
+		}
+		const base = this.options.retryBaseDelayMs ?? DEFAULT_RETRY_BASE_DELAY_MS;
+		const exp = base * Math.pow(2, attempt);
+		const jitter = Math.random() * base * 0.5;
+		return Math.min(exp + jitter, maxDelay);
 	}
 
 	private normalizeLegacySubject(subject: LegacyBangumiSubject): BangumiSubject {
@@ -293,4 +425,24 @@ export class BangumiClient {
 				return t("apiRequestFailed", values);
 		}
 	}
+}
+
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseRetryAfter(headers?: Record<string, string>): number | null {
+	if (!headers) return null;
+	const raw = headers["Retry-After"] ?? headers["retry-after"];
+	if (!raw) return null;
+	const seconds = Number(raw);
+	if (Number.isFinite(seconds) && seconds >= 0) {
+		return seconds * 1000;
+	}
+	const date = Date.parse(raw);
+	if (Number.isFinite(date)) {
+		const diff = date - Date.now();
+		return diff > 0 ? diff : 0;
+	}
+	return null;
 }

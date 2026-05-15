@@ -93,6 +93,9 @@ const EN = {
 	incrementalSync: "Incremental sync",
 	incrementalSyncDesc:
 		"Skip unchanged items by Bangumi updated_at, but recreate missing local files when needed.",
+	syncConcurrency: "Sync concurrency",
+	syncConcurrencyDesc:
+		"How many subjects to fetch in parallel. Higher is faster but more likely to hit Bangumi rate limits. Default 4.",
 	issues: "Issues",
 	lastSyncedAt: "Last synced at",
 	music: "Music",
@@ -308,6 +311,9 @@ const ZH: Record<LocaleKey, string> = {
 	incrementalSync: "增量同步",
 	incrementalSyncDesc:
 		"根据 Bangumi 更新时间跳过未变化条目，但会在本地文件缺失时重新创建。",
+	syncConcurrency: "同步并发数",
+	syncConcurrencyDesc:
+		"同步时同一时刻并发抓取多少个条目。越高越快，但更容易触发 Bangumi 限流。默认 4。",
 	issues: "问题数",
 	lastSyncedAt: "上次同步时间",
 	music: "音乐",

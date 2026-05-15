@@ -8,9 +8,12 @@ import {
 	BangumiCollectionType
 } from "../bangumi/types";
 import { BangumiClient } from "../bangumi/client";
+import { collectionStatusLabel } from "../bangumi/labels";
 import type { BangumiSyncSettings } from "../settings";
 import { formatLocalDateTime } from "../date-format";
 import { t } from "../i18n";
+import { ensureFolder } from "../utils/vault";
+import { SubjectNoteIndex } from "./subject-note-index";
 
 export interface OnAirUpdateResult {
 	path: string;
@@ -31,7 +34,12 @@ const ON_AIR_COLLECTION_TYPES: BangumiCollectionType[] = [
 export class OnAirService {
 	constructor(
 		private readonly app: App,
-		private readonly settings: BangumiSyncSettings
+		private readonly settings: BangumiSyncSettings,
+		private readonly clientFactory: () => BangumiClient = () =>
+			new BangumiClient({
+				accessToken: settings.accessToken,
+				userAgent: settings.userAgent
+			})
 	) {}
 
 	async update(): Promise<OnAirUpdateResult> {
@@ -44,10 +52,7 @@ export class OnAirService {
 			};
 		}
 
-		const client = new BangumiClient({
-			accessToken: this.settings.accessToken,
-			userAgent: this.settings.userAgent
-		});
+		const client = this.clientFactory();
 		const username = this.settings.username || (await client.getMe()).username;
 		const [calendar, collections] = await Promise.all([
 			client.getCalendar(),
@@ -57,7 +62,11 @@ export class OnAirService {
 		for (const collection of collections) {
 			collectionBySubjectId.set(collection.subject.id, collection);
 		}
-		const localNoteBySubjectId = this.buildLocalNoteIndex();
+		const noteIndex = SubjectNoteIndex.build(
+			this.app,
+			this.settings.syncDirectory || "Bangumi"
+		);
+		const localNoteBySubjectId = noteIndex.toMap();
 
 		const myRows = await this.buildMyRows(
 			calendar,
@@ -66,7 +75,7 @@ export class OnAirService {
 		);
 		const allRows = this.buildAllRows(calendar, localNoteBySubjectId);
 		const directory = normalizePath(this.settings.syncDirectory || "Bangumi");
-		await this.ensureFolder(directory);
+		await ensureFolder(this.app, directory);
 		const path = normalizePath(`${directory}/${ON_AIR_FILE_NAME}`);
 		const content = this.renderOnAirNote(myRows, allRows);
 		const existing = this.app.vault.getAbstractFileByPath(path);
@@ -104,25 +113,17 @@ export class OnAirService {
 		client: BangumiClient,
 		username: string
 	): Promise<BangumiCollection[]> {
-		const collections: BangumiCollection[] = [];
-		for (const collectionType of ON_AIR_COLLECTION_TYPES) {
-			let offset = 0;
-			while (true) {
-				const page = await client.getCollections({
+		const groups = await Promise.all(
+			ON_AIR_COLLECTION_TYPES.map((collectionType) =>
+				client.getAllUserCollections({
 					username,
 					subjectType: BANGUMI_SUBJECT_TYPES.anime,
 					collectionType,
-					limit: PAGE_LIMIT,
-					offset
-				});
-				collections.push(...page.data);
-				offset += page.data.length;
-				if (page.data.length === 0 || offset >= page.total) {
-					break;
-				}
-			}
-		}
-		return collections;
+					pageSize: PAGE_LIMIT
+				})
+			)
+		);
+		return groups.flat();
 	}
 
 	private async buildMyRows(
@@ -182,7 +183,7 @@ export class OnAirService {
 			title,
 			localNoteBySubjectId
 		);
-		const status = this.renderCollectionStatus(collection.type);
+		const status = collectionStatusLabel(collection.type);
 		return `- [ ] ${link} · status: ${status}`;
 	}
 
@@ -272,38 +273,6 @@ export class OnAirService {
 		return `[${escapedTitle}](https://bgm.tv/subject/${subjectId})`;
 	}
 
-	private buildLocalNoteIndex(): Map<number, TFile> {
-		const directory = normalizePath(this.settings.syncDirectory || "Bangumi");
-		const index = new Map<number, TFile>();
-		for (const file of this.app.vault.getMarkdownFiles()) {
-			if (!file.path.startsWith(`${directory}/`) && file.parent?.path !== directory) {
-				continue;
-			}
-
-			const frontmatterId = Number(this.getFrontmatterBangumiId(file));
-			if (Number.isInteger(frontmatterId) && frontmatterId > 0) {
-				index.set(frontmatterId, file);
-				continue;
-			}
-
-			const idMatch = file.basename.match(/bgm-(\d+)/);
-			if (idMatch) {
-				index.set(Number(idMatch[1]), file);
-			}
-		}
-		return index;
-	}
-
-	private getFrontmatterBangumiId(file: TFile): unknown {
-		const frontmatter: unknown =
-			this.app.metadataCache.getFileCache(file)?.frontmatter;
-		if (typeof frontmatter !== "object" || frontmatter === null) {
-			return undefined;
-		}
-
-		return (frontmatter as { bangumi_id?: unknown }).bangumi_id;
-	}
-
 	private normalizeWeekday(weekday: number): number {
 		return weekday >= 1 && weekday <= 7 ? weekday : 7;
 	}
@@ -321,23 +290,6 @@ export class OnAirService {
 		return labels[weekday - 1] ?? String(weekday);
 	}
 
-	private renderCollectionStatus(type: number): string {
-		switch (type) {
-			case BANGUMI_COLLECTION_TYPES.wish:
-				return "wish";
-			case BANGUMI_COLLECTION_TYPES.collect:
-				return "collect";
-			case BANGUMI_COLLECTION_TYPES.do:
-				return "do";
-			case BANGUMI_COLLECTION_TYPES.onHold:
-				return "on_hold";
-			case BANGUMI_COLLECTION_TYPES.dropped:
-				return "dropped";
-			default:
-				return String(type);
-		}
-	}
-
 	private countRows(rows: Map<number, string[]>): number {
 		return Array.from(rows.values()).reduce(
 			(total, dayRows) => total + dayRows.length,
@@ -349,14 +301,4 @@ export class OnAirService {
 		return value.replace(/\[/g, "\\[").replace(/\]/g, "\\]").replace(/\n/g, " ");
 	}
 
-	private async ensureFolder(path: string): Promise<void> {
-		const parts = normalizePath(path).split("/");
-		let current = "";
-		for (const part of parts) {
-			current = current ? `${current}/${part}` : part;
-			if (!this.app.vault.getAbstractFileByPath(current)) {
-				await this.app.vault.createFolder(current);
-			}
-		}
-	}
 }

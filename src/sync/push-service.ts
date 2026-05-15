@@ -1,6 +1,7 @@
 import { App, TFile } from "obsidian";
 
 import { BangumiClient } from "../bangumi/client";
+import { collectionStatusLabel } from "../bangumi/labels";
 import {
 	BANGUMI_COLLECTION_TYPES,
 	BangumiCollectionType,
@@ -49,12 +50,14 @@ export class PushService {
 
 	constructor(
 		private readonly app: App,
-		private readonly settings: BangumiSyncSettings
+		private readonly settings: BangumiSyncSettings,
+		clientFactory: () => BangumiClient = () =>
+			new BangumiClient({
+				accessToken: settings.accessToken,
+				userAgent: settings.userAgent
+			})
 	) {
-		this.client = new BangumiClient({
-			accessToken: settings.accessToken,
-			userAgent: settings.userAgent
-		});
+		this.client = clientFactory();
 	}
 
 	async prepareCurrentNotePush(): Promise<PushPreview> {
@@ -164,7 +167,7 @@ export class PushService {
 					preview.markDone.length + preview.markUndone.length,
 				statusChanged: false,
 				remoteStatusChanged: true,
-				finalStatus: this.renderCollectionStatus(remoteAfterEpisodes.type),
+				finalStatus: collectionStatusLabel(remoteAfterEpisodes.type),
 				shouldResync: true
 			};
 		}
@@ -184,7 +187,7 @@ export class PushService {
 			changedEpisodes: preview.markDone.length + preview.markUndone.length,
 			statusChanged,
 			remoteStatusChanged: false,
-			finalStatus: this.renderCollectionStatus(finalCollectionType),
+			finalStatus: collectionStatusLabel(finalCollectionType),
 			shouldResync: statusChanged
 		};
 	}
@@ -244,39 +247,9 @@ export class PushService {
 		return null;
 	}
 
-	private async fetchAllSubjectEpisodeCollections(
+	private fetchAllSubjectEpisodeCollections(
 		subjectId: number
 	): Promise<BangumiEpisodeCollection[]> {
-		const episodes: BangumiEpisodeCollection[] = [];
-		let offset = 0;
-		const limit = 50;
-
-		while (true) {
-			const page = await this.client.getSubjectEpisodeCollections(subjectId, {
-				limit,
-				offset
-			});
-			episodes.push(...page.data);
-			offset += page.data.length;
-
-			if (page.data.length === 0 || offset >= page.total) {
-				return episodes;
-			}
-		}
-	}
-
-	private renderCollectionStatus(type: BangumiCollectionType): string {
-		switch (type) {
-			case BANGUMI_COLLECTION_TYPES.wish:
-				return "wish";
-			case BANGUMI_COLLECTION_TYPES.collect:
-				return "collect";
-			case BANGUMI_COLLECTION_TYPES.do:
-				return "do";
-			case BANGUMI_COLLECTION_TYPES.onHold:
-				return "on_hold";
-			case BANGUMI_COLLECTION_TYPES.dropped:
-				return "dropped";
-		}
+		return this.client.getAllSubjectEpisodeCollections(subjectId);
 	}
 }

@@ -5,21 +5,24 @@ import {
 	BangumiCollectionType,
 	BangumiEpisodeCollection,
 	BANGUMI_COLLECTION_TYPES,
-	BangumiSubjectExtras,
-	BangumiSubjectType
+	BangumiSubjectExtras
 } from "../bangumi/types";
 import { BangumiClient } from "../bangumi/client";
+import { collectionStatusLabel, subjectTypeLabel } from "../bangumi/labels";
 import { formatLocalDateTime } from "../date-format";
 import {
 	BANGUMI_STORAGE_LAYOUTS,
 	BangumiSyncSettings
 } from "../settings";
 import { t } from "../i18n";
+import { mapWithConcurrency } from "../utils/concurrency";
+import { ensureFolder } from "../utils/vault";
 import {
 	DEFAULT_SUBJECT_NOTE_TEMPLATE,
 	MarkdownRenderer
 } from "./markdown-renderer";
 import { NoteWriter } from "./note-writer";
+import { SubjectNoteIndex } from "./subject-note-index";
 
 export interface SyncResult {
 	synced: number;
@@ -93,7 +96,12 @@ interface DailyNotesPlugin {
 export class SyncService {
 	constructor(
 		private readonly app: App,
-		private readonly settings: BangumiSyncSettings
+		private readonly settings: BangumiSyncSettings,
+		private readonly clientFactory: () => BangumiClient = () =>
+			new BangumiClient({
+				accessToken: settings.accessToken,
+				userAgent: settings.userAgent
+			})
 	) {}
 
 	async sync(options: SyncOptions = {}): Promise<SyncResult> {
@@ -155,10 +163,7 @@ export class SyncService {
 			message: t("progressStarted")
 		});
 
-		const client = new BangumiClient({
-			accessToken: this.settings.accessToken,
-			userAgent: this.settings.userAgent
-		});
+		const client = this.clientFactory();
 		const username = this.settings.username || (await client.getMe()).username;
 		options.onProgress?.({
 			stage: "user",
@@ -166,7 +171,10 @@ export class SyncService {
 		});
 
 		const writer = this.createNoteWriter();
-		const existingSubjectIds = this.getExistingSubjectIds();
+		const noteIndex = SubjectNoteIndex.build(
+			this.app,
+			this.settings.syncDirectory
+		);
 		const seenSubjectIds = new Set<number>();
 		const failures: SyncFailure[] = [];
 		const syncStartedAt = new Date().toISOString();
@@ -181,19 +189,21 @@ export class SyncService {
 			options
 		);
 
+		const concurrency = this.settings.syncConcurrency || 1;
+
 		for (const subjectType of this.settings.subjectTypes) {
 			for (const collectionType of collectionTypes) {
-				const subjectTypeName = this.renderSubjectType(subjectType);
-				const collectionStatus = this.renderCollectionStatus(collectionType);
+				const subjectTypeName = subjectTypeLabel(subjectType);
+				const collectionStatus = collectionStatusLabel(collectionType);
 
 				let collections: BangumiCollection[];
 				try {
-					collections = await this.fetchAllCollections(
-						client,
+					collections = await client.getAllUserCollections({
 						username,
 						subjectType,
-						collectionType
-					);
+						collectionType,
+						pageSize: PAGE_LIMIT
+					});
 					totalCollections += collections.length;
 				} catch (error) {
 					hasBlockingFailure = true;
@@ -210,69 +220,57 @@ export class SyncService {
 					continue;
 				}
 
-				let groupProcessed = 0;
 				let groupWritten = 0;
 				let groupSkipped = 0;
 				let groupUnchanged = 0;
 
+				const workItems: BangumiCollection[] = [];
 				for (const collection of collections) {
 					const subjectId = collection.subject.id;
-					const title = this.getSubjectTitle(collection);
 					if (seenSubjectIds.has(subjectId)) {
 						skipped += 1;
 						groupSkipped += 1;
-						groupProcessed += 1;
 						continue;
 					}
 					seenSubjectIds.add(subjectId);
 
 					if (
 						this.shouldSkipUnchanged(collection) &&
-						existingSubjectIds.has(subjectId)
+						noteIndex.has(subjectId)
 					) {
 						incrementalSkipped += 1;
 						groupUnchanged += 1;
-						groupProcessed += 1;
 						continue;
 					}
+					workItems.push(collection);
+				}
 
-					let episodes: BangumiEpisodeCollection[] = [];
-					let episodeSyncError: string | undefined;
-					try {
-						episodes = await this.fetchAllEpisodeCollections(client, subjectId);
-					} catch (error) {
-						episodeSyncError = this.getErrorMessage(error);
-						failures.push({
-							stage: t("fetchEpisodesStage"),
-							subjectId,
-							title,
-							subjectType: this.renderSubjectType(collection.subject.type),
-							collectionStatus: this.renderCollectionStatus(collection.type),
-							error: episodeSyncError
-						});
-						console.error(
-							`Bangumi Sync failed to fetch episodes for subject ${subjectId}`,
-							error
-						);
-					}
+				await mapWithConcurrency(workItems, concurrency, async (collection) => {
+					const subjectId = collection.subject.id;
+					const title = this.getSubjectTitle(collection);
 
-					try {
-						const extras = await this.fetchSubjectExtras(
+					const [episodesResult, extras] = await Promise.all([
+						this.safeFetchEpisodeCollections(
 							client,
 							collection,
+							title,
 							failures
-						);
+						),
+						this.fetchSubjectExtras(client, collection, failures)
+					]);
+					const { episodes, episodeSyncError } = episodesResult;
+
+					try {
 						const result = await writer.writeSubjectNote(
-							this.settings.syncDirectory,
 							this.getTargetDirectory(collection),
 							{
 								collection,
 								episodes,
 								episodeSyncError,
 								extras
-							}
+							},
+							noteIndex
 						);
-						existingSubjectIds.add(subjectId);
 						if (result.changed) {
 							written += 1;
 							groupWritten += 1;
@@ -298,8 +296,8 @@ export class SyncService {
 							stage: t("writeNoteStage"),
 							subjectId,
 							title,
-							subjectType: this.renderSubjectType(collection.subject.type),
-							collectionStatus: this.renderCollectionStatus(collection.type),
+							subjectType: subjectTypeLabel(collection.subject.type),
+							collectionStatus: collectionStatusLabel(collection.type),
 							error: this.getErrorMessage(error)
 						});
 						console.error(
@@ -307,9 +305,9 @@ export class SyncService {
 							error
 						);
 					}
-					groupProcessed += 1;
-				}
+				});
 
+				const groupProcessed = groupWritten + groupSkipped + groupUnchanged;
 				options.onProgress?.({
 					stage: "summary",
 					message: t("syncGroupProgress", {
@@ -392,10 +390,7 @@ export class SyncService {
 			throw new Error(t("noToken"));
 		}
 
-		const client = new BangumiClient({
-			accessToken: this.settings.accessToken,
-			userAgent: this.settings.userAgent
-		});
+		const client = this.clientFactory();
 		const writer = this.createNoteWriter();
 		const subjectId = collection.subject.id;
 		let episodes: BangumiEpisodeCollection[] = [];
@@ -413,15 +408,19 @@ export class SyncService {
 		}
 
 		const extras = await this.fetchSubjectExtras(client, collection, failures);
+		const noteIndex = SubjectNoteIndex.build(
+			this.app,
+			this.settings.syncDirectory
+		);
 		const result = await writer.writeSubjectNote(
-			this.settings.syncDirectory,
 			this.getTargetDirectory(collection),
 			{
 				collection,
 				episodes,
 				episodeSyncError,
 				extras
-			}
+			},
+			noteIndex
 		);
 
 		return {
@@ -431,35 +430,35 @@ export class SyncService {
 		};
 	}
 
-	private async fetchAllCollections(
+	private async safeFetchEpisodeCollections(
 		client: BangumiClient,
-		username: string,
-		subjectType: BangumiSubjectType,
-		collectionType: BangumiCollectionType
-	): Promise<BangumiCollection[]> {
-		const collections: BangumiCollection[] = [];
-		let offset = 0;
-		let total = Number.POSITIVE_INFINITY;
-
-		while (offset < total) {
-			const page = await client.getCollections({
-				username,
-				subjectType,
-				collectionType,
-				limit: PAGE_LIMIT,
-				offset
+		collection: BangumiCollection,
+		title: string,
+		failures: SyncFailure[]
+	): Promise<{
+		episodes: BangumiEpisodeCollection[];
+		episodeSyncError?: string;
+	}> {
+		const subjectId = collection.subject.id;
+		try {
+			const episodes = await this.fetchAllEpisodeCollections(client, subjectId);
+			return { episodes };
+		} catch (error) {
+			const message = this.getErrorMessage(error);
+			failures.push({
+				stage: t("fetchEpisodesStage"),
+				subjectId,
+				title,
+				subjectType: subjectTypeLabel(collection.subject.type),
+				collectionStatus: collectionStatusLabel(collection.type),
+				error: message
 			});
-
-			total = page.total;
-			collections.push(...page.data);
-
-			if (page.data.length === 0) {
-				break;
-			}
-			offset += page.data.length;
+			console.error(
+				`Bangumi Sync failed to fetch episodes for subject ${subjectId}`,
+				error
+			);
+			return { episodes: [], episodeSyncError: message };
 		}
-
-		return collections;
 	}
 
 	private async fetchSubjectExtras(
@@ -472,68 +471,89 @@ export class SyncService {
 		const extras: BangumiSubjectExtras = {};
 		const errors: string[] = [];
 
+		const tasks: Array<Promise<void>> = [];
+
 		if (this.shouldFetchDetailedSubjectInfo()) {
-			try {
-				collection.subject = {
-					...collection.subject,
-					...(await client.getSubject(subjectId))
-				};
-			} catch (error) {
-				this.recordExtraFailure(
-					failures,
-					errors,
-					collection,
-					title,
-					"fetch detailed subject info",
-					error
-				);
-			}
+			tasks.push(
+				client
+					.getSubject(subjectId)
+					.then((detailed) => {
+						collection.subject = { ...collection.subject, ...detailed };
+					})
+					.catch((error) => {
+						this.recordExtraFailure(
+							failures,
+							errors,
+							collection,
+							title,
+							"fetch detailed subject info",
+							error
+						);
+					})
+			);
 		}
 
 		if (this.shouldFetchStaff()) {
-			try {
-				extras.staff = await client.getSubjectPersons(subjectId);
-			} catch (error) {
-				this.recordExtraFailure(
-					failures,
-					errors,
-					collection,
-					title,
-					"fetch staff",
-					error
-				);
-			}
+			tasks.push(
+				client
+					.getSubjectPersons(subjectId)
+					.then((staff) => {
+						extras.staff = staff;
+					})
+					.catch((error) => {
+						this.recordExtraFailure(
+							failures,
+							errors,
+							collection,
+							title,
+							"fetch staff",
+							error
+						);
+					})
+			);
 		}
 
 		if (this.shouldFetchCharacters()) {
-			try {
-				extras.characters = await client.getSubjectCharacters(subjectId);
-			} catch (error) {
-				this.recordExtraFailure(
-					failures,
-					errors,
-					collection,
-					title,
-					"fetch characters",
-					error
-				);
-			}
+			tasks.push(
+				client
+					.getSubjectCharacters(subjectId)
+					.then((characters) => {
+						extras.characters = characters;
+					})
+					.catch((error) => {
+						this.recordExtraFailure(
+							failures,
+							errors,
+							collection,
+							title,
+							"fetch characters",
+							error
+						);
+					})
+			);
 		}
 
 		if (this.shouldFetchRelations()) {
-			try {
-				extras.relations = await client.getRelatedSubjects(subjectId);
-			} catch (error) {
-				this.recordExtraFailure(
-					failures,
-					errors,
-					collection,
-					title,
-					"fetch relations",
-					error
-				);
-			}
+			tasks.push(
+				client
+					.getRelatedSubjects(subjectId)
+					.then((relations) => {
+						extras.relations = relations;
+					})
+					.catch((error) => {
+						this.recordExtraFailure(
+							failures,
+							errors,
+							collection,
+							title,
+							"fetch relations",
+							error
+						);
+					})
+			);
 		}
+
+		await Promise.all(tasks);
 
 		if (errors.length > 0) {
 			extras.errors = errors;
@@ -556,8 +576,8 @@ export class SyncService {
 			stage,
 			subjectId: collection.subject.id,
 			title,
-			subjectType: this.renderSubjectType(collection.subject.type),
-			collectionStatus: this.renderCollectionStatus(collection.type),
+			subjectType: subjectTypeLabel(collection.subject.type),
+			collectionStatus: collectionStatusLabel(collection.type),
 			error: message
 		});
 		console.error(
@@ -677,7 +697,7 @@ export class SyncService {
 		const path = this.getDailyNotePath();
 		const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
 		if (folder) {
-			await this.ensureFolder(folder);
+			await ensureFolder(this.app,folder);
 		}
 
 		const existing = this.app.vault.getAbstractFileByPath(path);
@@ -871,41 +891,6 @@ export class SyncService {
 		return updatedAt <= lastSyncedAt;
 	}
 
-	private getExistingSubjectIds(): Set<number> {
-		const directory = normalizePath(this.settings.syncDirectory);
-		const ids = new Set<number>();
-
-		for (const file of this.app.vault.getMarkdownFiles()) {
-			if (!file.path.startsWith(`${directory}/`) && file.parent?.path !== directory) {
-				continue;
-			}
-
-			const frontmatterId = this.getFrontmatterBangumiId(file);
-			const parsedFrontmatterId = Number(frontmatterId);
-			if (Number.isInteger(parsedFrontmatterId)) {
-				ids.add(parsedFrontmatterId);
-				continue;
-			}
-
-			const idMatch = file.basename.match(/bgm-(\d+)/);
-			if (idMatch) {
-				ids.add(Number(idMatch[1]));
-			}
-		}
-
-		return ids;
-	}
-
-	private getFrontmatterBangumiId(file: TFile): unknown {
-		const frontmatter: unknown =
-			this.app.metadataCache.getFileCache(file)?.frontmatter;
-		if (typeof frontmatter !== "object" || frontmatter === null) {
-			return undefined;
-		}
-
-		return (frontmatter as { bangumi_id?: unknown }).bangumi_id;
-	}
-
 	private async fetchAllEpisodeCollections(
 		client: BangumiClient,
 		subjectId: number
@@ -922,8 +907,8 @@ export class SyncService {
 
 	private getTargetDirectory(collection: BangumiCollection): string {
 		const root = this.settings.syncDirectory;
-		const subjectType = this.renderSubjectType(collection.subject.type);
-		const collectionStatus = this.renderCollectionStatus(collection.type);
+		const subjectType = subjectTypeLabel(collection.subject.type);
+		const collectionStatus = collectionStatusLabel(collection.type);
 
 		switch (this.settings.storageLayout) {
 			case BANGUMI_STORAGE_LAYOUTS.subjectThenCollection:
@@ -945,7 +930,7 @@ export class SyncService {
 		failures: SyncFailure[];
 	}): Promise<string> {
 		const directory = normalizePath(this.settings.syncDirectory);
-		await this.ensureFolder(directory);
+		await ensureFolder(this.app,directory);
 		const path = normalizePath(`${directory}/${REPORT_FILE_NAME}`);
 		const content = this.renderFailureReport(params);
 		const existing = this.app.vault.getAbstractFileByPath(path);
@@ -1005,57 +990,11 @@ export class SyncService {
 		return failure.stage;
 	}
 
-	private async ensureFolder(path: string): Promise<void> {
-		const parts = normalizePath(path).split("/");
-		let current = "";
-
-		for (const part of parts) {
-			current = current ? `${current}/${part}` : part;
-			if (!this.app.vault.getAbstractFileByPath(current)) {
-				await this.app.vault.createFolder(current);
-			}
-		}
-	}
-
 	private getSubjectTitle(collection: BangumiCollection): string {
 		return collection.subject.name_cn || collection.subject.name;
 	}
 
 	private getErrorMessage(error: unknown): string {
 		return error instanceof Error ? error.message : String(error);
-	}
-
-	private renderCollectionStatus(type: number): string {
-		switch (type) {
-			case 1:
-				return "wish";
-			case 2:
-				return "collect";
-			case 3:
-				return "do";
-			case 4:
-				return "on_hold";
-			case 5:
-				return "dropped";
-			default:
-				return String(type);
-		}
-	}
-
-	private renderSubjectType(type: number): string {
-		switch (type) {
-			case 1:
-				return "book";
-			case 2:
-				return "anime";
-			case 3:
-				return "music";
-			case 4:
-				return "game";
-			case 6:
-				return "real";
-			default:
-				return String(type);
-		}
 	}
 }

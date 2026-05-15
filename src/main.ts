@@ -13,10 +13,12 @@ import {
 	BangumiSyncSettingTab,
 	BangumiSyncSettings,
 	buildUserAgent,
-	DEFAULT_SETTINGS
+	DEFAULT_SETTINGS,
+	sanitizeLoadedSettings
 } from "./settings";
 import { t } from "./i18n";
 import { BangumiApiError, BangumiClient } from "./bangumi/client";
+import { collectionStatusLabel, subjectTypeLabel } from "./bangumi/labels";
 import {
 	BANGUMI_COLLECTION_TYPES,
 	BANGUMI_SUBJECT_TYPES,
@@ -24,6 +26,7 @@ import {
 	BangumiCollectionType,
 	BangumiSubject
 } from "./bangumi/types";
+import { ensureFolder } from "./utils/vault";
 import {
 	DEFAULT_SUBJECT_NOTE_TEMPLATE,
 	DEFAULT_SUBJECT_NOTE_TEMPLATE_WITHOUT_SUMMARY,
@@ -175,6 +178,25 @@ cover: {{cover_yaml}}
 
 export default class BangumiSyncPlugin extends Plugin {
 	settings: BangumiSyncSettings;
+	private cachedClient: BangumiClient | null = null;
+	private cachedClientToken = "";
+	private cachedClientUserAgent = "";
+
+	getBangumiClient(): BangumiClient {
+		if (
+			this.cachedClient === null ||
+			this.cachedClientToken !== this.settings.accessToken ||
+			this.cachedClientUserAgent !== this.settings.userAgent
+		) {
+			this.cachedClient = new BangumiClient({
+				accessToken: this.settings.accessToken,
+				userAgent: this.settings.userAgent
+			});
+			this.cachedClientToken = this.settings.accessToken;
+			this.cachedClientUserAgent = this.settings.userAgent;
+		}
+		return this.cachedClient;
+	}
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -216,18 +238,16 @@ export default class BangumiSyncPlugin extends Plugin {
 
 	async loadSettings(): Promise<void> {
 		const loadedData: unknown = await this.loadData();
-		const loadedSettings: Partial<BangumiSyncSettings> =
-			this.isSettingsRecord(loadedData) ? loadedData : {};
+		const { settings: loadedSettings, invalidFields } =
+			sanitizeLoadedSettings(loadedData);
+		if (invalidFields.length > 0) {
+			console.warn(
+				`[bangumi-sync] dropped invalid settings fields, defaults applied: ${invalidFields.join(", ")}`
+			);
+		}
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings);
 		this.settings.username = "";
 		this.settings.userAgent = buildUserAgent(this.manifest.version);
-		this.settings.fetchDetailedSubjectInfo =
-			this.settings.fetchDetailedSubjectInfo === true;
-		this.settings.enableOnAirNote = this.settings.enableOnAirNote === true;
-		this.settings.enableWriteBack = this.settings.enableWriteBack === true;
-		this.settings.fetchStaff = this.settings.fetchStaff === true;
-		this.settings.fetchCharacters = this.settings.fetchCharacters === true;
-		this.settings.fetchRelations = this.settings.fetchRelations === true;
 		let migrated = false;
 		if (
 			this.settings.subjectNoteTemplate ===
@@ -247,14 +267,10 @@ export default class BangumiSyncPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	private isSettingsRecord(value: unknown): value is Partial<BangumiSyncSettings> {
-		return typeof value === "object" && value !== null;
-	}
-
 	async openTemplateVariablesDoc(): Promise<void> {
 		try {
 			const directory = normalizePath(this.settings.syncDirectory || "Bangumi");
-			await this.ensureFolder(directory);
+			await ensureFolder(this.app, directory);
 			const path = normalizePath(`${directory}/${TEMPLATE_VARIABLES_FILE_NAME}`);
 			const existing = this.app.vault.getAbstractFileByPath(path);
 			const file =
@@ -301,10 +317,7 @@ export default class BangumiSyncPlugin extends Plugin {
 		}
 
 		try {
-			const user = await new BangumiClient({
-				accessToken: this.settings.accessToken,
-				userAgent: this.settings.userAgent
-			}).getMe();
+			const user = await this.getBangumiClient().getMe();
 			new Notice(t("testTokenSucceeded", { username: user.username }));
 		} catch (error) {
 			const message =
@@ -319,10 +332,7 @@ export default class BangumiSyncPlugin extends Plugin {
 			new Notice(t("noToken"));
 			return;
 		}
-		const client = new BangumiClient({
-			accessToken: this.settings.accessToken,
-			userAgent: this.settings.userAgent
-		});
+		const client = this.getBangumiClient();
 		new SubjectLookupModal(
 			this.app,
 			client,
@@ -376,7 +386,8 @@ export default class BangumiSyncPlugin extends Plugin {
 
 			const result = await new SyncService(
 				this.app,
-				this.settings
+				this.settings,
+				() => this.getBangumiClient()
 			).syncSubjectCollection(collection);
 			const title = this.getSubjectTitle(collection.subject);
 			new Notice(
@@ -566,18 +577,6 @@ export default class BangumiSyncPlugin extends Plugin {
 		return value.trim().replace(/^Bearer\s+/i, "").trim();
 	}
 
-	private async ensureFolder(path: string): Promise<void> {
-		const parts = normalizePath(path).split("/");
-		let current = "";
-
-		for (const part of parts) {
-			current = current ? `${current}/${part}` : part;
-			if (!this.app.vault.getAbstractFileByPath(current)) {
-				await this.app.vault.createFolder(current);
-			}
-		}
-	}
-
 	private async pushCurrentNoteToBangumi(): Promise<void> {
 		if (!this.settings.enableWriteBack) {
 			new Notice(t("pushWriteBackDisabled"));
@@ -589,7 +588,9 @@ export default class BangumiSyncPlugin extends Plugin {
 		}
 
 		try {
-			const service = new PushService(this.app, this.settings);
+			const service = new PushService(this.app, this.settings, () =>
+				this.getBangumiClient()
+			);
 			const preview = await service.prepareCurrentNotePush();
 			if (preview.unknownEpisodeIds.length > 0) {
 				new Notice(
@@ -629,7 +630,11 @@ export default class BangumiSyncPlugin extends Plugin {
 
 	async updateOnAirNote(): Promise<void> {
 		try {
-			const result = await new OnAirService(this.app, this.settings).update();
+			const result = await new OnAirService(
+				this.app,
+				this.settings,
+				() => this.getBangumiClient()
+			).update();
 			new Notice(result.message);
 		} catch (error) {
 			const message =
@@ -647,7 +652,11 @@ export default class BangumiSyncPlugin extends Plugin {
 
 	private async syncNow(): Promise<void> {
 		try {
-			const result = await new SyncService(this.app, this.settings).sync({
+			const result = await new SyncService(
+				this.app,
+				this.settings,
+				() => this.getBangumiClient()
+			).sync({
 				onProgress: (progress) => {
 					if (
 						progress.stage === "start" ||
@@ -663,7 +672,8 @@ export default class BangumiSyncPlugin extends Plugin {
 				try {
 					const onAirResult = await new OnAirService(
 						this.app,
-						this.settings
+						this.settings,
+						() => this.getBangumiClient()
 					).update();
 					new Notice(onAirResult.message);
 				} catch (error) {
@@ -811,7 +821,7 @@ class SubjectLookupModal extends SuggestModal<SubjectLookupSuggestion> {
 			subject.date,
 			subject.rating?.score ? `score ${subject.rating.score}` : "",
 			`bgm-${subject.id}`,
-			`🏷 ${renderSubjectType(subject.type)}`
+			`🏷 ${subjectTypeLabel(subject.type)}`
 		].filter((value) => value);
 
 		el.createDiv({ text: `${title}${original}` });
@@ -889,7 +899,7 @@ function renderPushPreview(preview: PushPreview): string {
 	const lines = [
 		`Subject: bgm-${preview.subjectId}`,
 		`File: ${preview.file.path}`,
-		`Status: ${renderCollectionStatus(preview.remoteCollectionType)} -> ${preview.localStatus}`,
+		`Status: ${collectionStatusLabel(preview.remoteCollectionType)} -> ${preview.localStatus}`,
 		`Mark done: ${preview.markDone.length}`,
 		...preview.markDone.map(
 			(change) =>
@@ -905,34 +915,3 @@ function renderPushPreview(preview: PushPreview): string {
 	return lines.join("\n");
 }
 
-function renderCollectionStatus(type: BangumiCollectionType): string {
-	switch (type) {
-		case BANGUMI_COLLECTION_TYPES.wish:
-			return "wish";
-		case BANGUMI_COLLECTION_TYPES.collect:
-			return "collect";
-		case BANGUMI_COLLECTION_TYPES.do:
-			return "do";
-		case BANGUMI_COLLECTION_TYPES.onHold:
-			return "on_hold";
-		case BANGUMI_COLLECTION_TYPES.dropped:
-			return "dropped";
-	}
-}
-
-function renderSubjectType(type: number): string {
-	switch (type) {
-		case BANGUMI_SUBJECT_TYPES.book:
-			return "book";
-		case BANGUMI_SUBJECT_TYPES.anime:
-			return "anime";
-		case BANGUMI_SUBJECT_TYPES.music:
-			return "music";
-		case BANGUMI_SUBJECT_TYPES.game:
-			return "game";
-		case BANGUMI_SUBJECT_TYPES.real:
-			return "real";
-		default:
-			return String(type);
-	}
-}

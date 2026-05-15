@@ -6,6 +6,7 @@ import {
 	BangumiFileNameFormat
 } from "../settings";
 import { MarkdownRenderer } from "./markdown-renderer";
+import { SubjectNoteIndex } from "./subject-note-index";
 
 export interface NoteWriteResult {
 	file: TFile;
@@ -20,14 +21,12 @@ export class NoteWriter {
 	) {}
 
 	async writeSubjectNote(
-		syncRootDirectory: string,
 		targetDirectory: string,
-		subject: BangumiSyncedSubject
+		subject: BangumiSyncedSubject,
+		index: SubjectNoteIndex
 	): Promise<NoteWriteResult> {
-		const existing = this.findExistingSubjectNote(
-			subject.collection.subject.id,
-			syncRootDirectory
-		);
+		const subjectId = subject.collection.subject.id;
+		const existing = index.get(subjectId);
 		const rendered = this.renderer.renderSubjectNote(subject);
 
 		if (existing) {
@@ -46,12 +45,13 @@ export class NoteWriter {
 		const title =
 			subject.collection.subject.name_cn || subject.collection.subject.name;
 		const path = normalizePath(
-			`${directory}/${this.buildFileName(title, subject.collection.subject.id)}.md`
+			`${directory}/${this.buildFileName(title, subjectId)}.md`
 		);
 		const existingAtPath = this.app.vault.getAbstractFileByPath(path);
 		if (existingAtPath instanceof TFile) {
 			const previous = await this.app.vault.read(existingAtPath);
 			const next = this.renderer.mergeSyncedContent(previous, rendered);
+			index.add(subjectId, existingAtPath);
 			if (next === previous) {
 				return { file: existingAtPath, changed: false };
 			}
@@ -60,44 +60,8 @@ export class NoteWriter {
 		}
 
 		const file = await this.app.vault.create(path, rendered);
+		index.add(subjectId, file);
 		return { file, changed: true };
-	}
-
-	private findExistingSubjectNote(
-		subjectId: number,
-		syncDirectory: string
-	): TFile | null {
-		const directory = normalizePath(syncDirectory);
-		const idMarker = `[bgm-${subjectId}]`;
-
-		return (
-			this.app.vault
-				.getMarkdownFiles()
-				.find(
-					(file) =>
-						file.path.startsWith(`${directory}/`) &&
-						String(this.getFrontmatterBangumiId(file)) === String(subjectId)
-				) ??
-			this.app.vault
-				.getMarkdownFiles()
-				.find(
-					(file) =>
-						file.path.startsWith(`${directory}/`) &&
-						(file.basename.includes(idMarker) ||
-							file.basename.includes(String(subjectId)))
-				) ??
-			null
-		);
-	}
-
-	private getFrontmatterBangumiId(file: TFile): unknown {
-		const frontmatter: unknown =
-			this.app.metadataCache.getFileCache(file)?.frontmatter;
-		if (typeof frontmatter !== "object" || frontmatter === null) {
-			return undefined;
-		}
-
-		return (frontmatter as { bangumi_id?: unknown }).bangumi_id;
 	}
 
 	private async ensureFolder(path: string): Promise<void> {
