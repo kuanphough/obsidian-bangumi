@@ -261,7 +261,9 @@ export class MarkdownRenderer {
 				}
 				const checked = item.type > 0 ? "x" : " ";
 				const title = episode.name_cn || episode.name || `Episode ${episode.sort}`;
-				return `- [${checked}] EP${episode.sort} ${title}`;
+				const airdate = episode.airdate ?? "";
+				const displayDate = airdate ? ` · ${airdate}` : "";
+				return `- [${checked}] EP${episode.sort} ${title}${displayDate} <!-- bgm-ep:${episode.id} sort:${episode.sort} type:${episode.type} airdate:${airdate} -->`;
 			})
 			.filter((line): line is string => line !== null)
 			.join("\n");

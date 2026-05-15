@@ -3,6 +3,7 @@ import { requestUrl } from "obsidian";
 import {
 	BangumiCollection,
 	BangumiCollectionType,
+	BangumiCalendarDay,
 	BangumiCharacter,
 	BangumiEpisodeCollection,
 	BangumiPagedResponse,
@@ -61,6 +62,10 @@ export class BangumiClient {
 		return this.request<BangumiUser>("/v0/me");
 	}
 
+	async getCalendar(): Promise<BangumiCalendarDay[]> {
+		return this.request<BangumiCalendarDay[]>("/calendar");
+	}
+
 	async getCollections(params: {
 		username: string;
 		subjectType: number;
@@ -101,10 +106,67 @@ export class BangumiClient {
 	}
 
 	async getSubjectEpisodeCollections(
-		subjectId: number
+		subjectId: number,
+		params: {
+			limit?: number;
+			offset?: number;
+		} = {}
 	): Promise<BangumiPagedResponse<BangumiEpisodeCollection>> {
+		const search = new URLSearchParams({
+			limit: String(params.limit ?? 50),
+			offset: String(params.offset ?? 0)
+		});
+
 		return this.request<BangumiPagedResponse<BangumiEpisodeCollection>>(
-			`/v0/users/-/collections/${subjectId}/episodes`
+			`/v0/users/-/collections/${subjectId}/episodes?${search.toString()}`
+		);
+	}
+
+	async patchSubjectCollection(params: {
+		subjectId: number;
+		type: BangumiCollectionType;
+	}): Promise<void> {
+		await this.request<void>(`/v0/users/-/collections/${params.subjectId}`, {
+			method: "PATCH",
+			body: {
+				type: params.type
+			}
+		});
+	}
+
+	async patchSubjectEpisodeCollections(params: {
+		subjectId: number;
+		episodeIds: number[];
+		type: number;
+	}): Promise<void> {
+		if (params.episodeIds.length === 0) {
+			return;
+		}
+
+		await this.request<void>(
+			`/v0/users/-/collections/${params.subjectId}/episodes`,
+			{
+				method: "PATCH",
+				body: {
+					episode_id: params.episodeIds,
+					type: params.type
+				}
+			}
+		);
+	}
+
+	async putEpisodeCollection(params: {
+		episodeId: number;
+		type: number;
+	}): Promise<void> {
+		await this.request<void>(
+			`/v0/users/-/collections/-/episodes/${params.episodeId}`,
+			{
+				method: "PUT",
+				body: {
+					type: params.type
+				}
+			}
 		);
 	}
 
@@ -148,7 +210,7 @@ export class BangumiClient {
 	private async request<T>(
 		path: string,
 		options: {
-			method?: "GET" | "POST";
+			method?: "GET" | "POST" | "PATCH" | "PUT";
 			body?: unknown;
 		} = {}
 	): Promise<T> {

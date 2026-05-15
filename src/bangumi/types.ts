@@ -36,6 +36,7 @@ export interface BangumiImages {
 
 export interface BangumiSubject {
 	id: number;
+	url?: string;
 	type: number;
 	name: string;
 	name_cn?: string;
@@ -63,6 +64,16 @@ export interface BangumiSubject {
 		on_hold?: number;
 		dropped?: number;
 	};
+}
+
+export interface BangumiCalendarDay {
+	weekday: {
+		en?: string;
+		cn?: string;
+		ja?: string;
+		id: number;
+	};
+	items: BangumiSubject[];
 }
 
 export interface BangumiSubjectTag {

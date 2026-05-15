@@ -16,3 +16,9 @@
 	margin-top: 8px;
 	margin-bottom: 8px;
 }
+
+.bangumi-note-push-preview {
+	white-space: pre-wrap;
+	max-height: 320px;
+	overflow: auto;
+}

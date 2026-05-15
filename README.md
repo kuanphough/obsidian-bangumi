@@ -14,6 +14,7 @@ Bangumi Sync 是一个 Obsidian 插件，用于把 Bangumi 收藏同步到本地
 - 同步评分、标签、评论、封面、章节 checklist 和轻量进度字段 `progress_done`。
 - 保留 `## Notes` 等同步块外的手写内容。
 - 可选把本次新增或更新的进行中条目写入 Daily Note。
+- 可选生成独立的每日放送笔记，包含全列表和你的想看/进行中动画收藏列表。
 - 支持单独搜索并同步一个条目，可输入 Bangumi 链接、ID、中文名、原名或标题关键词。
 - 支持自定义条目笔记模板和 frontmatter 字段。
 - 同步失败时生成 `Bangumi Sync Report.md`，方便排查问题。
@@ -94,6 +95,7 @@ BRAT 适合测试开发版。正式发布后，普通用户更建议使用 Obsid
 | `Include on hold/dropped` | 是否同步搁置和抛弃条目。 |
 | `Incremental sync` | 根据 Bangumi 更新时间跳过未变化条目，并补回本地缺失文件。 |
 | `Daily note sync` | 将本次新增或更新的进行中条目写入今天的 Daily Note 同步块。 |
+| `Enable On Air note` | 同步后生成 `Bangumi/On Air.md`，按星期展示全站放送和你的想看/进行中动画收藏。 |
 | `Subject note template` | 自定义条目笔记 Markdown 模板。 |
 
 ## 单独同步条目
@@ -107,6 +109,20 @@ BRAT 适合测试开发版。正式发布后，普通用户更建议使用 Obsid
 如果输入的是链接或 ID，候选框会显示一条直接同步选项。如果输入的是关键词，插件会搜索书籍、动画、音乐、游戏和三次元条目，并在候选结果里显示年份、评分、`bgm-id` 和条目类型标签。
 
 如果条目已经在你的 Bangumi 收藏里，插件会读取真实收藏状态、评分、标签和评论。如果条目不在收藏里，插件会让你选择一个本地状态，用于生成笔记和分类；这个状态只保存在本地笔记中，不会写回 Bangumi。
+
+## 每日放送
+
+开启 `Enable On Air note` 后，每次 `Sync now` 完成都会更新独立笔记 `Bangumi/On Air.md`。也可以运行命令 `Bangumi Sync: Update On Air note` 手动刷新。
+
+第一版使用 Bangumi legacy `/calendar` 一周动画放送表。笔记里会生成两个分区：`My Collections` 只显示你的 `wish` 和 `do` 动画收藏；`All On Air` 显示 Bangumi 日历里的完整放送列表。两个分区都按星期一到星期日分组。
+
+收藏分区每条是 todo 格式，不再逐条拉取章节进度，刷新速度更快：
+
+```markdown
+- [ ] [[本地条目笔记|标题]] · status: do
+```
+
+如果本地已有对应条目笔记，标题会链接到本地笔记；否则链接到 Bangumi 条目页。因为 `/calendar` 是动画放送表，本功能暂不支持书籍、音乐、游戏和三次元。
 
 ## 同步行为
 

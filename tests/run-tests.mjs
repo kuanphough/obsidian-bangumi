@@ -53,15 +53,22 @@ export function getLanguage() {
 	return "en";
 }
 export const moment = () => ({ format: () => "2026-05-14" });
-export async function requestUrl() {
+export async function requestUrl(options) {
+	requestUrl.calls.push(options);
+	if (requestUrl.handler) {
+		return requestUrl.handler(options);
+	}
 	return { status: 200, text: "", json: {} };
 }
+requestUrl.calls = [];
+requestUrl.handler = null;
 `;
 
 const entry = `
 import assert from "node:assert/strict";
-import { TFile } from "obsidian";
+import { TFile, requestUrl } from "obsidian";
 import BangumiSyncPlugin from "./src/main.ts";
+import { BangumiClient } from "./src/bangumi/client.ts";
 import { BANGUMI_COLLECTION_TYPES, BANGUMI_SUBJECT_TYPES } from "./src/bangumi/types.ts";
 import { DEFAULT_SETTINGS, BANGUMI_FILE_NAME_FORMATS } from "./src/settings.ts";
 import {
@@ -72,6 +79,7 @@ import {
 } from "./src/sync/markdown-renderer.ts";
 import { NoteWriter } from "./src/sync/note-writer.ts";
 import { SyncService } from "./src/sync/sync-service.ts";
+import { OnAirService } from "./src/sync/on-air-service.ts";
 
 function makeSubject(overrides = {}) {
 	return {
@@ -92,7 +100,7 @@ function makeSubject(overrides = {}) {
 			}
 		},
 		episodes: [
-			{ type: 2, episode: { id: 1, type: 0, sort: 1, name: "One" } },
+			{ type: 2, episode: { id: 1, type: 0, sort: 1, name: "One", airdate: "2026-01-01" } },
 			{ type: 0, episode: { id: 2, type: 0, sort: 2, name: "Two" } }
 		],
 		...overrides
@@ -131,6 +139,130 @@ function makeApp(files = [], contents = new Map(), frontmatter = new Map()) {
 }
 
 {
+	requestUrl.calls.length = 0;
+	await new BangumiClient({
+		accessToken: "token",
+		userAgent: "test"
+	}).patchSubjectEpisodeCollections({
+		subjectId: 123,
+		episodeIds: [101, 102],
+		type: 2
+	});
+	assert.deepEqual(
+		requestUrl.calls.map((call) => [call.method, call.url, call.body]),
+		[
+			[
+				"PATCH",
+				"https://api.bgm.tv/v0/users/-/collections/123/episodes",
+				'{"episode_id":[101,102],"type":2}'
+			]
+		]
+	);
+}
+
+{
+	requestUrl.calls.length = 0;
+	await new BangumiClient({
+		accessToken: "token",
+		userAgent: "test"
+	}).putEpisodeCollection({
+		episodeId: 101,
+		type: 2
+	});
+	assert.deepEqual(
+		requestUrl.calls.map((call) => [call.method, call.url, call.body]),
+		[
+			[
+				"PUT",
+				"https://api.bgm.tv/v0/users/-/collections/-/episodes/101",
+				'{"type":2}'
+			]
+		]
+	);
+}
+
+{
+	requestUrl.calls.length = 0;
+	requestUrl.handler = (options) => {
+		if (options.url.endsWith("/v0/me")) {
+			return { status: 200, text: "", json: { username: "me" } };
+		}
+		if (options.url.endsWith("/calendar")) {
+			return {
+				status: 200,
+				text: "",
+				json: [
+					{
+						weekday: { id: 1, en: "Mon", cn: "星期一" },
+						items: [
+							{ id: 123, type: BANGUMI_SUBJECT_TYPES.anime, name: "Original", name_cn: "Show" },
+							{ id: 999, type: BANGUMI_SUBJECT_TYPES.anime, name: "Other" }
+						]
+					}
+				]
+			};
+		}
+		if (options.url.includes("/collections?") && options.url.includes("type=1")) {
+			return {
+				status: 200,
+				text: "",
+				json: {
+					total: 1,
+					limit: 50,
+					offset: 0,
+					data: [
+						{
+							type: BANGUMI_COLLECTION_TYPES.wish,
+							subject: {
+								id: 123,
+								type: BANGUMI_SUBJECT_TYPES.anime,
+								name: "Original",
+								name_cn: "Show",
+								eps: 12
+							}
+						}
+					]
+				}
+			};
+		}
+		if (options.url.includes("/collections?") && options.url.includes("type=3")) {
+			return {
+				status: 200,
+				text: "",
+				json: { total: 0, limit: 50, offset: 0, data: [] }
+			};
+		}
+		if (options.url.includes("/collections/123/episodes")) {
+			throw new Error("On Air note should not fetch episode progress");
+		}
+		return { status: 200, text: "", json: {} };
+	};
+	const file = new TFile("Bangumi/Show [bgm-123].md");
+	const { app, contents, frontmatter, created } = makeApp([file]);
+	frontmatter.set(file.path, { bangumi_id: 123 });
+	const result = await new OnAirService(app, {
+		...DEFAULT_SETTINGS,
+		accessToken: "token",
+		userAgent: "test",
+		syncDirectory: "Bangumi"
+	}).update();
+	requestUrl.handler = null;
+	assert.equal(result.path, "Bangumi/On Air.md");
+	assert.equal(result.count, 1);
+	assert.equal(created.length, 1);
+	const content = contents.get("Bangumi/On Air.md");
+	assert.match(content, /<!-- bangumi-onair-start -->/);
+	assert.match(content, /## My Collections/);
+	assert.match(content, /## All On Air/);
+	assert.match(content, /### Monday/);
+	assert.match(content, /- \\[ \\] \\[\\[Bangumi\\/Show \\[bgm-123\\]\\|Show\\]\\] · status: wish/);
+	assert.doesNotMatch(content, /progress:/);
+	assert.match(content, /- \\[Other\\]\\(https:\\/\\/bgm\\.tv\\/subject\\/999\\)/);
+	const myCollectionsSection = content.match(/## My Collections[\\s\\S]*?## All On Air/)?.[0] ?? "";
+	assert.doesNotMatch(myCollectionsSection, /### Tuesday/);
+}
+
+{
 	const rendered = new MarkdownRenderer().renderSubjectNote(makeSubject());
 	assert.match(rendered, /progress_done: 1/);
 	assert.doesNotMatch(rendered, /progress_total:/);
@@ -139,6 +271,7 @@ function makeApp(files = [], contents = new Map(), frontmatter = new Map()) {
 	assert.doesNotMatch(rendered, /next_episode:/);
 	assert.doesNotMatch(rendered, /last_done_episode:/);
 	assert.doesNotMatch(rendered, /air_date:/);
+	assert.match(rendered, /EP1 One · 2026-01-01 <!-- bgm-ep:1 sort:1 type:0 airdate:2026-01-01 -->/);
 }
 
 {

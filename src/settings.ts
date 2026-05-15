@@ -25,6 +25,8 @@ export interface BangumiSyncSettings {
 	includeOnHoldAndDropped: boolean;
 	incrementalSync: boolean;
 	dailyNoteSync: boolean;
+	enableOnAirNote: boolean;
+	enableWriteBack: boolean;
 	fetchDetailedSubjectInfo: boolean;
 	fetchStaff: boolean;
 	fetchCharacters: boolean;
@@ -72,6 +74,8 @@ export const DEFAULT_SETTINGS: BangumiSyncSettings = {
 	includeOnHoldAndDropped: false,
 	incrementalSync: true,
 	dailyNoteSync: false,
+	enableOnAirNote: false,
+	enableWriteBack: false,
 	fetchDetailedSubjectInfo: false,
 	fetchStaff: false,
 	fetchCharacters: false,
@@ -357,6 +361,25 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 		dailySnippetEl.readOnly = true;
 		dailySnippetEl.rows = 2;
 		dailySnippetEl.addClass("bangumi-note-daily-sync-snippet");
+
+		new Setting(containerEl)
+			.setName(t("enableOnAirNote"))
+			.setDesc(t("enableOnAirNoteDesc"))
+			.addButton((button) =>
+				button
+					.setButtonText(t("updateOnAirNote"))
+					.onClick(() => {
+						void this.plugin.updateOnAirNote();
+					})
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.enableOnAirNote)
+					.onChange(async (enabled) => {
+						this.plugin.settings.enableOnAirNote = enabled;
+						await this.plugin.saveSettings();
+					})
+			);
 
 		new Setting(containerEl)
 			.setName(t("lastSyncedAt"))

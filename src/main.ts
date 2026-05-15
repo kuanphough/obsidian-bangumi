@@ -1,7 +1,9 @@
 import {
 	App,
+	Modal,
 	Notice,
 	Plugin,
+	Setting,
 	SuggestModal,
 	TFile,
 	normalizePath
@@ -28,6 +30,8 @@ import {
 	LEGACY_DEFAULT_SUBJECT_NOTE_TEMPLATE
 } from "./sync/markdown-renderer";
 import { SyncService } from "./sync/sync-service";
+import { PushPreview, PushService } from "./sync/push-service";
+import { OnAirService } from "./sync/on-air-service";
 
 const ACCESS_TOKEN_CREATE_URL = "https://next.bgm.tv/demo/access-token/create";
 const TEMPLATE_VARIABLES_FILE_NAME = "Template Variables.md";
@@ -179,6 +183,10 @@ export default class BangumiSyncPlugin extends Plugin {
 			void this.syncNow();
 		});
 
+		this.addRibbonIcon("calendar-days", t("updateOnAirNote"), () => {
+			void this.updateOnAirNote();
+		});
+
 		this.addCommand({
 			id: "sync-now",
 			name: t("syncNow"),
@@ -195,6 +203,14 @@ export default class BangumiSyncPlugin extends Plugin {
 			}
 		});
 
+		this.addCommand({
+			id: "update-on-air-note",
+			name: t("updateOnAirNote"),
+			callback: () => {
+				void this.updateOnAirNote();
+			}
+		});
+
 		this.addSettingTab(new BangumiSyncSettingTab(this.app, this));
 	}
 
@@ -207,6 +223,8 @@ export default class BangumiSyncPlugin extends Plugin {
 		this.settings.userAgent = buildUserAgent(this.manifest.version);
 		this.settings.fetchDetailedSubjectInfo =
 			this.settings.fetchDetailedSubjectInfo === true;
+		this.settings.enableOnAirNote = this.settings.enableOnAirNote === true;
+		this.settings.enableWriteBack = this.settings.enableWriteBack === true;
 		this.settings.fetchStaff = this.settings.fetchStaff === true;
 		this.settings.fetchCharacters = this.settings.fetchCharacters === true;
 		this.settings.fetchRelations = this.settings.fetchRelations === true;
@@ -560,6 +578,73 @@ export default class BangumiSyncPlugin extends Plugin {
 		}
 	}
 
+	private async pushCurrentNoteToBangumi(): Promise<void> {
+		if (!this.settings.enableWriteBack) {
+			new Notice(t("pushWriteBackDisabled"));
+			return;
+		}
+		if (!this.settings.accessToken) {
+			new Notice(t("noToken"));
+			return;
+		}
+
+		try {
+			const service = new PushService(this.app, this.settings);
+			const preview = await service.prepareCurrentNotePush();
+			if (preview.unknownEpisodeIds.length > 0) {
+				new Notice(
+					t("pushUnknownEpisodes", {
+						ids: preview.unknownEpisodeIds.join(", ")
+					})
+				);
+				return;
+			}
+			if (!service.hasChanges(preview)) {
+				new Notice(t("pushNoChanges"));
+				return;
+			}
+
+			const confirmed = await this.confirmPush(preview);
+			if (!confirmed) {
+				new Notice(t("pushCancelled"));
+				return;
+			}
+
+			new Notice(t("pushStarted"));
+			const result = await service.executePreparedPush(preview);
+			new Notice(
+				t("pushFinished", {
+					episodes: result.changedEpisodes,
+					statusChanged: result.statusChanged ? "yes" : "no",
+					resync: result.shouldResync ? t("pushFinishedResync") : ""
+				})
+			);
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : t("unknownError");
+			new Notice(t("pushFailed", { message }));
+			console.error(error);
+		}
+	}
+
+	async updateOnAirNote(): Promise<void> {
+		try {
+			const result = await new OnAirService(this.app, this.settings).update();
+			new Notice(result.message);
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : t("unknownError");
+			new Notice(t("onAirNoteFailed", { message }));
+			console.error(error);
+		}
+	}
+
+	private confirmPush(preview: PushPreview): Promise<boolean> {
+		return new Promise((resolve) => {
+			new PushConfirmModal(this.app, preview, resolve).open();
+		});
+	}
+
 	private async syncNow(): Promise<void> {
 		try {
 			const result = await new SyncService(this.app, this.settings).sync({
@@ -574,6 +659,20 @@ export default class BangumiSyncPlugin extends Plugin {
 				}
 			});
 			await this.saveSettings();
+			if (this.settings.enableOnAirNote) {
+				try {
+					const onAirResult = await new OnAirService(
+						this.app,
+						this.settings
+					).update();
+					new Notice(onAirResult.message);
+				} catch (error) {
+					const message =
+						error instanceof Error ? error.message : t("unknownError");
+					new Notice(t("onAirNoteFailed", { message }));
+					console.error(error);
+				}
+			}
 			new Notice(result.message);
 		} catch (error) {
 			const message =
@@ -594,6 +693,63 @@ type SubjectLookupSuggestion =
 			kind: "subject";
 			subject: BangumiSubject;
 	  };
+
+class PushConfirmModal extends Modal {
+	private resolved = false;
+
+	constructor(
+		app: App,
+		private readonly preview: PushPreview,
+		private readonly resolve: (confirmed: boolean) => void
+	) {
+		super(app);
+	}
+
+	onOpen(): void {
+		const { contentEl } = this;
+		contentEl.empty();
+
+		new Setting(contentEl).setName(t("pushConfirmTitle")).setHeading();
+		contentEl.createEl("p", { text: t("pushConfirmDesc") });
+
+		const previewEl = contentEl.createEl("pre", {
+			text: renderPushPreview(this.preview)
+		});
+		previewEl.addClass("bangumi-note-push-preview");
+
+		new Setting(contentEl)
+			.addButton((button) =>
+				button
+					.setButtonText(t("pushCancel"))
+					.onClick(() => {
+						this.finish(false);
+						this.close();
+					})
+			)
+			.addButton((button) =>
+				button
+					.setButtonText(t("pushConfirm"))
+					.setCta()
+					.onClick(() => {
+						this.finish(true);
+						this.close();
+					})
+			);
+	}
+
+	onClose(): void {
+		this.finish(false);
+		this.contentEl.empty();
+	}
+
+	private finish(confirmed: boolean): void {
+		if (this.resolved) {
+			return;
+		}
+		this.resolved = true;
+		this.resolve(confirmed);
+	}
+}
 
 class SubjectLookupModal extends SuggestModal<SubjectLookupSuggestion> {
 	constructor(
@@ -726,6 +882,41 @@ class CollectionStatusModal extends SuggestModal<{
 		if (!this.selected) {
 			this.resolve(null);
 		}
+	}
+}
+
+function renderPushPreview(preview: PushPreview): string {
+	const lines = [
+		`Subject: bgm-${preview.subjectId}`,
+		`File: ${preview.file.path}`,
+		`Status: ${renderCollectionStatus(preview.remoteCollectionType)} -> ${preview.localStatus}`,
+		`Mark done: ${preview.markDone.length}`,
+		...preview.markDone.map(
+			(change) =>
+				`  - EP${change.sort} ${change.title} (bgm-ep:${change.episodeId})`
+		),
+		`Mark undone: ${preview.markUndone.length}`,
+		...preview.markUndone.map(
+			(change) =>
+				`  - EP${change.sort} ${change.title} (bgm-ep:${change.episodeId})`
+		)
+	];
+
+	return lines.join("\n");
+}
+
+function renderCollectionStatus(type: BangumiCollectionType): string {
+	switch (type) {
+		case BANGUMI_COLLECTION_TYPES.wish:
+			return "wish";
+		case BANGUMI_COLLECTION_TYPES.collect:
+			return "collect";
+		case BANGUMI_COLLECTION_TYPES.do:
+			return "do";
+		case BANGUMI_COLLECTION_TYPES.onHold:
+			return "on_hold";
+		case BANGUMI_COLLECTION_TYPES.dropped:
+			return "dropped";
 	}
 }
 

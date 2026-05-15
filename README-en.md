@@ -14,6 +14,7 @@ Bangumi Sync is an Obsidian plugin for turning Bangumi collections into local no
 - Sync rating, tags, comment, cover, episode checklist, and lightweight `progress_done`.
 - Preserve handwritten content outside the generated sync block.
 - Optionally write newly synced in-progress subjects to today's Daily Note.
+- Optionally generate a standalone On Air note with both the full broadcast list and your wished/watching anime list.
 - Search and sync a single subject by Bangumi URL, ID, Chinese title, original title, or title keyword.
 - Customize subject note templates and frontmatter fields.
 - Generate `Bangumi Sync Report.md` when issues occur.
@@ -101,6 +102,7 @@ Keep the token private. It authorizes the plugin to read your Bangumi account da
 | `Include on hold/dropped` | Whether to sync on-hold and dropped subjects. |
 | `Incremental sync` | Skip unchanged subjects by Bangumi updated time and recreate missing local notes. |
 | `Daily note sync` | Write newly added or updated in-progress subjects to today's Daily Note block. |
+| `Enable On Air note` | Generate `Bangumi/On Air.md` after sync, grouped by weekday for all broadcasts and your wished/watching anime. |
 | `Subject note template` | Customize the Markdown template for subject notes. |
 
 ## Sync One Subject
@@ -114,6 +116,20 @@ Run `Bangumi Sync: Sync one subject`, or click `Sync one subject` in settings. T
 URLs and IDs show a direct sync option. Keywords search books, anime, music, games, and real-life subjects. Search results include year, score, `bgm-id`, and a subject type tag.
 
 If the subject is already in your Bangumi collection, the plugin uses the real collection status, rating, tags, and comment. If it is not collected, the plugin asks you to choose a local status for note generation and folder classification. This local status is not written back to Bangumi.
+
+## On Air Note
+
+After enabling `Enable On Air note`, every `Sync now` run updates the standalone `Bangumi/On Air.md` note. You can also run `Bangumi Sync: Update On Air note` to refresh it manually.
+
+The first version uses Bangumi's legacy `/calendar` weekly anime broadcast data. The note has two sections: `My Collections` only shows your `wish` and `do` anime collections; `All On Air` shows the full Bangumi calendar list. Both sections are grouped from Monday to Sunday.
+
+Rows in the collection section use this todo format. Episode progress is no longer fetched per subject, which keeps refreshes much faster:
+
+```markdown
+- [ ] [[Local subject note|Title]] · status: do
+```
+
+If a matching local subject note exists, the title links to that note. Otherwise it links to the Bangumi subject page. Because `/calendar` is an anime broadcast calendar, books, music, games, and real-life subjects are not supported here yet.
 
 ## Sync Behavior
 
