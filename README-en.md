@@ -9,17 +9,16 @@ Bangumi Sync is an Obsidian plugin for turning Bangumi collections into local no
 ## Features
 
 - Sync Bangumi books, anime, music, games, and real-life media.
-- Filter by collection status: wish, collected, doing, on hold, and dropped.
-- Incremental sync with missing local note recovery.
-- Sync rating, tags, comment, cover, episode checklist, and lightweight `progress_done`.
-- Preserve handwritten content outside the generated sync block.
-- Optionally write newly synced in-progress subjects to today's Daily Note.
-- Optionally generate a standalone On Air note with both the full broadcast list and your wished/watching anime list.
-- Search and sync a single subject by Bangumi URL, ID, Chinese title, original title, or title keyword.
-- Use an in-progress board to review `status: do` subjects and safely push episode progress from a grid UI.
-- Explicitly push the current subject note's episode progress and `do` / `collect` status back to Bangumi, with remote verification after write-back.
-- Customize subject note templates and frontmatter fields.
-- Generate `Bangumi Sync Report.md` when issues occur.
+- Collection-status filtering: sync wish, collected, doing, on-hold, and dropped subjects.
+- Incremental sync: automatically recreate local subject notes if they were deleted.
+- Custom sync: sync rating, tags, comment, cover, episode checklist, and other optional fields; customize subject note templates and frontmatter fields. See the template variable documentation for details.
+- Section-based note sync: use sync blocks so you can freely write elsewhere in the same file.
+- Daily Note sync: optionally write newly added or updated in-progress subjects to a Daily Note sync block.
+- On Air note: optionally generate a standalone On Air note with both the full broadcast list and your wished/watching anime list.
+- Single-subject sync: search and sync one subject by Bangumi URL, ID, Chinese title, original title, or title keyword.
+- Progress board: review `status: do` subjects in one board and safely push episode progress from a grid UI.
+- Write back to Bangumi: explicitly push the current subject note's episode progress and `do` / `collect` status back to Bangumi, with remote verification after write-back.
+- Issue review: generate `Bangumi Sync Report.md` when sync issues occur.
 
 ## Screenshots
 
