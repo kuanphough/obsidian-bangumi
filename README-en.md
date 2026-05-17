@@ -17,7 +17,7 @@ Bangumi Sync is an Obsidian plugin for turning Bangumi collections into local no
 - On Air note: optionally generate a standalone On Air note with both the full broadcast list and your wished/watching anime list.
 - Single-subject sync: search and sync one subject by Bangumi URL, ID, Chinese title, original title, or title keyword.
 - Progress board: review `status: do` subjects in one board and safely push episode progress from a grid UI.
-- Write back to Bangumi: explicitly push the current subject note's episode progress and `do` / `collect` status back to Bangumi, with remote verification after write-back.
+- Write back to Bangumi: explicitly push the current subject note's episode progress and status back to Bangumi, with remote verification after write-back.
 - Issue review: generate `Bangumi Sync Report.md` when sync issues occur.
 
 ## Screenshots
