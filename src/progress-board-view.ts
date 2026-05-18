@@ -11,12 +11,19 @@ import {
 import type BangumiSyncPlugin from "./main";
 import { collectionStatusLabel } from "./bangumi/labels";
 import {
+	compareEpisodesByTypeThenSort,
+	episodeTypeLabel
+} from "./bangumi/episodes";
+import {
 	BANGUMI_COLLECTION_TYPES,
+	BangumiCollection,
 	BangumiCollectionType,
 	BangumiEpisodeCollection
 } from "./bangumi/types";
 import { t } from "./i18n";
 import { BANGUMI_STORAGE_LAYOUTS } from "./settings";
+import { SYNC_BLOCK_END, SYNC_BLOCK_START } from "./sync/markdown-renderer";
+import { SyncService } from "./sync/sync-service";
 import {
 	ProgressBoardItem,
 	ProgressBoardService
@@ -35,6 +42,7 @@ const BOARD_STATUS_OPTIONS: Array<{ type: BangumiCollectionType; label: string }
 
 interface BoardEpisode {
 	id: number;
+	type: number;
 	sort: number;
 	title: string;
 	airdate: string;
@@ -269,8 +277,8 @@ export class ProgressBoardView extends ItemView {
 		const gridEl = contentEl.createDiv({ cls: "bangumi-note-board-grid" });
 		for (const episode of this.episodes) {
 			const cell = gridEl.createEl("button", {
-				cls: `bangumi-note-board-cell${episode.localChecked ? " is-done" : ""}${episode.localChecked !== episode.remoteChecked ? " is-changed" : ""}`,
-				text: `EP${episode.sort}`
+				cls: `bangumi-note-board-cell${episode.type === 0 ? "" : " is-extra"}${episode.localChecked ? " is-done" : ""}${episode.localChecked !== episode.remoteChecked ? " is-changed" : ""}`,
+				text: this.renderEpisodeCellText(episode)
 			});
 			cell.type = "button";
 			cell.title = this.renderEpisodeTitle(episode);
@@ -359,6 +367,7 @@ export class ProgressBoardView extends ItemView {
 				});
 			}
 			await this.reloadAndVerify(item, changes);
+			await this.updateLocalEpisodeChecklist(item);
 			this.updateListProgress(item);
 			new Notice(
 				t("boardPushFinished", {
@@ -423,6 +432,11 @@ export class ProgressBoardView extends ItemView {
 				this.remoteRating
 			);
 			await this.moveLocalNote(item, remote.type);
+			await this.refreshLocalSubjectNote({
+				...remote,
+				comment: this.remoteComment,
+				rate: this.remoteRating
+			});
 
 			new Notice(
 				t("boardStatusFinished", {
@@ -451,9 +465,12 @@ export class ProgressBoardView extends ItemView {
 	private promptStatusCollectionInfo(
 		nextType: BangumiCollectionType
 	): Promise<{ comment: string; rating: number } | null> {
+		const previousStatus =
+			this.remoteStatus === null ? "" : collectionStatusLabel(this.remoteStatus);
 		return new Promise((resolve) => {
 			new BoardStatusCommentModal(
 				this.app,
+				previousStatus,
 				collectionStatusLabel(nextType),
 				this.remoteComment,
 				this.remoteRating,
@@ -476,6 +493,36 @@ export class ProgressBoardView extends ItemView {
 		});
 		item.status = collectionStatusLabel(status);
 		item.rating = rating === 0 ? "" : String(rating);
+	}
+
+	private async refreshLocalSubjectNote(
+		collection: BangumiCollection
+	): Promise<void> {
+		await new SyncService(
+			this.app,
+			this.plugin.settings,
+			() => this.plugin.getBangumiClient()
+		).syncSubjectCollection(collection);
+	}
+
+	private async updateLocalEpisodeChecklist(
+		item: ProgressBoardItem
+	): Promise<void> {
+		const checkedByEpisodeId = new Map<number, boolean>(
+			this.episodes.map((episode) => [episode.id, episode.remoteChecked])
+		);
+		const content = await this.app.vault.read(item.file);
+		const nextContent = updateEpisodeChecklistContent(
+			content,
+			checkedByEpisodeId
+		);
+		if (nextContent !== content) {
+			await this.app.vault.modify(item.file, nextContent);
+		}
+		await this.app.fileManager.processFrontMatter(item.file, (frontmatter) => {
+			const values = frontmatter as Record<string, unknown>;
+			values.progress_done = this.countLocalDone();
+		});
 	}
 
 	private async moveLocalNote(
@@ -570,15 +617,16 @@ export class ProgressBoardView extends ItemView {
 		return episodeCollections
 			.filter((item) => item.episode !== null)
 			.sort((left, right) => {
-				const leftSort = left.episode?.sort ?? 0;
-				const rightSort = right.episode?.sort ?? 0;
-				return leftSort - rightSort;
+				const leftEpisode = left.episode!;
+				const rightEpisode = right.episode!;
+				return compareEpisodesByTypeThenSort(leftEpisode, rightEpisode);
 			})
 			.map((item) => {
 				const episode = item.episode!;
 				const checked = item.type > 0;
 				return {
 					id: episode.id,
+					type: episode.type,
 					sort: episode.sort,
 					title: episode.name_cn || episode.name || "",
 					airdate: episode.airdate ?? "",
@@ -629,13 +677,17 @@ export class ProgressBoardView extends ItemView {
 
 	private renderEpisodeTitle(episode: BoardEpisode): string {
 		return [
-			`EP${episode.sort}`,
+			this.renderEpisodeCellText(episode),
 			episode.title,
 			episode.airdate,
 			`bgm-ep:${episode.id}`
 		]
 			.filter(Boolean)
 			.join(" · ");
+	}
+
+	private renderEpisodeCellText(episode: BoardEpisode): string {
+		return `${episodeTypeLabel(episode.type)}${episode.sort}`;
 	}
 
 	private confirmPush(changes: {
@@ -646,6 +698,33 @@ export class ProgressBoardView extends ItemView {
 			new BoardPushConfirmModal(this.app, changes, resolve).open();
 		});
 	}
+}
+
+export function updateEpisodeChecklistContent(
+	content: string,
+	checkedByEpisodeId: Map<number, boolean>
+): string {
+	const start = content.indexOf(SYNC_BLOCK_START);
+	const end = content.indexOf(SYNC_BLOCK_END);
+	if (start === -1 || end === -1 || end < start) {
+		return content;
+	}
+
+	const blockEnd = end + SYNC_BLOCK_END.length;
+	const before = content.slice(0, start);
+	const block = content.slice(start, blockEnd);
+	const after = content.slice(blockEnd);
+	const nextBlock = block.replace(
+		/^(\s*-\s+\[)([ xX])(\]\s+.*?<!--\s*bgm-ep:(\d+)(?:\s|>).*?-->)$/gm,
+		(match, prefix: string, _checked: string, suffix: string, id: string) => {
+			const checked = checkedByEpisodeId.get(Number(id));
+			return checked === undefined
+				? match
+				: `${prefix}${checked ? "x" : " "}${suffix}`;
+		}
+	);
+
+	return `${before}${nextBlock}${after}`;
 }
 
 class BoardPushConfirmModal extends Modal {
@@ -716,13 +795,15 @@ class BoardPushConfirmModal extends Modal {
 class BoardStatusCommentModal extends Modal {
 	private resolved = false;
 	private textarea: HTMLTextAreaElement | null = null;
+	private previewEl: HTMLPreElement | null = null;
 	private rating = 0;
 
 	constructor(
 		app: App,
-		private readonly status: string,
+		private readonly previousStatus: string,
+		private readonly nextStatus: string,
 		private readonly initialComment: string,
-		initialRating: number,
+		private readonly initialRating: number,
 		private readonly resolve: (
 			info: { comment: string; rating: number } | null
 		) => void
@@ -735,7 +816,7 @@ class BoardStatusCommentModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 		new Setting(contentEl)
-			.setName(t("boardStatusCommentTitle", { status: this.status }))
+			.setName(t("boardStatusCommentTitle", { status: this.nextStatus }))
 			.setHeading();
 		contentEl.createEl("p", { text: t("boardStatusCommentDesc") });
 		new Setting(contentEl)
@@ -749,11 +830,17 @@ class BoardStatusCommentModal extends Modal {
 					.setValue(String(this.rating))
 					.onChange((value) => {
 						this.rating = Number(value);
+						this.renderPreview();
 					});
 			});
 		this.textarea = contentEl.createEl("textarea");
 		this.textarea.value = this.initialComment;
 		this.textarea.addClass("bangumi-note-board-comment-textarea");
+		this.textarea.addEventListener("input", () => this.renderPreview());
+
+		this.previewEl = contentEl.createEl("pre");
+		this.previewEl.addClass("bangumi-note-push-preview");
+		this.renderPreview();
 
 		new Setting(contentEl)
 			.addButton((button) =>
@@ -781,6 +868,26 @@ class BoardStatusCommentModal extends Modal {
 	onClose(): void {
 		this.finish(null);
 		this.contentEl.empty();
+	}
+
+	private renderPreview(): void {
+		if (!this.previewEl) return;
+		const comment = this.textarea?.value ?? this.initialComment;
+		const empty = t("boardEmptyValue");
+		this.previewEl.setText(
+			[
+				`${t("boardStatus")}: ${this.previousStatus} -> ${this.nextStatus}`,
+				`${t("boardRating")}: ${this.formatRating(this.initialRating)} -> ${this.formatRating(this.rating)}`,
+				`${t("boardComment")}:`,
+				`  ${this.initialComment || empty}`,
+				"  ->",
+				`  ${comment || empty}`
+			].join("\n")
+		);
+	}
+
+	private formatRating(rating: number): string {
+		return rating === 0 ? t("boardRatingNone") : String(rating);
 	}
 
 	private finish(info: { comment: string; rating: number } | null): void {

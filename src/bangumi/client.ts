@@ -204,6 +204,23 @@ export class BangumiClient {
 		});
 	}
 
+	async createSubjectCollection(params: {
+		subjectId: number;
+		type: BangumiCollectionType;
+		comment?: string;
+		rate?: number;
+	}): Promise<void> {
+		await this.request<void>(`/v0/users/-/collections/${params.subjectId}`, {
+			method: "POST",
+			body: {
+				type: params.type,
+				...(params.comment === undefined ? {} : { comment: params.comment }),
+				...(params.rate === undefined ? {} : { rate: params.rate })
+			},
+			expectEmptyResponse: true
+		});
+	}
+
 	async patchSubjectEpisodeCollections(params: {
 		subjectId: number;
 		episodeIds: number[];

@@ -421,7 +421,15 @@ export default class BangumiSyncPlugin extends Plugin {
 					new Notice(t("syncOneSubjectCancelled"));
 					return;
 				}
-				collection = this.createLocalCollection(subject, collectionType);
+				await client.createSubjectCollection({
+					subjectId,
+					type: collectionType
+				});
+				collection = await this.fetchSubjectCollection(
+					client,
+					subjectId,
+					subject.type
+				);
 			}
 
 			new Notice(
@@ -599,20 +607,6 @@ export default class BangumiSyncPlugin extends Plugin {
 		return new Promise((resolve) => {
 			new CollectionStatusModal(this.app, subject, resolve).open();
 		});
-	}
-
-	private createLocalCollection(
-		subject: BangumiSubject,
-		type: BangumiCollectionType
-	): BangumiCollection {
-		return {
-			type,
-			rate: 0,
-			comment: "",
-			tags: [],
-			updated_at: "",
-			subject
-		};
 	}
 
 	private getSubjectTitle(subject: BangumiSubject): string {
@@ -882,25 +876,25 @@ class SubjectLookupModal extends SuggestModal<SubjectLookupSuggestion> {
 	}
 }
 
-class CollectionStatusModal extends SuggestModal<{
-	type: BangumiCollectionType;
-	label: string;
-}> {
-	private selected = false;
-
+class CollectionStatusModal extends Modal {
+	private resolved = false;
 	constructor(
 		app: App,
 		private readonly subject: BangumiSubject,
 		private readonly resolve: (type: BangumiCollectionType | null) => void
 	) {
 		super(app);
-		this.setPlaceholder(t("syncOneSubjectStatusPlaceholder"));
 	}
 
-	getSuggestions(query: string): Array<{
-		type: BangumiCollectionType;
-		label: string;
-	}> {
+	onOpen(): void {
+		const { contentEl } = this;
+		contentEl.empty();
+		new Setting(contentEl)
+			.setName(t("syncOneSubjectStatusPlaceholder"))
+			.setHeading();
+		contentEl.createEl("p", {
+			text: this.subject.name_cn || this.subject.name
+		});
 		const options = [
 			{ type: BANGUMI_COLLECTION_TYPES.wish, label: "wish" },
 			{ type: BANGUMI_COLLECTION_TYPES.do, label: "do" },
@@ -908,47 +902,45 @@ class CollectionStatusModal extends SuggestModal<{
 			{ type: BANGUMI_COLLECTION_TYPES.onHold, label: "on_hold" },
 			{ type: BANGUMI_COLLECTION_TYPES.dropped, label: "dropped" }
 		];
-		const normalizedQuery = query.trim().toLowerCase();
-		return normalizedQuery
-			? options.filter((option) => option.label.includes(normalizedQuery))
-			: options;
-	}
-
-	renderSuggestion(
-		option: {
-			type: BangumiCollectionType;
-			label: string;
-		},
-		el: HTMLElement
-	): void {
-		el.createDiv({
-			text: t("syncOneSubjectStatusOption", {
-				status: option.label,
-				title: this.subject.name_cn || this.subject.name
-			})
-		});
-	}
-
-	onChooseSuggestion(option: {
-		type: BangumiCollectionType;
-		label: string;
-	}): void {
-		this.selected = true;
-		this.resolve(option.type);
+		for (const option of options) {
+			new Setting(contentEl)
+				.setName(
+					t("syncOneSubjectStatusOption", {
+						status: option.label,
+						title: this.subject.name_cn || this.subject.name
+					})
+				)
+				.addButton((button) =>
+					button
+						.setButtonText(option.label)
+						.onClick(() => {
+							this.finish(option.type);
+							this.close();
+						})
+				);
+		}
 	}
 
 	onClose(): void {
-		if (!this.selected) {
-			this.resolve(null);
-		}
+		this.finish(null);
+		this.contentEl.empty();
+	}
+
+	private finish(type: BangumiCollectionType | null): void {
+		if (this.resolved) return;
+		this.resolved = true;
+		this.resolve(type);
 	}
 }
 
 function renderPushPreview(preview: PushPreview): string {
+	const remoteStatus = preview.remoteMissing
+		? "not collected"
+		: collectionStatusLabel(preview.remoteCollectionType ?? 0);
 	const lines = [
 		`Subject: bgm-${preview.subjectId}`,
 		`File: ${preview.file.path}`,
-		`Status: ${collectionStatusLabel(preview.remoteCollectionType)} -> ${preview.localStatus}`,
+		`Status: ${remoteStatus} -> ${preview.localStatus}`,
 		`Mark done: ${preview.markDone.length}`,
 		...preview.markDone.map(
 			(change) =>

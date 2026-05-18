@@ -1,4 +1,5 @@
 import { App, TFile, normalizePath } from "obsidian";
+import { getMarkdownFilesInFolder } from "../utils/vault";
 
 export class SubjectNoteIndex {
 	private readonly byId = new Map<number, TFile>();
@@ -8,13 +9,7 @@ export class SubjectNoteIndex {
 	static build(app: App, syncDirectory: string): SubjectNoteIndex {
 		const directory = normalizePath(syncDirectory);
 		const index = new SubjectNoteIndex();
-		for (const file of app.vault.getMarkdownFiles()) {
-			if (
-				!file.path.startsWith(`${directory}/`) &&
-				file.parent?.path !== directory
-			) {
-				continue;
-			}
+		for (const file of getMarkdownFilesInFolder(app, directory)) {
 			const id = readSubjectId(app, file);
 			if (id !== null) {
 				index.byId.set(id, file);

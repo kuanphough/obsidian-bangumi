@@ -4,6 +4,8 @@ import { BangumiClient } from "../bangumi/client";
 import { collectionStatusLabel, subjectTypeLabel } from "../bangumi/labels";
 import {
 	BANGUMI_COLLECTION_TYPES,
+	BANGUMI_SUBJECT_TYPES,
+	BangumiCollection,
 	BangumiCollectionType,
 	BangumiEpisodeCollection
 } from "../bangumi/types";
@@ -28,7 +30,8 @@ export interface PushPreview {
 	username: string;
 	localStatus: string;
 	localCollectionType: BangumiCollectionType;
-	remoteCollectionType: BangumiCollectionType;
+	remoteCollectionType: BangumiCollectionType | null;
+	remoteMissing: boolean;
 	subjectType: number;
 	markDone: PushEpisodeChange[];
 	markUndone: PushEpisodeChange[];
@@ -92,12 +95,19 @@ export class PushService {
 			: [];
 
 		const username = this.settings.username || (await this.client.getMe()).username;
-		const [remoteEpisodes, remoteCollection] = await Promise.all([
-			this.supportsEpisodePush(localCollectionType)
-				? this.fetchAllSubjectEpisodeCollections(subjectId)
-				: Promise.resolve([]),
-			this.client.getSubjectCollection(subjectId, username)
-		]);
+		const remoteCollection = await this.getSubjectCollectionOrNull(
+			subjectId,
+			username
+		);
+		const remoteMissing = remoteCollection === null;
+		const remoteEpisodes =
+			this.supportsEpisodePush(localCollectionType) && !remoteMissing
+				? await this.fetchAllSubjectEpisodeCollections(subjectId)
+				: [];
+		const subjectType =
+			remoteCollection?.subject.type ??
+			this.parseSubjectType(String(frontmatter?.type ?? "")) ??
+			(await this.client.getSubject(subjectId)).type;
 		const remoteEpisodeMap = new Map<number, boolean>();
 		for (const item of remoteEpisodes) {
 			const episodeId = item.episode?.id;
@@ -110,6 +120,18 @@ export class PushService {
 		const markUndone: PushEpisodeChange[] = [];
 		const unknownEpisodeIds: number[] = [];
 		for (const item of localItems) {
+			if (remoteMissing) {
+				if (item.checked) {
+					markDone.push({
+						episodeId: item.episodeId,
+						sort: item.sort,
+						title: item.title,
+						localChecked: true,
+						remoteChecked: false
+					});
+				}
+				continue;
+			}
 			const remoteChecked = remoteEpisodeMap.get(item.episodeId);
 			if (remoteChecked === undefined) {
 				unknownEpisodeIds.push(item.episodeId);
@@ -139,8 +161,9 @@ export class PushService {
 			username,
 			localStatus,
 			localCollectionType,
-			remoteCollectionType: remoteCollection.type,
-			subjectType: remoteCollection.subject.type,
+			remoteCollectionType: remoteCollection?.type ?? null,
+			remoteMissing,
+			subjectType,
 			markDone,
 			markUndone,
 			unknownEpisodeIds
@@ -148,6 +171,25 @@ export class PushService {
 	}
 
 	async executePreparedPush(preview: PushPreview): Promise<PushResult> {
+		if (preview.remoteMissing) {
+			await this.client.createSubjectCollection({
+				subjectId: preview.subjectId,
+				type: preview.localCollectionType
+			});
+			const createdCollection = await this.client.getSubjectCollection(
+				preview.subjectId,
+				preview.username
+			);
+			if (createdCollection.type !== preview.localCollectionType) {
+				throw new Error(
+					t("pushStatusVerifyFailed", {
+						expected: collectionStatusLabel(preview.localCollectionType),
+						actual: collectionStatusLabel(createdCollection.type)
+					})
+				);
+			}
+		}
+
 		if (preview.markDone.length > 0) {
 			await this.client.patchSubjectEpisodeCollections({
 				subjectId: preview.subjectId,
@@ -171,6 +213,7 @@ export class PushService {
 			preview.username
 		);
 		const serverChangedStatus =
+			preview.remoteCollectionType !== null &&
 			remoteAfterEpisodes.type !== preview.remoteCollectionType &&
 			remoteAfterEpisodes.type !== preview.localCollectionType;
 
@@ -190,7 +233,7 @@ export class PushService {
 			};
 		}
 
-		let statusChanged = false;
+		let statusChanged = preview.remoteMissing;
 		let finalCollectionType = remoteAfterEpisodes.type;
 		if (remoteAfterEpisodes.type !== preview.localCollectionType) {
 			await this.client.patchSubjectCollection({
@@ -268,11 +311,52 @@ export class PushService {
 
 	hasChanges(preview: PushPreview): boolean {
 		return (
+			preview.remoteMissing ||
 			preview.markDone.length > 0 ||
 			preview.markUndone.length > 0 ||
 			preview.unknownEpisodeIds.length > 0 ||
 			preview.remoteCollectionType !== preview.localCollectionType
 		);
+	}
+
+	private async getSubjectCollectionOrNull(
+		subjectId: number,
+		username: string
+	): Promise<BangumiCollection | null> {
+		try {
+			return await this.client.getSubjectCollection(subjectId, username);
+		} catch (error) {
+			if (this.isBangumiNotFound(error)) {
+				return null;
+			}
+			throw error;
+		}
+	}
+
+	private isBangumiNotFound(error: unknown): boolean {
+		return (
+			typeof error === "object" &&
+			error !== null &&
+			"status" in error &&
+			(error as { status?: unknown }).status === 404
+		);
+	}
+
+	private parseSubjectType(type: string): number | null {
+		switch (type) {
+			case "book":
+				return BANGUMI_SUBJECT_TYPES.book;
+			case "anime":
+				return BANGUMI_SUBJECT_TYPES.anime;
+			case "music":
+				return BANGUMI_SUBJECT_TYPES.music;
+			case "game":
+				return BANGUMI_SUBJECT_TYPES.game;
+			case "real":
+				return BANGUMI_SUBJECT_TYPES.real;
+			default:
+				return null;
+		}
 	}
 
 	private extractSyncBlock(content: string): string {

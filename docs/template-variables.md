@@ -79,7 +79,7 @@ The template must include both `{{sync_block_start}}` and `{{sync_block_end}}`. 
 | Variable / 变量 | English | 中文 |
 | --- | --- | --- |
 | `{{progress_done}}` | Completed episode count, based on episode collection `type > 0`. | 已完成章节数，按章节收藏 `type > 0` 统计。 |
-| `{{progress_total}}` | Total count, preferring subject `eps`, then fetched episode count. | 总数，优先条目 `eps`，否则使用已拉取章节数。 |
+| `{{progress_total}}` | Total valid fetched episode count, including main episodes and extra episode types such as SP/OP/ED/PV/MAD/Other. | 已拉取到的有效章节总数，包含本篇以及 SP/OP/ED/PV/MAD/Other 等额外章节类型。 |
 | `{{progress_percent}}` | Integer percentage, rounded from `done / total * 100`. | 整数百分比，四舍五入。 |
 | `{{progress_available}}` | `true` when episode progress was fetched and has valid episodes. | 成功拉到有效章节进度时为 `true`。 |
 | `{{next_episode_json}}` | JSON/YAML-safe next unfinished episode label, or empty string. | 下一集/章节，适合 JSON/YAML；没有时为空字符串。 |

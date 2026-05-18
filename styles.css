@@ -153,6 +153,18 @@
 	color: var(--text-on-accent);
 }
 
+.bangumi-note-board-cell.is-extra {
+	background: rgba(var(--color-yellow-rgb), 0.14);
+	border-color: rgba(var(--color-yellow-rgb), 0.72);
+	color: var(--text-normal);
+}
+
+.bangumi-note-board-cell.is-extra.is-done {
+	background: rgba(var(--color-yellow-rgb), 0.32);
+	border-color: var(--color-yellow);
+	color: var(--text-normal);
+}
+
 .bangumi-note-board-cell.is-changed {
 	box-shadow: 0 0 0 2px var(--text-accent);
 }

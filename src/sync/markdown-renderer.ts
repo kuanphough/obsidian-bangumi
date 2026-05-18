@@ -6,6 +6,10 @@ import {
 	BangumiSubjectTag,
 	BangumiSyncedSubject
 } from "../bangumi/types";
+import {
+	episodeTypeLabel,
+	sortEpisodeCollectionsByTypeThenSort
+} from "../bangumi/episodes";
 import { collectionStatusLabel, subjectTypeLabel } from "../bangumi/labels";
 
 export const SYNC_BLOCK_START = "<!-- bangumi-sync-start -->";
@@ -254,7 +258,7 @@ export class MarkdownRenderer {
 			return "- [ ] Episode progress unavailable.";
 		}
 
-		const lines = subject.episodes
+		const lines = sortEpisodeCollectionsByTypeThenSort(subject.episodes)
 			.map((item) => {
 				const episode = item.episode;
 				if (!episode) {
@@ -264,7 +268,8 @@ export class MarkdownRenderer {
 				const title = episode.name_cn || episode.name || `Episode ${episode.sort}`;
 				const airdate = episode.airdate ?? "";
 				const displayDate = airdate ? ` · ${airdate}` : "";
-				return `- [${checked}] EP${episode.sort} ${title}${displayDate} <!-- bgm-ep:${episode.id} sort:${episode.sort} type:${episode.type} airdate:${airdate} -->`;
+				const label = episodeTypeLabel(episode.type);
+				return `- [${checked}] ${label}${episode.sort} ${title}${displayDate} <!-- bgm-ep:${episode.id} sort:${episode.sort} type:${episode.type} airdate:${airdate} -->`;
 			})
 			.filter((line): line is string => line !== null)
 			.join("\n");
@@ -282,8 +287,10 @@ export class MarkdownRenderer {
 		lastDoneEpisodeTitle: string;
 		lastDoneEpisodeSort: string;
 	} {
-		const validEpisodes = subject.episodes.filter((item) => item.episode !== null);
-		const total = subject.collection.subject.eps || validEpisodes.length;
+		const validEpisodes = sortEpisodeCollectionsByTypeThenSort(
+			subject.episodes.filter((item) => item.episode !== null)
+		);
+		const total = validEpisodes.length;
 		const doneEpisodes = validEpisodes.filter((item) => item.type > 0);
 		const done = doneEpisodes.length;
 		const percent = total > 0 ? Math.round((done / total) * 100) : 0;

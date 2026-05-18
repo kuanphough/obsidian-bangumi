@@ -185,7 +185,6 @@ export class SyncService {
 		let hasBlockingFailure = false;
 		const dailySyncEntries: DailySyncEntry[] = [];
 		const dailyNoteSyncAvailable = await this.validateDailyNoteSyncTarget(
-			failures,
 			options
 		);
 
@@ -329,10 +328,7 @@ export class SyncService {
 			try {
 				await this.writeDailyNoteSyncBlock(dailySyncEntries);
 			} catch (error) {
-				failures.push({
-					stage: t("writeDailyNoteStage"),
-					error: this.getErrorMessage(error)
-				});
+				this.recordDailyNoteSyncWarning(options, this.getErrorMessage(error));
 				console.error("Bangumi Sync failed to write daily note sync block", error);
 			}
 		}
@@ -647,7 +643,6 @@ export class SyncService {
 	}
 
 	private async validateDailyNoteSyncTarget(
-		failures: SyncFailure[],
 		options: SyncOptions
 	): Promise<boolean> {
 		if (!this.settings.dailyNoteSync) {
@@ -658,7 +653,6 @@ export class SyncService {
 		const existing = this.app.vault.getAbstractFileByPath(path);
 		if (!(existing instanceof TFile)) {
 			this.recordDailyNoteSyncWarning(
-				failures,
 				options,
 				t("dailyNoteSyncNoteMissing", { path })
 			);
@@ -668,7 +662,6 @@ export class SyncService {
 		const content = await this.app.vault.read(existing);
 		if (!this.hasDailySyncMarkers(content)) {
 			this.recordDailyNoteSyncWarning(
-				failures,
 				options,
 				t("dailyNoteSyncMarkersMissing")
 			);
@@ -679,14 +672,9 @@ export class SyncService {
 	}
 
 	private recordDailyNoteSyncWarning(
-		failures: SyncFailure[],
 		options: SyncOptions,
 		message: string
 	): void {
-		failures.push({
-			stage: t("writeDailyNoteStage"),
-			error: message
-		});
 		options.onProgress?.({
 			stage: "warning",
 			message
@@ -895,8 +883,7 @@ export class SyncService {
 		client: BangumiClient,
 		subjectId: number
 	): Promise<BangumiEpisodeCollection[]> {
-		const page = await client.getSubjectEpisodeCollections(subjectId);
-		return page.data
+		return (await client.getAllSubjectEpisodeCollections(subjectId))
 			.filter((item) => item.episode !== null)
 			.sort((left, right) => {
 				const leftSort = left.episode?.sort ?? 0;

@@ -78,23 +78,25 @@ var EN = {
   bangumiSync: "Bangumi Sync",
   boardBackToList: "Back to list",
   boardChangeSummary: "Will mark done: {{done}}, mark undone: {{undone}}.",
+  boardComment: "Comment",
   boardDesc: "Manage in-progress Bangumi subjects from synced notes.",
   boardDiscardChanges: "Discard changes",
   boardEmpty: "No in-progress Bangumi notes found in the sync directory.",
+  boardEmptyValue: "(empty)",
   boardFilterEmpty: "No in-progress subjects match this type filter.",
   boardLoadFailed: "Could not load board item: {{message}}",
   boardLoading: "Loading episode progress...",
   boardNoEpisodes: "No episode progress data available.",
   boardProgress: "{{done}}/{{total}}",
   boardPushChanges: "Push changes",
-  boardPushFinished: "Bangumi board write-back finished: {{episodes}} episode change(s). Re-sync notes to update Markdown.",
+  boardPushFinished: "Bangumi board write-back finished: {{episodes}} episode change(s). Local Markdown checklist updated.",
   boardPushUnsupported: "Episode write-back from the board only supports remote status do or collect.",
   boardRating: "Rating",
   boardRatingNone: "N/A",
   boardRefreshItem: "Refresh item",
   boardRefreshList: "Refresh list",
   boardStatus: "Status",
-  boardStatusCommentDesc: "This comment will be saved to your Bangumi collection together with the status change.",
+  boardStatusCommentDesc: "This comment and rating will be saved to your Bangumi collection together with the status change.",
   boardStatusCommentTitle: "Comment for {{status}}",
   boardStatusDesc: "Changing status writes to Bangumi after you confirm a comment.",
   boardStatusFinished: "Bangumi status changed to {{status}}.",
@@ -289,23 +291,25 @@ var ZH = {
   bangumiSync: "Bangumi Sync",
   boardBackToList: "\u8FD4\u56DE\u5217\u8868",
   boardChangeSummary: "\u5C06\u6807\u8BB0\u5B8C\u6210\uFF1A{{done}}\uFF0C\u53D6\u6D88\u5B8C\u6210\uFF1A{{undone}}\u3002",
+  boardComment: "\u8BC4\u8BBA",
   boardDesc: "\u96C6\u4E2D\u7BA1\u7406\u5DF2\u540C\u6B65\u7B14\u8BB0\u91CC\u7684\u8FDB\u884C\u4E2D Bangumi \u6761\u76EE\u3002",
   boardDiscardChanges: "\u653E\u5F03\u4FEE\u6539",
   boardEmpty: "\u540C\u6B65\u76EE\u5F55\u91CC\u6CA1\u6709\u627E\u5230\u8FDB\u884C\u4E2D\u7684 Bangumi \u7B14\u8BB0\u3002",
+  boardEmptyValue: "\uFF08\u7A7A\uFF09",
   boardFilterEmpty: "\u5F53\u524D\u7C7B\u578B\u7B5B\u9009\u4E0B\u6CA1\u6709\u8FDB\u884C\u4E2D\u6761\u76EE\u3002",
   boardLoadFailed: "\u65E0\u6CD5\u52A0\u8F7D\u770B\u677F\u6761\u76EE\uFF1A{{message}}",
   boardLoading: "\u6B63\u5728\u52A0\u8F7D\u7AE0\u8282\u8FDB\u5EA6...",
   boardNoEpisodes: "\u6CA1\u6709\u53EF\u7528\u7684\u7AE0\u8282\u8FDB\u5EA6\u6570\u636E\u3002",
   boardProgress: "{{done}}/{{total}}",
   boardPushChanges: "Push \u4FEE\u6539",
-  boardPushFinished: "Bangumi \u770B\u677F\u5199\u56DE\u5B8C\u6210\uFF1A{{episodes}} \u4E2A\u7AE0\u8282\u53D8\u66F4\u3002\u8BF7\u91CD\u65B0\u540C\u6B65\u7B14\u8BB0\u4EE5\u66F4\u65B0 Markdown\u3002",
+  boardPushFinished: "Bangumi \u770B\u677F\u5199\u56DE\u5B8C\u6210\uFF1A{{episodes}} \u4E2A\u7AE0\u8282\u53D8\u66F4\u3002\u672C\u5730 Markdown checklist \u5DF2\u66F4\u65B0\u3002",
   boardPushUnsupported: "\u770B\u677F\u7AE0\u8282\u5199\u56DE\u53EA\u652F\u6301\u8FDC\u7AEF\u72B6\u6001\u4E3A do \u6216 collect \u7684\u6761\u76EE\u3002",
   boardRating: "\u8BC4\u5206",
   boardRatingNone: "\u4E0D\u8BC4\u5206",
   boardRefreshItem: "\u5237\u65B0\u6761\u76EE",
   boardRefreshList: "\u5237\u65B0\u5217\u8868",
   boardStatus: "\u72B6\u6001",
-  boardStatusCommentDesc: "\u8FD9\u6761\u8BC4\u8BBA\u4F1A\u548C\u72B6\u6001\u53D8\u66F4\u4E00\u8D77\u4FDD\u5B58\u5230\u4F60\u7684 Bangumi \u6536\u85CF\u91CC\u3002",
+  boardStatusCommentDesc: "\u8FD9\u6761\u8BC4\u8BBA\u548C\u8BC4\u5206\u4F1A\u548C\u72B6\u6001\u53D8\u66F4\u4E00\u8D77\u4FDD\u5B58\u5230\u4F60\u7684 Bangumi \u6536\u85CF\u91CC\u3002",
   boardStatusCommentTitle: "{{status}} \u7684\u6536\u85CF\u8BC4\u8BBA",
   boardStatusDesc: "\u4FEE\u6539\u72B6\u6001\u4F1A\u5728\u4F60\u786E\u8BA4\u8BC4\u8BBA\u540E\u5199\u5165 Bangumi\u3002",
   boardStatusFinished: "Bangumi \u72B6\u6001\u5DF2\u6539\u4E3A {{status}}\u3002",
@@ -497,6 +501,39 @@ function t(key, values = {}) {
       return value === void 0 ? match : String(value);
     }
   );
+}
+
+// src/bangumi/episodes.ts
+function episodeTypeLabel(type) {
+  switch (type) {
+    case 0:
+      return "EP";
+    case 1:
+      return "SP";
+    case 2:
+      return "OP";
+    case 3:
+      return "ED";
+    case 4:
+      return "PV";
+    case 5:
+      return "MAD";
+    case 6:
+      return "Other";
+    default:
+      return `Type${type}`;
+  }
+}
+function compareEpisodesByTypeThenSort(left, right) {
+  return left.type - right.type || left.sort - right.sort || left.id - right.id;
+}
+function sortEpisodeCollectionsByTypeThenSort(episodes) {
+  return [...episodes].sort((left, right) => {
+    if (!left.episode && !right.episode) return 0;
+    if (!left.episode) return 1;
+    if (!right.episode) return -1;
+    return compareEpisodesByTypeThenSort(left.episode, right.episode);
+  });
 }
 
 // src/bangumi/labels.ts
@@ -758,7 +795,7 @@ var MarkdownRenderer = class {
     if (subject.episodes.length === 0) {
       return "- [ ] Episode progress unavailable.";
     }
-    const lines = subject.episodes.map((item) => {
+    const lines = sortEpisodeCollectionsByTypeThenSort(subject.episodes).map((item) => {
       var _a;
       const episode = item.episode;
       if (!episode) {
@@ -768,14 +805,17 @@ var MarkdownRenderer = class {
       const title = episode.name_cn || episode.name || `Episode ${episode.sort}`;
       const airdate = (_a = episode.airdate) != null ? _a : "";
       const displayDate = airdate ? ` \xB7 ${airdate}` : "";
-      return `- [${checked}] EP${episode.sort} ${title}${displayDate} <!-- bgm-ep:${episode.id} sort:${episode.sort} type:${episode.type} airdate:${airdate} -->`;
+      const label = episodeTypeLabel(episode.type);
+      return `- [${checked}] ${label}${episode.sort} ${title}${displayDate} <!-- bgm-ep:${episode.id} sort:${episode.sort} type:${episode.type} airdate:${airdate} -->`;
     }).filter((line) => line !== null).join("\n");
     return lines || "- [ ] Episode progress unavailable.";
   }
   getProgressSummary(subject) {
     var _a, _b;
-    const validEpisodes = subject.episodes.filter((item) => item.episode !== null);
-    const total = subject.collection.subject.eps || validEpisodes.length;
+    const validEpisodes = sortEpisodeCollectionsByTypeThenSort(
+      subject.episodes.filter((item) => item.episode !== null)
+    );
+    const total = validEpisodes.length;
     const doneEpisodes = validEpisodes.filter((item) => item.type > 0);
     const done = doneEpisodes.length;
     const percent = total > 0 ? Math.round(done / total * 100) : 0;
@@ -1475,6 +1515,17 @@ var BangumiClient = class {
       expectEmptyResponse: true
     });
   }
+  async createSubjectCollection(params) {
+    await this.request(`/v0/users/-/collections/${params.subjectId}`, {
+      method: "POST",
+      body: {
+        type: params.type,
+        ...params.comment === void 0 ? {} : { comment: params.comment },
+        ...params.rate === void 0 ? {} : { rate: params.rate }
+      },
+      expectEmptyResponse: true
+    });
+  }
   async patchSubjectEpisodeCollections(params) {
     if (params.episodeIds.length === 0) {
       return;
@@ -1700,6 +1751,31 @@ async function ensureFolder(app, path) {
     }
   }
 }
+function getMarkdownFilesInFolder(app, path) {
+  const root = app.vault.getAbstractFileByPath((0, import_obsidian4.normalizePath)(path));
+  if (root instanceof import_obsidian4.TFile) {
+    return root.extension === "md" ? [root] : [];
+  }
+  if (!(root instanceof import_obsidian4.TFolder)) {
+    return [];
+  }
+  const files = [];
+  collectMarkdownFiles(root, files);
+  return files;
+}
+function collectMarkdownFiles(folder, files) {
+  for (const child of folder.children) {
+    if (child instanceof import_obsidian4.TFile) {
+      if (child.extension === "md") {
+        files.push(child);
+      }
+      continue;
+    }
+    if (child instanceof import_obsidian4.TFolder) {
+      collectMarkdownFiles(child, files);
+    }
+  }
+}
 
 // src/sync/sync-service.ts
 var import_obsidian7 = require("obsidian");
@@ -1803,13 +1879,9 @@ var SubjectNoteIndex = class _SubjectNoteIndex {
     this.byId = /* @__PURE__ */ new Map();
   }
   static build(app, syncDirectory) {
-    var _a;
     const directory = (0, import_obsidian6.normalizePath)(syncDirectory);
     const index = new _SubjectNoteIndex();
-    for (const file of app.vault.getMarkdownFiles()) {
-      if (!file.path.startsWith(`${directory}/`) && ((_a = file.parent) == null ? void 0 : _a.path) !== directory) {
-        continue;
-      }
+    for (const file of getMarkdownFilesInFolder(app, directory)) {
       const id = readSubjectId(app, file);
       if (id !== null) {
         index.byId.set(id, file);
@@ -1941,7 +2013,6 @@ var SyncService = class {
     let hasBlockingFailure = false;
     const dailySyncEntries = [];
     const dailyNoteSyncAvailable = await this.validateDailyNoteSyncTarget(
-      failures,
       options
     );
     const concurrency = this.settings.syncConcurrency || 1;
@@ -2066,10 +2137,7 @@ var SyncService = class {
       try {
         await this.writeDailyNoteSyncBlock(dailySyncEntries);
       } catch (error) {
-        failures.push({
-          stage: t("writeDailyNoteStage"),
-          error: this.getErrorMessage(error)
-        });
+        this.recordDailyNoteSyncWarning(options, this.getErrorMessage(error));
         console.error("Bangumi Sync failed to write daily note sync block", error);
       }
     }
@@ -2310,7 +2378,7 @@ var SyncService = class {
       this.settings.fileNameFormat
     );
   }
-  async validateDailyNoteSyncTarget(failures, options) {
+  async validateDailyNoteSyncTarget(options) {
     if (!this.settings.dailyNoteSync) {
       return false;
     }
@@ -2318,7 +2386,6 @@ var SyncService = class {
     const existing = this.app.vault.getAbstractFileByPath(path);
     if (!(existing instanceof import_obsidian7.TFile)) {
       this.recordDailyNoteSyncWarning(
-        failures,
         options,
         t("dailyNoteSyncNoteMissing", { path })
       );
@@ -2327,7 +2394,6 @@ var SyncService = class {
     const content = await this.app.vault.read(existing);
     if (!this.hasDailySyncMarkers(content)) {
       this.recordDailyNoteSyncWarning(
-        failures,
         options,
         t("dailyNoteSyncMarkersMissing")
       );
@@ -2335,12 +2401,8 @@ var SyncService = class {
     }
     return true;
   }
-  recordDailyNoteSyncWarning(failures, options, message) {
+  recordDailyNoteSyncWarning(options, message) {
     var _a;
-    failures.push({
-      stage: t("writeDailyNoteStage"),
-      error: message
-    });
     (_a = options.onProgress) == null ? void 0 : _a.call(options, {
       stage: "warning",
       message
@@ -2498,8 +2560,7 @@ var SyncService = class {
     return updatedAt <= lastSyncedAt;
   }
   async fetchAllEpisodeCollections(client, subjectId) {
-    const page = await client.getSubjectEpisodeCollections(subjectId);
-    return page.data.filter((item) => item.episode !== null).sort((left, right) => {
+    return (await client.getAllSubjectEpisodeCollections(subjectId)).filter((item) => item.episode !== null).sort((left, right) => {
       var _a, _b, _c, _d;
       const leftSort = (_b = (_a = left.episode) == null ? void 0 : _a.sort) != null ? _b : 0;
       const rightSort = (_d = (_c = right.episode) == null ? void 0 : _c.sort) != null ? _d : 0;
@@ -2588,7 +2649,7 @@ var PushService = class {
     this.client = clientFactory();
   }
   async prepareCurrentNotePush() {
-    var _a, _b;
+    var _a, _b, _c, _d, _e, _f;
     const file = this.app.workspace.getActiveFile();
     if (!(file instanceof import_obsidian8.TFile) || file.extension !== "md") {
       throw new Error(t("pushNoActiveFile"));
@@ -2608,13 +2669,16 @@ var PushService = class {
     const syncBlock = this.extractSyncBlock(content);
     const localItems = this.supportsEpisodePush(localCollectionType) ? this.parseChecklist(syncBlock) : [];
     const username = this.settings.username || (await this.client.getMe()).username;
-    const [remoteEpisodes, remoteCollection] = await Promise.all([
-      this.supportsEpisodePush(localCollectionType) ? this.fetchAllSubjectEpisodeCollections(subjectId) : Promise.resolve([]),
-      this.client.getSubjectCollection(subjectId, username)
-    ]);
+    const remoteCollection = await this.getSubjectCollectionOrNull(
+      subjectId,
+      username
+    );
+    const remoteMissing = remoteCollection === null;
+    const remoteEpisodes = this.supportsEpisodePush(localCollectionType) && !remoteMissing ? await this.fetchAllSubjectEpisodeCollections(subjectId) : [];
+    const subjectType = (_d = (_c = remoteCollection == null ? void 0 : remoteCollection.subject.type) != null ? _c : this.parseSubjectType(String((_b = frontmatter == null ? void 0 : frontmatter.type) != null ? _b : ""))) != null ? _d : (await this.client.getSubject(subjectId)).type;
     const remoteEpisodeMap = /* @__PURE__ */ new Map();
     for (const item of remoteEpisodes) {
-      const episodeId = (_b = item.episode) == null ? void 0 : _b.id;
+      const episodeId = (_e = item.episode) == null ? void 0 : _e.id;
       if (typeof episodeId === "number") {
         remoteEpisodeMap.set(episodeId, item.type > 0);
       }
@@ -2623,6 +2687,18 @@ var PushService = class {
     const markUndone = [];
     const unknownEpisodeIds = [];
     for (const item of localItems) {
+      if (remoteMissing) {
+        if (item.checked) {
+          markDone.push({
+            episodeId: item.episodeId,
+            sort: item.sort,
+            title: item.title,
+            localChecked: true,
+            remoteChecked: false
+          });
+        }
+        continue;
+      }
       const remoteChecked = remoteEpisodeMap.get(item.episodeId);
       if (remoteChecked === void 0) {
         unknownEpisodeIds.push(item.episodeId);
@@ -2650,14 +2726,33 @@ var PushService = class {
       username,
       localStatus,
       localCollectionType,
-      remoteCollectionType: remoteCollection.type,
-      subjectType: remoteCollection.subject.type,
+      remoteCollectionType: (_f = remoteCollection == null ? void 0 : remoteCollection.type) != null ? _f : null,
+      remoteMissing,
+      subjectType,
       markDone,
       markUndone,
       unknownEpisodeIds
     };
   }
   async executePreparedPush(preview) {
+    if (preview.remoteMissing) {
+      await this.client.createSubjectCollection({
+        subjectId: preview.subjectId,
+        type: preview.localCollectionType
+      });
+      const createdCollection = await this.client.getSubjectCollection(
+        preview.subjectId,
+        preview.username
+      );
+      if (createdCollection.type !== preview.localCollectionType) {
+        throw new Error(
+          t("pushStatusVerifyFailed", {
+            expected: collectionStatusLabel(preview.localCollectionType),
+            actual: collectionStatusLabel(createdCollection.type)
+          })
+        );
+      }
+    }
     if (preview.markDone.length > 0) {
       await this.client.patchSubjectEpisodeCollections({
         subjectId: preview.subjectId,
@@ -2677,7 +2772,7 @@ var PushService = class {
       preview.subjectId,
       preview.username
     );
-    const serverChangedStatus = remoteAfterEpisodes.type !== preview.remoteCollectionType && remoteAfterEpisodes.type !== preview.localCollectionType;
+    const serverChangedStatus = preview.remoteCollectionType !== null && remoteAfterEpisodes.type !== preview.remoteCollectionType && remoteAfterEpisodes.type !== preview.localCollectionType;
     if (serverChangedStatus) {
       const movedPath2 = await this.moveNoteForFinalStatus(
         preview,
@@ -2692,7 +2787,7 @@ var PushService = class {
         movedPath: movedPath2
       };
     }
-    let statusChanged = false;
+    let statusChanged = preview.remoteMissing;
     let finalCollectionType = remoteAfterEpisodes.type;
     if (remoteAfterEpisodes.type !== preview.localCollectionType) {
       await this.client.patchSubjectCollection({
@@ -2764,7 +2859,36 @@ var PushService = class {
     }
   }
   hasChanges(preview) {
-    return preview.markDone.length > 0 || preview.markUndone.length > 0 || preview.unknownEpisodeIds.length > 0 || preview.remoteCollectionType !== preview.localCollectionType;
+    return preview.remoteMissing || preview.markDone.length > 0 || preview.markUndone.length > 0 || preview.unknownEpisodeIds.length > 0 || preview.remoteCollectionType !== preview.localCollectionType;
+  }
+  async getSubjectCollectionOrNull(subjectId, username) {
+    try {
+      return await this.client.getSubjectCollection(subjectId, username);
+    } catch (error) {
+      if (this.isBangumiNotFound(error)) {
+        return null;
+      }
+      throw error;
+    }
+  }
+  isBangumiNotFound(error) {
+    return typeof error === "object" && error !== null && "status" in error && error.status === 404;
+  }
+  parseSubjectType(type) {
+    switch (type) {
+      case "book":
+        return BANGUMI_SUBJECT_TYPES.book;
+      case "anime":
+        return BANGUMI_SUBJECT_TYPES.anime;
+      case "music":
+        return BANGUMI_SUBJECT_TYPES.music;
+      case "game":
+        return BANGUMI_SUBJECT_TYPES.game;
+      case "real":
+        return BANGUMI_SUBJECT_TYPES.real;
+      default:
+        return null;
+    }
   }
   extractSyncBlock(content) {
     const start = content.indexOf(SYNC_BLOCK_START);
@@ -3106,10 +3230,7 @@ var ProgressBoardService = class {
     var _a;
     const directory = (0, import_obsidian10.normalizePath)(this.syncDirectory || "Bangumi");
     const items = [];
-    for (const file of this.app.vault.getMarkdownFiles()) {
-      if (!this.isInsideDirectory(file, directory)) {
-        continue;
-      }
+    for (const file of getMarkdownFilesInFolder(this.app, directory)) {
       const frontmatter = (_a = this.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter;
       if (typeof frontmatter !== "object" || frontmatter === null) {
         continue;
@@ -3135,10 +3256,6 @@ var ProgressBoardService = class {
       });
     }
     return items.sort((left, right) => left.title.localeCompare(right.title));
-  }
-  isInsideDirectory(file, directory) {
-    var _a;
-    return file.path.startsWith(`${directory}/`) || ((_a = file.parent) == null ? void 0 : _a.path) === directory;
   }
   readString(value) {
     if (typeof value === "string") {
@@ -3341,8 +3458,8 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
     const gridEl = contentEl.createDiv({ cls: "bangumi-note-board-grid" });
     for (const episode of this.episodes) {
       const cell = gridEl.createEl("button", {
-        cls: `bangumi-note-board-cell${episode.localChecked ? " is-done" : ""}${episode.localChecked !== episode.remoteChecked ? " is-changed" : ""}`,
-        text: `EP${episode.sort}`
+        cls: `bangumi-note-board-cell${episode.type === 0 ? "" : " is-extra"}${episode.localChecked ? " is-done" : ""}${episode.localChecked !== episode.remoteChecked ? " is-changed" : ""}`,
+        text: this.renderEpisodeCellText(episode)
       });
       cell.type = "button";
       cell.title = this.renderEpisodeTitle(episode);
@@ -3415,6 +3532,7 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
         });
       }
       await this.reloadAndVerify(item, changes);
+      await this.updateLocalEpisodeChecklist(item);
       this.updateListProgress(item);
       new import_obsidian11.Notice(
         t("boardPushFinished", {
@@ -3474,6 +3592,11 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
         this.remoteRating
       );
       await this.moveLocalNote(item, remote.type);
+      await this.refreshLocalSubjectNote({
+        ...remote,
+        comment: this.remoteComment,
+        rate: this.remoteRating
+      });
       new import_obsidian11.Notice(
         t("boardStatusFinished", {
           status: collectionStatusLabel(remote.type)
@@ -3498,9 +3621,11 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
     }
   }
   promptStatusCollectionInfo(nextType) {
+    const previousStatus = this.remoteStatus === null ? "" : collectionStatusLabel(this.remoteStatus);
     return new Promise((resolve) => {
       new BoardStatusCommentModal(
         this.app,
+        previousStatus,
         collectionStatusLabel(nextType),
         this.remoteComment,
         this.remoteRating,
@@ -3517,6 +3642,30 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
     });
     item.status = collectionStatusLabel(status);
     item.rating = rating === 0 ? "" : String(rating);
+  }
+  async refreshLocalSubjectNote(collection) {
+    await new SyncService(
+      this.app,
+      this.plugin.settings,
+      () => this.plugin.getBangumiClient()
+    ).syncSubjectCollection(collection);
+  }
+  async updateLocalEpisodeChecklist(item) {
+    const checkedByEpisodeId = new Map(
+      this.episodes.map((episode) => [episode.id, episode.remoteChecked])
+    );
+    const content = await this.app.vault.read(item.file);
+    const nextContent = updateEpisodeChecklistContent(
+      content,
+      checkedByEpisodeId
+    );
+    if (nextContent !== content) {
+      await this.app.vault.modify(item.file, nextContent);
+    }
+    await this.app.fileManager.processFrontMatter(item.file, (frontmatter) => {
+      const values = frontmatter;
+      values.progress_done = this.countLocalDone();
+    });
   }
   async moveLocalNote(item, status) {
     var _a;
@@ -3593,16 +3742,16 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
   }
   toBoardEpisodes(episodeCollections) {
     return episodeCollections.filter((item) => item.episode !== null).sort((left, right) => {
-      var _a, _b, _c, _d;
-      const leftSort = (_b = (_a = left.episode) == null ? void 0 : _a.sort) != null ? _b : 0;
-      const rightSort = (_d = (_c = right.episode) == null ? void 0 : _c.sort) != null ? _d : 0;
-      return leftSort - rightSort;
+      const leftEpisode = left.episode;
+      const rightEpisode = right.episode;
+      return compareEpisodesByTypeThenSort(leftEpisode, rightEpisode);
     }).map((item) => {
       var _a;
       const episode = item.episode;
       const checked = item.type > 0;
       return {
         id: episode.id,
+        type: episode.type,
         sort: episode.sort,
         title: episode.name_cn || episode.name || "",
         airdate: (_a = episode.airdate) != null ? _a : "",
@@ -3643,11 +3792,14 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
   }
   renderEpisodeTitle(episode) {
     return [
-      `EP${episode.sort}`,
+      this.renderEpisodeCellText(episode),
       episode.title,
       episode.airdate,
       `bgm-ep:${episode.id}`
     ].filter(Boolean).join(" \xB7 ");
+  }
+  renderEpisodeCellText(episode) {
+    return `${episodeTypeLabel(episode.type)}${episode.sort}`;
   }
   confirmPush(changes) {
     return new Promise((resolve) => {
@@ -3655,6 +3807,25 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
     });
   }
 };
+function updateEpisodeChecklistContent(content, checkedByEpisodeId) {
+  const start = content.indexOf(SYNC_BLOCK_START);
+  const end = content.indexOf(SYNC_BLOCK_END);
+  if (start === -1 || end === -1 || end < start) {
+    return content;
+  }
+  const blockEnd = end + SYNC_BLOCK_END.length;
+  const before = content.slice(0, start);
+  const block = content.slice(start, blockEnd);
+  const after = content.slice(blockEnd);
+  const nextBlock = block.replace(
+    /^(\s*-\s+\[)([ xX])(\]\s+.*?<!--\s*bgm-ep:(\d+)(?:\s|>).*?-->)$/gm,
+    (match, prefix, _checked, suffix, id) => {
+      const checked = checkedByEpisodeId.get(Number(id));
+      return checked === void 0 ? match : `${prefix}${checked ? "x" : " "}${suffix}`;
+    }
+  );
+  return `${before}${nextBlock}${after}`;
+}
 var BoardPushConfirmModal = class extends import_obsidian11.Modal {
   constructor(app, changes, resolve) {
     super(app);
@@ -3702,20 +3873,23 @@ var BoardPushConfirmModal = class extends import_obsidian11.Modal {
   }
 };
 var BoardStatusCommentModal = class extends import_obsidian11.Modal {
-  constructor(app, status, initialComment, initialRating, resolve) {
+  constructor(app, previousStatus, nextStatus, initialComment, initialRating, resolve) {
     super(app);
-    this.status = status;
+    this.previousStatus = previousStatus;
+    this.nextStatus = nextStatus;
     this.initialComment = initialComment;
+    this.initialRating = initialRating;
     this.resolve = resolve;
     this.resolved = false;
     this.textarea = null;
+    this.previewEl = null;
     this.rating = 0;
     this.rating = initialRating;
   }
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
-    new import_obsidian11.Setting(contentEl).setName(t("boardStatusCommentTitle", { status: this.status })).setHeading();
+    new import_obsidian11.Setting(contentEl).setName(t("boardStatusCommentTitle", { status: this.nextStatus })).setHeading();
     contentEl.createEl("p", { text: t("boardStatusCommentDesc") });
     new import_obsidian11.Setting(contentEl).setName(t("boardRating")).addDropdown((dropdown) => {
       dropdown.addOption("0", t("boardRatingNone"));
@@ -3724,11 +3898,16 @@ var BoardStatusCommentModal = class extends import_obsidian11.Modal {
       }
       dropdown.setValue(String(this.rating)).onChange((value) => {
         this.rating = Number(value);
+        this.renderPreview();
       });
     });
     this.textarea = contentEl.createEl("textarea");
     this.textarea.value = this.initialComment;
     this.textarea.addClass("bangumi-note-board-comment-textarea");
+    this.textarea.addEventListener("input", () => this.renderPreview());
+    this.previewEl = contentEl.createEl("pre");
+    this.previewEl.addClass("bangumi-note-push-preview");
+    this.renderPreview();
     new import_obsidian11.Setting(contentEl).addButton(
       (button) => button.setButtonText(t("pushCancel")).onClick(() => {
         this.finish(null);
@@ -3748,6 +3927,25 @@ var BoardStatusCommentModal = class extends import_obsidian11.Modal {
   onClose() {
     this.finish(null);
     this.contentEl.empty();
+  }
+  renderPreview() {
+    var _a, _b;
+    if (!this.previewEl) return;
+    const comment = (_b = (_a = this.textarea) == null ? void 0 : _a.value) != null ? _b : this.initialComment;
+    const empty = t("boardEmptyValue");
+    this.previewEl.setText(
+      [
+        `${t("boardStatus")}: ${this.previousStatus} -> ${this.nextStatus}`,
+        `${t("boardRating")}: ${this.formatRating(this.initialRating)} -> ${this.formatRating(this.rating)}`,
+        `${t("boardComment")}:`,
+        `  ${this.initialComment || empty}`,
+        "  ->",
+        `  ${comment || empty}`
+      ].join("\n")
+    );
+  }
+  formatRating(rating) {
+    return rating === 0 ? t("boardRatingNone") : String(rating);
   }
   finish(info) {
     if (this.resolved) return;
@@ -4096,7 +4294,15 @@ var BangumiSyncPlugin = class extends import_obsidian12.Plugin {
           new import_obsidian12.Notice(t("syncOneSubjectCancelled"));
           return;
         }
-        collection = this.createLocalCollection(subject, collectionType);
+        await client.createSubjectCollection({
+          subjectId,
+          type: collectionType
+        });
+        collection = await this.fetchSubjectCollection(
+          client,
+          subjectId,
+          subject.type
+        );
       }
       new import_obsidian12.Notice(
         t("syncOneSubjectStarted", {
@@ -4230,16 +4436,6 @@ var BangumiSyncPlugin = class extends import_obsidian12.Plugin {
     return new Promise((resolve) => {
       new CollectionStatusModal(this.app, subject, resolve).open();
     });
-  }
-  createLocalCollection(subject, type) {
-    return {
-      type,
-      rate: 0,
-      comment: "",
-      tags: [],
-      updated_at: "",
-      subject
-    };
   }
   getSubjectTitle(subject) {
     return subject.name_cn || subject.name;
@@ -4451,15 +4647,20 @@ var SubjectLookupModal = class extends import_obsidian12.SuggestModal {
     this.onChoose(suggestion);
   }
 };
-var CollectionStatusModal = class extends import_obsidian12.SuggestModal {
+var CollectionStatusModal = class extends import_obsidian12.Modal {
   constructor(app, subject, resolve) {
     super(app);
     this.subject = subject;
     this.resolve = resolve;
-    this.selected = false;
-    this.setPlaceholder(t("syncOneSubjectStatusPlaceholder"));
+    this.resolved = false;
   }
-  getSuggestions(query) {
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    new import_obsidian12.Setting(contentEl).setName(t("syncOneSubjectStatusPlaceholder")).setHeading();
+    contentEl.createEl("p", {
+      text: this.subject.name_cn || this.subject.name
+    });
     const options = [
       { type: BANGUMI_COLLECTION_TYPES.wish, label: "wish" },
       { type: BANGUMI_COLLECTION_TYPES.do, label: "do" },
@@ -4467,32 +4668,37 @@ var CollectionStatusModal = class extends import_obsidian12.SuggestModal {
       { type: BANGUMI_COLLECTION_TYPES.onHold, label: "on_hold" },
       { type: BANGUMI_COLLECTION_TYPES.dropped, label: "dropped" }
     ];
-    const normalizedQuery = query.trim().toLowerCase();
-    return normalizedQuery ? options.filter((option) => option.label.includes(normalizedQuery)) : options;
-  }
-  renderSuggestion(option, el) {
-    el.createDiv({
-      text: t("syncOneSubjectStatusOption", {
-        status: option.label,
-        title: this.subject.name_cn || this.subject.name
-      })
-    });
-  }
-  onChooseSuggestion(option) {
-    this.selected = true;
-    this.resolve(option.type);
+    for (const option of options) {
+      new import_obsidian12.Setting(contentEl).setName(
+        t("syncOneSubjectStatusOption", {
+          status: option.label,
+          title: this.subject.name_cn || this.subject.name
+        })
+      ).addButton(
+        (button) => button.setButtonText(option.label).onClick(() => {
+          this.finish(option.type);
+          this.close();
+        })
+      );
+    }
   }
   onClose() {
-    if (!this.selected) {
-      this.resolve(null);
-    }
+    this.finish(null);
+    this.contentEl.empty();
+  }
+  finish(type) {
+    if (this.resolved) return;
+    this.resolved = true;
+    this.resolve(type);
   }
 };
 function renderPushPreview(preview) {
+  var _a;
+  const remoteStatus = preview.remoteMissing ? "not collected" : collectionStatusLabel((_a = preview.remoteCollectionType) != null ? _a : 0);
   const lines = [
     `Subject: bgm-${preview.subjectId}`,
     `File: ${preview.file.path}`,
-    `Status: ${collectionStatusLabel(preview.remoteCollectionType)} -> ${preview.localStatus}`,
+    `Status: ${remoteStatus} -> ${preview.localStatus}`,
     `Mark done: ${preview.markDone.length}`,
     ...preview.markDone.map(
       (change) => `  - EP${change.sort} ${change.title} (bgm-ep:${change.episodeId})`

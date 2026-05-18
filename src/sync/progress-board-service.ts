@@ -1,4 +1,5 @@
 import { App, TFile, normalizePath } from "obsidian";
+import { getMarkdownFilesInFolder } from "../utils/vault";
 
 export interface ProgressBoardItem {
 	file: TFile;
@@ -22,11 +23,7 @@ export class ProgressBoardService {
 		const directory = normalizePath(this.syncDirectory || "Bangumi");
 		const items: ProgressBoardItem[] = [];
 
-		for (const file of this.app.vault.getMarkdownFiles()) {
-			if (!this.isInsideDirectory(file, directory)) {
-				continue;
-			}
-
+		for (const file of getMarkdownFilesInFolder(this.app, directory)) {
 			const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
 			if (typeof frontmatter !== "object" || frontmatter === null) {
 				continue;
@@ -56,10 +53,6 @@ export class ProgressBoardService {
 		}
 
 		return items.sort((left, right) => left.title.localeCompare(right.title));
-	}
-
-	private isInsideDirectory(file: TFile, directory: string): boolean {
-		return file.path.startsWith(`${directory}/`) || file.parent?.path === directory;
 	}
 
 	private readString(value: unknown): string {

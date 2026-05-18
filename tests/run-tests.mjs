@@ -12,6 +12,13 @@ export class TFile {
 		this.parent = { path: parentPath };
 	}
 }
+export class TFolder {
+	constructor(path, children = []) {
+		this.path = path;
+		this.name = path.split("/").pop() ?? "";
+		this.children = children;
+	}
+}
 export class Notice {
 	constructor(message) {
 		Notice.messages.push(message);
@@ -79,10 +86,11 @@ requestUrl.handler = null;
 
 const entry = `
 import assert from "node:assert/strict";
-import { TFile, requestUrl } from "obsidian";
+import { TFile, TFolder, requestUrl } from "obsidian";
 globalThis.window = globalThis.window ?? globalThis;
 import BangumiSyncPlugin from "./src/main.ts";
 import { BangumiClient, BangumiApiError, BangumiTimeoutError } from "./src/bangumi/client.ts";
+import { episodeTypeLabel } from "./src/bangumi/episodes.ts";
 import { mapWithConcurrency } from "./src/utils/concurrency.ts";
 import { collectionStatusLabel, subjectTypeLabel } from "./src/bangumi/labels.ts";
 import { BANGUMI_COLLECTION_TYPES, BANGUMI_SUBJECT_TYPES } from "./src/bangumi/types.ts";
@@ -99,6 +107,7 @@ import { SyncService } from "./src/sync/sync-service.ts";
 import { OnAirService } from "./src/sync/on-air-service.ts";
 import { PushService } from "./src/sync/push-service.ts";
 import { ProgressBoardService } from "./src/sync/progress-board-service.ts";
+import { updateEpisodeChecklistContent } from "./src/progress-board-view.ts";
 
 function makeSubject(overrides = {}) {
 	return {
@@ -129,10 +138,40 @@ function makeSubject(overrides = {}) {
 function makeApp(files = [], contents = new Map(), frontmatter = new Map()) {
 	const created = [];
 	const modified = [];
+	const buildFolder = (folderPath) => {
+		const normalized = folderPath.replace(/\\/$/, "");
+		const directChildren = [];
+		const folderChildren = new Map();
+		for (const file of files) {
+			if (!file.path.startsWith(normalized + "/")) continue;
+			const rest = file.path.slice(normalized.length + 1);
+			const firstSegment = rest.split("/")[0];
+			if (!firstSegment) continue;
+			if (rest === firstSegment) {
+				directChildren.push(file);
+				continue;
+			}
+			const childPath = normalized + "/" + firstSegment;
+			if (!folderChildren.has(childPath)) {
+				folderChildren.set(childPath, buildFolder(childPath));
+			}
+		}
+		return new TFolder(normalized, [
+			...folderChildren.values(),
+			...directChildren
+		]);
+	};
 	const app = {
 		vault: {
 			getMarkdownFiles: () => files,
-			getAbstractFileByPath: (path) => files.find((file) => file.path === path) ?? null,
+			getAbstractFileByPath: (path) => {
+				const file = files.find((item) => item.path === path);
+				if (file) return file;
+				const normalized = path.replace(/\\/$/, "");
+				return files.some((item) => item.path.startsWith(normalized + "/"))
+					? buildFolder(normalized)
+					: null;
+			},
 			read: async (file) => contents.get(file.path) ?? "",
 			modify: async (file, content) => {
 				modified.push({ file, content });
@@ -163,6 +202,29 @@ function makeApp(files = [], contents = new Map(), frontmatter = new Map()) {
 		}
 	};
 	return { app, files, contents, frontmatter, created, modified };
+}
+
+{
+	requestUrl.calls.length = 0;
+	requestUrl.handler = async () => ({ status: 204, text: "", json: undefined, headers: {} });
+	await new BangumiClient({
+		accessToken: "token",
+		userAgent: "test"
+	}).createSubjectCollection({
+		subjectId: 123,
+		type: BANGUMI_COLLECTION_TYPES.do
+	});
+	assert.deepEqual(
+		requestUrl.calls.map((call) => [call.method, call.url, call.body]),
+		[
+			[
+				"POST",
+				"https://api.bgm.tv/v0/users/-/collections/123",
+				'{"type":3}'
+			]
+		]
+	);
+	requestUrl.handler = null;
 }
 
 {
@@ -212,6 +274,40 @@ function makeApp(files = [], contents = new Map(), frontmatter = new Map()) {
 		]
 	);
 	requestUrl.handler = null;
+}
+
+{
+	requestUrl.calls.length = 0;
+	requestUrl.handler = async (options) => {
+		const url = new URL(options.url);
+		const offset = Number(url.searchParams.get("offset") ?? 0);
+		const limit = Number(url.searchParams.get("limit") ?? 50);
+		const total = 127;
+		const data = [];
+		for (let index = offset; index < Math.min(offset + limit, total); index++) {
+			data.push({
+				type: index < 12 ? 2 : 0,
+				episode: { id: index + 1, type: 0, sort: index + 1, name: "Episode " + (index + 1) }
+			});
+		}
+		return {
+			status: 200,
+			text: "",
+			headers: {},
+			json: { total, limit, offset, data }
+		};
+	};
+	const episodes = await new BangumiClient({
+		accessToken: "token",
+		userAgent: "test"
+	}).getAllSubjectEpisodeCollections(411247);
+	requestUrl.handler = null;
+	assert.equal(episodes.length, 127);
+	assert.equal(episodes.at(-1).episode.id, 127);
+	assert.deepEqual(
+		requestUrl.calls.map((call) => new URL(call.url).searchParams.get("offset")),
+		["0", "50", "100"]
+	);
 }
 
 {
@@ -335,6 +431,31 @@ function makeApp(files = [], contents = new Map(), frontmatter = new Map()) {
 
 {
 	const rendered = new MarkdownRenderer().renderSubjectNote(makeSubject({
+		episodes: [
+			{ type: 0, episode: { id: 101, type: 1, sort: 1, name: "Special" } },
+			{ type: 0, episode: { id: 2, type: 0, sort: 2, name: "Two" } },
+			{ type: 0, episode: { id: 201, type: 2, sort: 1, name: "Opening" } },
+			{ type: 2, episode: { id: 1, type: 0, sort: 1, name: "One" } }
+		]
+	}));
+	const progress = rendered.slice(rendered.indexOf("## Progress"));
+	assert.ok(
+		progress.indexOf("EP1 One") < progress.indexOf("EP2 Two"),
+		"main episodes should be sorted by sort"
+	);
+	assert.ok(
+		progress.indexOf("EP2 Two") < progress.indexOf("SP1 Special"),
+		"SP episodes should appear after main episodes"
+	);
+	assert.ok(
+		progress.indexOf("SP1 Special") < progress.indexOf("OP1 Opening"),
+		"OP episodes should appear after SP episodes"
+	);
+	assert.equal(episodeTypeLabel(3), "ED");
+}
+
+{
+	const rendered = new MarkdownRenderer().renderSubjectNote(makeSubject({
 		collection: {
 			...makeSubject().collection,
 			subject: {
@@ -385,6 +506,41 @@ handwritten\`;
 }
 
 {
+	const { app, created } = makeApp();
+	const warnings = [];
+	const collection = makeSubject().collection;
+	const fakeClient = {
+		getMe: async () => ({ username: "me" }),
+		getAllUserCollections: async () => [collection],
+		getSubject: async () => collection.subject,
+		getAllSubjectEpisodeCollections: async () => []
+	};
+	const result = await new SyncService(
+		app,
+		{
+			...DEFAULT_SETTINGS,
+			accessToken: "token",
+			userAgent: "test",
+			syncDirectory: "Bangumi",
+			dailyNoteSync: true,
+			subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
+			collectionTypes: [BANGUMI_COLLECTION_TYPES.do]
+		},
+		() => fakeClient
+	).sync({
+		onProgress: (progress) => {
+			if (progress.stage === "warning") warnings.push(progress.message);
+		}
+	});
+	assert.equal(result.failed, 0);
+	assert.equal(result.failures.length, 0);
+	assert.equal(result.reportPath, undefined);
+	assert.equal(created.some((entry) => entry.file.path === "Bangumi Sync Report.md"), false);
+	assert.equal(warnings.length, 1);
+	assert.match(warnings[0], /Daily Note|Today's Daily Note|每日日记/);
+}
+
+{
 	const fileByFrontmatter = new TFile("Bangumi/anime/do/Any.md");
 	const fileByName = new TFile("Bangumi/game/do/Game [bgm-456].md");
 	const { app, frontmatter } = makeApp([fileByFrontmatter, fileByName]);
@@ -402,6 +558,30 @@ handwritten\`;
 	service.settings.lastSyncedAt = "2026-01-01T00:00:00+08:00";
 	assert.equal(service.shouldSkipUnchanged(unchanged), true);
 	assert.equal(!service.shouldSkipUnchanged(unchanged) || !ids.has(789), true);
+}
+
+{
+	const content = [
+		"outside before",
+		"<!-- bangumi-sync-start -->",
+		"- [ ] EP1 One <!-- bgm-ep:1 sort:1 type:0 airdate: -->",
+		"- [x] EP2 Two <!-- bgm-ep:2 sort:2 type:0 airdate: -->",
+		"- [ ] EP3 Three <!-- bgm-ep:3 sort:3 type:0 airdate: -->",
+		"<!-- bangumi-sync-end -->",
+		"- [ ] EP1 Outside <!-- bgm-ep:1 sort:1 type:0 airdate: -->",
+		"outside after"
+	].join("\\n");
+	const updated = updateEpisodeChecklistContent(
+		content,
+		new Map([
+			[1, true],
+			[2, false]
+		])
+	);
+	assert.ok(updated.includes("- [x] EP1 One"));
+	assert.ok(updated.includes("- [ ] EP2 Two"));
+	assert.ok(updated.includes("- [ ] EP3 Three"));
+	assert.ok(updated.includes("- [ ] EP1 Outside"));
 }
 
 {
@@ -448,6 +628,32 @@ handwritten\`;
 	assert.equal(items[0].title, "Doing");
 	assert.equal(items[0].progressDone, 3);
 	assert.equal(items[0].epsTotal, 12);
+}
+
+{
+	const inside = new TFile("Bangumi/anime/do/Inside [bgm-10].md");
+	const outside = new TFile("Other/Outside [bgm-20].md");
+	const { app, frontmatter } = makeApp([inside, outside]);
+	app.vault.getMarkdownFiles = () => {
+		throw new Error("full vault markdown scan should not be used");
+	};
+	frontmatter.set(inside.path, {
+		bangumi_id: 10,
+		title: "Inside",
+		type: "anime",
+		status: "do"
+	});
+	frontmatter.set(outside.path, {
+		bangumi_id: 20,
+		title: "Outside",
+		type: "anime",
+		status: "do"
+	});
+	const index = SubjectNoteIndex.build(app, "Bangumi");
+	assert.deepEqual([...index.ids()], [10]);
+	const items = new ProgressBoardService(app, "Bangumi").listDoingItems();
+	assert.equal(items.length, 1);
+	assert.equal(items[0].subjectId, 10);
 }
 
 {
@@ -662,6 +868,109 @@ status: on_hold
 	assert.equal(result.finalStatus, "on_hold");
 	assert.equal(result.movedPath, "Bangumi/anime/on_hold/Original [bgm-123].md");
 	assert.equal(file.path, "Bangumi/anime/on_hold/Original [bgm-123].md");
+}
+
+{
+	requestUrl.calls.length = 0;
+	let collectionReads = 0;
+	requestUrl.handler = async (options) => {
+		if (options.url.endsWith("/v0/me")) {
+			return { status: 200, text: "", json: { username: "me" }, headers: {} };
+		}
+		if (options.url.endsWith("/v0/subjects/123")) {
+			return {
+				status: 200,
+				text: "",
+				headers: {},
+				json: {
+					id: 123,
+					type: BANGUMI_SUBJECT_TYPES.anime,
+					name: "Original"
+				}
+			};
+		}
+		if (options.url.endsWith("/v0/users/me/collections/123")) {
+			collectionReads++;
+			if (collectionReads === 1) {
+				return { status: 404, text: "not collected", json: {}, headers: {} };
+			}
+			return {
+				status: 200,
+				text: "",
+				headers: {},
+				json: {
+					type: BANGUMI_COLLECTION_TYPES.do,
+					subject: {
+						id: 123,
+						type: BANGUMI_SUBJECT_TYPES.anime,
+						name: "Original"
+					}
+				}
+			};
+		}
+		if (options.url.endsWith("/v0/users/-/collections/123") && options.method === "POST") {
+			assert.equal(options.body, '{"type":3}');
+			return { status: 204, text: "", json: undefined, headers: {} };
+		}
+		if (options.url.endsWith("/v0/users/-/collections/123/episodes") && options.method === "PATCH") {
+			assert.equal(options.body, '{"episode_id":[1],"type":2}');
+			return { status: 204, text: "", json: undefined, headers: {} };
+		}
+		if (options.url.includes("/collections/123/episodes")) {
+			return {
+				status: 200,
+				text: "",
+				headers: {},
+				json: {
+					total: 1,
+					limit: 50,
+					offset: 0,
+					data: [{ type: 2, episode: { id: 1, type: 0, sort: 1, name: "One" } }]
+				}
+			};
+		}
+		throw new Error("Unexpected request: " + options.url);
+	};
+	const file = new TFile("Bangumi/anime/do/Original [bgm-123].md");
+	const { app, contents, frontmatter } = makeApp([file]);
+	app.workspace.getActiveFile = () => file;
+	contents.set(
+		file.path,
+		\`---
+bangumi_id: 123
+type: anime
+status: do
+---
+
+<!-- bangumi-sync-start -->
+- [x] EP1 One <!-- bgm-ep:1 sort:1 type:0 airdate: -->
+<!-- bangumi-sync-end -->\`
+	);
+	frontmatter.set(file.path, {
+		bangumi_id: 123,
+		type: "anime",
+		status: "do"
+	});
+	const service = new PushService(app, {
+		...DEFAULT_SETTINGS,
+		accessToken: "token",
+		userAgent: "test"
+	});
+	const preview = await service.prepareCurrentNotePush();
+	assert.equal(preview.remoteMissing, true);
+	assert.equal(preview.markDone.length, 1);
+	const result = await service.executePreparedPush(preview);
+	requestUrl.handler = null;
+	assert.equal(result.statusChanged, true);
+	assert.equal(result.changedEpisodes, 1);
+	assert.equal(result.finalStatus, "do");
+	assert.ok(
+		requestUrl.calls.some(
+			(call) =>
+				call.method === "POST" &&
+				call.url.endsWith("/v0/users/-/collections/123")
+		)
+	);
 }
 
 {
