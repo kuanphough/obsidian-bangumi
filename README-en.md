@@ -166,9 +166,11 @@ If a matching local subject note exists, the title links to that note. Otherwise
 
 ## Sync Behavior
 
+- The plugin only reads your configured sync directory, today's Daily Note when Daily Note sync is enabled, and the currently open note when you manually Push; it does not scan the whole vault for sync or board features.
 - Repeat syncs update frontmatter and the block between `<!-- bangumi-sync-start -->` and `<!-- bangumi-sync-end -->`.
 - Content outside the sync block is preserved, including `## Notes`.
 - Full sync compares rendered content before writing, so unchanged files are not touched.
+- To reduce API requests, episode progress is fetched by default only for `wish` / `do` / `collect` book, anime, and real-life subjects. Games, music, on-hold, and dropped subjects skip episode progress.
 - Episode progress failures do not block note generation; reports show that progress content was not fetched.
 - One failed subject does not stop the whole sync. Issues are summarized at the end.
 - When syncing one subject, the plugin checks whether the subject is already collected first. For uncollected subjects, there may be a short wait before the local-status picker appears.
@@ -205,11 +207,10 @@ In incremental sync, only subjects actually written or updated in this run are a
 
 ## Current Limits
 
-- OAuth login is not supported yet; use manual access tokens.
-- Bangumi's current v0 episode collection endpoint does not return per-episode comment text.
-- Bangumi write-back is still experimental. Current-note Push supports status, rating, comment, and episode checklist for `do` / `collect` subjects; board status changes also support status, rating, and comment.
-- The plugin cannot control Bangumi timeline text or timeline merge rules.
-- This plugin is desktop-first. Mobile compatibility may be limited, especially clipboard access, token page opening, Daily Note path detection, and large settings textareas.
+- OAuth login is not supported: for safety reasons, use a manual access token.
+- Public APIs only: this brings a few limits. For example, the Bangumi v0 episode collection endpoint does not return per-episode user comments, so per-episode comments cannot be synced; the plugin also cannot control Bangumi timeline text or timeline merge rules, so timeline entries may not show progress like `completed xx of xx episodes`.
+- Bangumi write-back is still experimental: current-note Push supports status, rating, comment, and episode checklist for `do` / `collect` subjects; board status changes also support status, rating, and comment.
+- Mobile compatibility: this plugin is desktop-first. Mobile compatibility may be limited, especially clipboard access, token page opening, Daily Note path detection, and large settings textareas. Use with caution.
 
 ## Support
 

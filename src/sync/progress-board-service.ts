@@ -70,3 +70,32 @@ export class ProgressBoardService {
 		return Number.isFinite(parsed) ? parsed : null;
 	}
 }
+
+export class ProgressBoardCache {
+	private cachedDirectory = "";
+	private cachedItems: ProgressBoardItem[] | null = null;
+
+	constructor(private readonly app: App) {}
+
+	listDoingItems(syncDirectory: string, forceRefresh = false): ProgressBoardItem[] {
+		const directory = normalizePath(syncDirectory || "Bangumi");
+		if (
+			!forceRefresh &&
+			this.cachedItems !== null &&
+			this.cachedDirectory === directory
+		) {
+			return this.cachedItems;
+		}
+
+		this.cachedDirectory = directory;
+		this.cachedItems = new ProgressBoardService(
+			this.app,
+			directory
+		).listDoingItems();
+		return this.cachedItems;
+	}
+
+	invalidate(): void {
+		this.cachedItems = null;
+	}
+}

@@ -5,6 +5,7 @@ import {
 	BangumiCollectionType,
 	BangumiEpisodeCollection,
 	BANGUMI_COLLECTION_TYPES,
+	BANGUMI_SUBJECT_TYPES,
 	BangumiSubjectExtras
 } from "../bangumi/types";
 import { BangumiClient } from "../bangumi/client";
@@ -393,14 +394,16 @@ export class SyncService {
 		let episodeSyncError: string | undefined;
 		const failures: SyncFailure[] = [];
 
-		try {
-			episodes = await this.fetchAllEpisodeCollections(client, subjectId);
-		} catch (error) {
-			episodeSyncError = this.getErrorMessage(error);
-			console.error(
-				`Bangumi Sync failed to fetch episodes for subject ${subjectId}`,
-				error
-			);
+		if (this.shouldFetchEpisodeCollections(collection)) {
+			try {
+				episodes = await this.fetchAllEpisodeCollections(client, subjectId);
+			} catch (error) {
+				episodeSyncError = this.getErrorMessage(error);
+				console.error(
+					`Bangumi Sync failed to fetch episodes for subject ${subjectId}`,
+					error
+				);
+			}
 		}
 
 		const extras = await this.fetchSubjectExtras(client, collection, failures);
@@ -436,6 +439,9 @@ export class SyncService {
 		episodeSyncError?: string;
 	}> {
 		const subjectId = collection.subject.id;
+		if (!this.shouldFetchEpisodeCollections(collection)) {
+			return { episodes: [] };
+		}
 		try {
 			const episodes = await this.fetchAllEpisodeCollections(client, subjectId);
 			return { episodes };
@@ -890,6 +896,20 @@ export class SyncService {
 				const rightSort = right.episode?.sort ?? 0;
 				return leftSort - rightSort;
 			});
+	}
+
+	private shouldFetchEpisodeCollections(collection: BangumiCollection): boolean {
+		const subjectType = collection.subject.type;
+		const collectionType = collection.type;
+		const subjectSupportsProgress =
+			subjectType === BANGUMI_SUBJECT_TYPES.book ||
+			subjectType === BANGUMI_SUBJECT_TYPES.anime ||
+			subjectType === BANGUMI_SUBJECT_TYPES.real;
+		const collectionSupportsProgress =
+			collectionType === BANGUMI_COLLECTION_TYPES.wish ||
+			collectionType === BANGUMI_COLLECTION_TYPES.do ||
+			collectionType === BANGUMI_COLLECTION_TYPES.collect;
+		return subjectSupportsProgress && collectionSupportsProgress;
 	}
 
 	private getTargetDirectory(collection: BangumiCollection): string {

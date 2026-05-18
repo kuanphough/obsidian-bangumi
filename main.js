@@ -2194,14 +2194,16 @@ var SyncService = class {
     let episodes = [];
     let episodeSyncError;
     const failures = [];
-    try {
-      episodes = await this.fetchAllEpisodeCollections(client, subjectId);
-    } catch (error) {
-      episodeSyncError = this.getErrorMessage(error);
-      console.error(
-        `Bangumi Sync failed to fetch episodes for subject ${subjectId}`,
-        error
-      );
+    if (this.shouldFetchEpisodeCollections(collection)) {
+      try {
+        episodes = await this.fetchAllEpisodeCollections(client, subjectId);
+      } catch (error) {
+        episodeSyncError = this.getErrorMessage(error);
+        console.error(
+          `Bangumi Sync failed to fetch episodes for subject ${subjectId}`,
+          error
+        );
+      }
     }
     const extras = await this.fetchSubjectExtras(client, collection, failures);
     const noteIndex = SubjectNoteIndex.build(
@@ -2226,6 +2228,9 @@ var SyncService = class {
   }
   async safeFetchEpisodeCollections(client, collection, title, failures) {
     const subjectId = collection.subject.id;
+    if (!this.shouldFetchEpisodeCollections(collection)) {
+      return { episodes: [] };
+    }
     try {
       const episodes = await this.fetchAllEpisodeCollections(client, subjectId);
       return { episodes };
@@ -2566,6 +2571,13 @@ var SyncService = class {
       const rightSort = (_d = (_c = right.episode) == null ? void 0 : _c.sort) != null ? _d : 0;
       return leftSort - rightSort;
     });
+  }
+  shouldFetchEpisodeCollections(collection) {
+    const subjectType = collection.subject.type;
+    const collectionType = collection.type;
+    const subjectSupportsProgress = subjectType === BANGUMI_SUBJECT_TYPES.book || subjectType === BANGUMI_SUBJECT_TYPES.anime || subjectType === BANGUMI_SUBJECT_TYPES.real;
+    const collectionSupportsProgress = collectionType === BANGUMI_COLLECTION_TYPES.wish || collectionType === BANGUMI_COLLECTION_TYPES.do || collectionType === BANGUMI_COLLECTION_TYPES.collect;
+    return subjectSupportsProgress && collectionSupportsProgress;
   }
   getTargetDirectory(collection) {
     const root = this.settings.syncDirectory;
@@ -3258,9 +3270,6 @@ ${existingContent}`;
   }
 };
 
-// src/progress-board-view.ts
-var import_obsidian11 = require("obsidian");
-
 // src/sync/progress-board-service.ts
 var import_obsidian10 = require("obsidian");
 var ProgressBoardService = class {
@@ -3313,8 +3322,31 @@ var ProgressBoardService = class {
     return Number.isFinite(parsed) ? parsed : null;
   }
 };
+var ProgressBoardCache = class {
+  constructor(app) {
+    this.app = app;
+    this.cachedDirectory = "";
+    this.cachedItems = null;
+  }
+  listDoingItems(syncDirectory, forceRefresh = false) {
+    const directory = (0, import_obsidian10.normalizePath)(syncDirectory || "Bangumi");
+    if (!forceRefresh && this.cachedItems !== null && this.cachedDirectory === directory) {
+      return this.cachedItems;
+    }
+    this.cachedDirectory = directory;
+    this.cachedItems = new ProgressBoardService(
+      this.app,
+      directory
+    ).listDoingItems();
+    return this.cachedItems;
+  }
+  invalidate() {
+    this.cachedItems = null;
+  }
+};
 
 // src/progress-board-view.ts
+var import_obsidian11 = require("obsidian");
 var VIEW_TYPE_BANGUMI_BOARD = "bangumi-progress-board";
 var BOARD_TYPE_FILTERS = ["all", "anime", "book", "music", "game", "real"];
 var BOARD_STATUS_OPTIONS = [
@@ -3352,11 +3384,8 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
   async onClose() {
     this.contentEl.empty();
   }
-  refreshList() {
-    this.items = new ProgressBoardService(
-      this.app,
-      this.plugin.settings.syncDirectory
-    ).listDoingItems();
+  refreshList(forceRefresh = false) {
+    this.items = this.plugin.listProgressBoardItems(forceRefresh);
     this.selectedItem = null;
     this.episodes = [];
     this.remoteStatus = null;
@@ -3377,7 +3406,7 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
         this.renderList();
       });
     }).addButton(
-      (button) => button.setButtonText(t("boardRefreshList")).onClick(() => this.refreshList())
+      (button) => button.setButtonText(t("boardRefreshList")).onClick(() => this.refreshList(true))
     );
     const visibleItems = this.getVisibleItems();
     if (visibleItems.length === 0) {
@@ -3708,6 +3737,7 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
       const values = frontmatter;
       values.progress_done = this.countLocalDone();
     });
+    this.plugin.invalidateProgressBoardCache();
   }
   async moveLocalNote(item, status) {
     var _a;
@@ -3729,6 +3759,7 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
     }
     await this.app.vault.rename(item.file, targetPath);
     item.path = targetPath;
+    this.plugin.invalidateProgressBoardCache();
   }
   getTargetDirectory(type, status) {
     const root = this.plugin.settings.syncDirectory;
@@ -4146,6 +4177,7 @@ var BangumiSyncPlugin = class extends import_obsidian12.Plugin {
     this.cachedClient = null;
     this.cachedClientToken = "";
     this.cachedClientUserAgent = "";
+    this.progressBoardCache = null;
   }
   getBangumiClient() {
     if (this.cachedClient === null || this.cachedClientToken !== this.settings.accessToken || this.cachedClientUserAgent !== this.settings.userAgent) {
@@ -4160,6 +4192,8 @@ var BangumiSyncPlugin = class extends import_obsidian12.Plugin {
   }
   async onload() {
     await this.loadSettings();
+    this.progressBoardCache = new ProgressBoardCache(this.app);
+    this.registerProgressBoardCacheInvalidation();
     this.registerView(
       VIEW_TYPE_BANGUMI_BOARD,
       (leaf) => new ProgressBoardView(leaf, this)
@@ -4248,6 +4282,55 @@ var BangumiSyncPlugin = class extends import_obsidian12.Plugin {
   }
   async saveSettings() {
     await this.saveData(this.settings);
+    this.invalidateProgressBoardCache();
+  }
+  listProgressBoardItems(forceRefresh = false) {
+    if (this.progressBoardCache === null) {
+      this.progressBoardCache = new ProgressBoardCache(this.app);
+    }
+    return this.progressBoardCache.listDoingItems(
+      this.settings.syncDirectory,
+      forceRefresh
+    );
+  }
+  invalidateProgressBoardCache() {
+    var _a;
+    (_a = this.progressBoardCache) == null ? void 0 : _a.invalidate();
+  }
+  registerProgressBoardCacheInvalidation() {
+    this.registerEvent(
+      this.app.vault.on("create", (file) => {
+        if (this.isPathInSyncDirectory(file.path)) {
+          this.invalidateProgressBoardCache();
+        }
+      })
+    );
+    this.registerEvent(
+      this.app.vault.on("delete", (file) => {
+        if (this.isPathInSyncDirectory(file.path)) {
+          this.invalidateProgressBoardCache();
+        }
+      })
+    );
+    this.registerEvent(
+      this.app.vault.on("modify", (file) => {
+        if (this.isPathInSyncDirectory(file.path)) {
+          this.invalidateProgressBoardCache();
+        }
+      })
+    );
+    this.registerEvent(
+      this.app.vault.on("rename", (file, oldPath) => {
+        if (this.isPathInSyncDirectory(file.path) || this.isPathInSyncDirectory(oldPath)) {
+          this.invalidateProgressBoardCache();
+        }
+      })
+    );
+  }
+  isPathInSyncDirectory(path) {
+    const directory = (0, import_obsidian12.normalizePath)(this.settings.syncDirectory || "Bangumi");
+    const normalized = (0, import_obsidian12.normalizePath)(path);
+    return normalized === directory || normalized.startsWith(`${directory}/`);
   }
   async openTemplateVariablesDoc() {
     try {

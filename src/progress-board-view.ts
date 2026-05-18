@@ -24,10 +24,7 @@ import { t } from "./i18n";
 import { BANGUMI_STORAGE_LAYOUTS } from "./settings";
 import { SYNC_BLOCK_END, SYNC_BLOCK_START } from "./sync/markdown-renderer";
 import { SyncService } from "./sync/sync-service";
-import {
-	ProgressBoardItem,
-	ProgressBoardService
-} from "./sync/progress-board-service";
+import { ProgressBoardItem } from "./sync/progress-board-service";
 
 export const VIEW_TYPE_BANGUMI_BOARD = "bangumi-progress-board";
 const BOARD_TYPE_FILTERS = ["all", "anime", "book", "music", "game", "real"] as const;
@@ -87,11 +84,8 @@ export class ProgressBoardView extends ItemView {
 		this.contentEl.empty();
 	}
 
-	private refreshList(): void {
-		this.items = new ProgressBoardService(
-			this.app,
-			this.plugin.settings.syncDirectory
-		).listDoingItems();
+	private refreshList(forceRefresh = false): void {
+		this.items = this.plugin.listProgressBoardItems(forceRefresh);
 		this.selectedItem = null;
 		this.episodes = [];
 		this.remoteStatus = null;
@@ -121,7 +115,7 @@ export class ProgressBoardView extends ItemView {
 			.addButton((button) =>
 				button
 					.setButtonText(t("boardRefreshList"))
-					.onClick(() => this.refreshList())
+					.onClick(() => this.refreshList(true))
 			);
 
 		const visibleItems = this.getVisibleItems();
@@ -523,6 +517,7 @@ export class ProgressBoardView extends ItemView {
 			const values = frontmatter as Record<string, unknown>;
 			values.progress_done = this.countLocalDone();
 		});
+		this.plugin.invalidateProgressBoardCache();
 	}
 
 	private async moveLocalNote(
@@ -548,6 +543,7 @@ export class ProgressBoardView extends ItemView {
 		}
 		await this.app.vault.rename(item.file, targetPath);
 		item.path = targetPath;
+		this.plugin.invalidateProgressBoardCache();
 	}
 
 	private getTargetDirectory(type: string, status: string): string {

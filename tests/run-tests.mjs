@@ -106,7 +106,7 @@ import { SubjectNoteIndex } from "./src/sync/subject-note-index.ts";
 import { SyncService } from "./src/sync/sync-service.ts";
 import { OnAirService } from "./src/sync/on-air-service.ts";
 import { PushService } from "./src/sync/push-service.ts";
-import { ProgressBoardService } from "./src/sync/progress-board-service.ts";
+import { ProgressBoardCache, ProgressBoardService } from "./src/sync/progress-board-service.ts";
 import { updateEpisodeChecklistContent } from "./src/progress-board-view.ts";
 
 function makeSubject(overrides = {}) {
@@ -541,6 +541,71 @@ handwritten\`;
 }
 
 {
+	const gameCollection = {
+		...makeSubject().collection,
+		type: BANGUMI_COLLECTION_TYPES.do,
+		subject: {
+			...makeSubject().collection.subject,
+			id: 400,
+			type: BANGUMI_SUBJECT_TYPES.game,
+			name: "Game"
+		}
+	};
+	const wishAnimeCollection = {
+		...makeSubject().collection,
+		type: BANGUMI_COLLECTION_TYPES.wish,
+		subject: {
+			...makeSubject().collection.subject,
+			id: 401,
+			type: BANGUMI_SUBJECT_TYPES.anime,
+			name: "Wish Anime"
+		}
+	};
+	let episodeFetches = 0;
+	const fakeClient = {
+		getMe: async () => ({ username: "me" }),
+		getSubject: async (subjectId) =>
+			subjectId === gameCollection.subject.id ? gameCollection.subject : wishAnimeCollection.subject,
+		getAllUserCollections: async ({ subjectType, collectionType }) => {
+			if (
+				subjectType === BANGUMI_SUBJECT_TYPES.game &&
+				collectionType === BANGUMI_COLLECTION_TYPES.do
+			) {
+				return [gameCollection];
+			}
+			if (
+				subjectType === BANGUMI_SUBJECT_TYPES.anime &&
+				collectionType === BANGUMI_COLLECTION_TYPES.wish
+			) {
+				return [wishAnimeCollection];
+			}
+			return [];
+		},
+		getAllSubjectEpisodeCollections: async (subjectId) => {
+			episodeFetches++;
+			assert.equal(subjectId, wishAnimeCollection.subject.id);
+			return [];
+		}
+	};
+	const { app } = makeApp();
+	const result = await new SyncService(
+		app,
+		{
+			...DEFAULT_SETTINGS,
+			accessToken: "token",
+			userAgent: "test",
+			syncDirectory: "Bangumi",
+			subjectTypes: [BANGUMI_SUBJECT_TYPES.game, BANGUMI_SUBJECT_TYPES.anime],
+			collectionTypes: [BANGUMI_COLLECTION_TYPES.do, BANGUMI_COLLECTION_TYPES.wish]
+		},
+		() => fakeClient
+	).sync();
+	assert.equal(result.failed, 0);
+	assert.equal(result.written, 2);
+	assert.equal(episodeFetches, 1);
+}
+
+{
 	const fileByFrontmatter = new TFile("Bangumi/anime/do/Any.md");
 	const fileByName = new TFile("Bangumi/game/do/Game [bgm-456].md");
 	const { app, frontmatter } = makeApp([fileByFrontmatter, fileByName]);
@@ -654,6 +719,32 @@ handwritten\`;
 	const items = new ProgressBoardService(app, "Bangumi").listDoingItems();
 	assert.equal(items.length, 1);
 	assert.equal(items[0].subjectId, 10);
+}
+
+{
+	const file = new TFile("Bangumi/anime/do/Cached [bgm-30].md");
+	const { app, frontmatter } = makeApp([file]);
+	frontmatter.set(file.path, {
+		bangumi_id: 30,
+		title: "Cached",
+		type: "anime",
+		status: "do"
+	});
+	let folderReads = 0;
+	const originalGetAbstractFileByPath = app.vault.getAbstractFileByPath;
+	app.vault.getAbstractFileByPath = (path) => {
+		if (path === "Bangumi") folderReads++;
+		return originalGetAbstractFileByPath(path);
+	};
+	const cache = new ProgressBoardCache(app);
+	assert.equal(cache.listDoingItems("Bangumi").length, 1);
+	assert.equal(cache.listDoingItems("Bangumi").length, 1);
+	assert.equal(folderReads, 1);
+	cache.invalidate();
+	assert.equal(cache.listDoingItems("Bangumi").length, 1);
+	assert.equal(folderReads, 2);
+	assert.equal(cache.listDoingItems("Bangumi", true).length, 1);
+	assert.equal(folderReads, 3);
 }
 
 {

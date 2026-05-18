@@ -36,6 +36,7 @@ import {
 import { SyncService } from "./sync/sync-service";
 import { PushPreview, PushService } from "./sync/push-service";
 import { OnAirService } from "./sync/on-air-service";
+import { ProgressBoardCache } from "./sync/progress-board-service";
 import {
 	ProgressBoardView,
 	VIEW_TYPE_BANGUMI_BOARD
@@ -190,6 +191,7 @@ export default class BangumiSyncPlugin extends Plugin {
 	private cachedClient: BangumiClient | null = null;
 	private cachedClientToken = "";
 	private cachedClientUserAgent = "";
+	private progressBoardCache: ProgressBoardCache | null = null;
 
 	getBangumiClient(): BangumiClient {
 		if (
@@ -209,6 +211,8 @@ export default class BangumiSyncPlugin extends Plugin {
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
+		this.progressBoardCache = new ProgressBoardCache(this.app);
+		this.registerProgressBoardCacheInvalidation();
 
 		this.registerView(
 			VIEW_TYPE_BANGUMI_BOARD,
@@ -315,6 +319,61 @@ export default class BangumiSyncPlugin extends Plugin {
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
+		this.invalidateProgressBoardCache();
+	}
+
+	listProgressBoardItems(forceRefresh = false) {
+		if (this.progressBoardCache === null) {
+			this.progressBoardCache = new ProgressBoardCache(this.app);
+		}
+		return this.progressBoardCache.listDoingItems(
+			this.settings.syncDirectory,
+			forceRefresh
+		);
+	}
+
+	invalidateProgressBoardCache(): void {
+		this.progressBoardCache?.invalidate();
+	}
+
+	private registerProgressBoardCacheInvalidation(): void {
+		this.registerEvent(
+			this.app.vault.on("create", (file) => {
+				if (this.isPathInSyncDirectory(file.path)) {
+					this.invalidateProgressBoardCache();
+				}
+			})
+		);
+		this.registerEvent(
+			this.app.vault.on("delete", (file) => {
+				if (this.isPathInSyncDirectory(file.path)) {
+					this.invalidateProgressBoardCache();
+				}
+			})
+		);
+		this.registerEvent(
+			this.app.vault.on("modify", (file) => {
+				if (this.isPathInSyncDirectory(file.path)) {
+					this.invalidateProgressBoardCache();
+				}
+			})
+		);
+		this.registerEvent(
+			this.app.vault.on("rename", (file, oldPath) => {
+				if (
+					this.isPathInSyncDirectory(file.path) ||
+					this.isPathInSyncDirectory(oldPath)
+				) {
+					this.invalidateProgressBoardCache();
+				}
+			})
+		);
+	}
+
+	private isPathInSyncDirectory(path: string): boolean {
+		const directory = normalizePath(this.settings.syncDirectory || "Bangumi");
+		const normalized = normalizePath(path);
+		return normalized === directory || normalized.startsWith(`${directory}/`);
 	}
 
 	async openTemplateVariablesDoc(): Promise<void> {
