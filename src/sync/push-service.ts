@@ -31,6 +31,10 @@ export interface PushPreview {
 	localStatus: string;
 	localCollectionType: BangumiCollectionType;
 	remoteCollectionType: BangumiCollectionType | null;
+	localRating: number | null;
+	remoteRating: number | null;
+	localComment: string | null;
+	remoteComment: string | null;
 	remoteMissing: boolean;
 	subjectType: number;
 	markDone: PushEpisodeChange[];
@@ -41,6 +45,7 @@ export interface PushPreview {
 export interface PushResult {
 	changedEpisodes: number;
 	statusChanged: boolean;
+	metadataChanged: boolean;
 	remoteStatusChanged: boolean;
 	finalStatus: string;
 	shouldResync: boolean;
@@ -80,6 +85,8 @@ export class PushService {
 		const subjectId = Number(frontmatter?.bangumi_id);
 		const localStatus = String(frontmatter?.status ?? "");
 		const localCollectionType = this.parseWritableStatus(localStatus);
+		const localRating = this.readOptionalRating(frontmatter?.rating);
+		const localComment = this.readOptionalComment(frontmatter?.comment);
 
 		if (!Number.isInteger(subjectId) || subjectId <= 0) {
 			throw new Error(t("pushInvalidNote"));
@@ -162,6 +169,10 @@ export class PushService {
 			localStatus,
 			localCollectionType,
 			remoteCollectionType: remoteCollection?.type ?? null,
+			localRating,
+			remoteRating: remoteCollection?.rate ?? null,
+			localComment,
+			remoteComment: remoteCollection?.comment ?? null,
 			remoteMissing,
 			subjectType,
 			markDone,
@@ -174,20 +185,17 @@ export class PushService {
 		if (preview.remoteMissing) {
 			await this.client.createSubjectCollection({
 				subjectId: preview.subjectId,
-				type: preview.localCollectionType
+				type: preview.localCollectionType,
+				...(preview.localComment === null
+					? {}
+					: { comment: preview.localComment }),
+				...(preview.localRating === null ? {} : { rate: preview.localRating })
 			});
 			const createdCollection = await this.client.getSubjectCollection(
 				preview.subjectId,
 				preview.username
 			);
-			if (createdCollection.type !== preview.localCollectionType) {
-				throw new Error(
-					t("pushStatusVerifyFailed", {
-						expected: collectionStatusLabel(preview.localCollectionType),
-						actual: collectionStatusLabel(createdCollection.type)
-					})
-				);
-			}
+			this.verifyCollectionWrite(preview, createdCollection);
 		}
 
 		if (preview.markDone.length > 0) {
@@ -226,6 +234,7 @@ export class PushService {
 				changedEpisodes:
 					preview.markDone.length + preview.markUndone.length,
 				statusChanged: false,
+				metadataChanged: false,
 				remoteStatusChanged: true,
 				finalStatus: collectionStatusLabel(remoteAfterEpisodes.type),
 				shouldResync: true,
@@ -234,25 +243,30 @@ export class PushService {
 		}
 
 		let statusChanged = preview.remoteMissing;
+		let metadataChanged = preview.remoteMissing
+			? this.hasLocalMetadata(preview)
+			: false;
 		let finalCollectionType = remoteAfterEpisodes.type;
-		if (remoteAfterEpisodes.type !== preview.localCollectionType) {
+		const needsCollectionPatch =
+			remoteAfterEpisodes.type !== preview.localCollectionType ||
+			this.hasMetadataChanges(preview, remoteAfterEpisodes);
+		if (needsCollectionPatch) {
 			await this.client.patchSubjectCollection({
 				subjectId: preview.subjectId,
-				type: preview.localCollectionType
+				type: preview.localCollectionType,
+				...(preview.localComment === null
+					? {}
+					: { comment: preview.localComment }),
+				...(preview.localRating === null ? {} : { rate: preview.localRating })
 			});
 			const remoteAfterStatus = await this.client.getSubjectCollection(
 				preview.subjectId,
 				preview.username
 			);
-			if (remoteAfterStatus.type !== preview.localCollectionType) {
-				throw new Error(
-					t("pushStatusVerifyFailed", {
-						expected: collectionStatusLabel(preview.localCollectionType),
-						actual: collectionStatusLabel(remoteAfterStatus.type)
-					})
-				);
-			}
-			statusChanged = true;
+			this.verifyCollectionWrite(preview, remoteAfterStatus);
+			statusChanged =
+				remoteAfterEpisodes.type !== preview.localCollectionType;
+			metadataChanged = this.hasMetadataChanges(preview, remoteAfterEpisodes);
 			finalCollectionType = remoteAfterStatus.type;
 		}
 
@@ -264,9 +278,10 @@ export class PushService {
 		return {
 			changedEpisodes: preview.markDone.length + preview.markUndone.length,
 			statusChanged,
+			metadataChanged,
 			remoteStatusChanged: false,
 			finalStatus: collectionStatusLabel(finalCollectionType),
-			shouldResync: statusChanged,
+			shouldResync: false,
 			movedPath
 		};
 	}
@@ -315,8 +330,56 @@ export class PushService {
 			preview.markDone.length > 0 ||
 			preview.markUndone.length > 0 ||
 			preview.unknownEpisodeIds.length > 0 ||
-			preview.remoteCollectionType !== preview.localCollectionType
+			preview.remoteCollectionType !== preview.localCollectionType ||
+			preview.remoteMissing ||
+			this.hasMetadataChanges(preview)
 		);
+	}
+
+	private verifyCollectionWrite(
+		preview: PushPreview,
+		collection: BangumiCollection
+	): void {
+		if (collection.type !== preview.localCollectionType) {
+			throw new Error(
+				t("pushStatusVerifyFailed", {
+					expected: collectionStatusLabel(preview.localCollectionType),
+					actual: collectionStatusLabel(collection.type)
+				})
+			);
+		}
+		if (
+			preview.localRating !== null &&
+			(collection.rate ?? 0) !== preview.localRating
+		) {
+			throw new Error(
+				`Bangumi rating verification failed: expected ${preview.localRating}, actual ${collection.rate ?? 0}`
+			);
+		}
+		if (
+			preview.localComment !== null &&
+			(collection.comment ?? "") !== preview.localComment
+		) {
+			throw new Error("Bangumi comment verification failed.");
+		}
+	}
+
+	private hasMetadataChanges(
+		preview: PushPreview,
+		remote?: BangumiCollection
+	): boolean {
+		const remoteRating = remote?.rate ?? preview.remoteRating;
+		const remoteComment = remote?.comment ?? preview.remoteComment;
+		return (
+			(preview.localRating !== null &&
+				(remoteRating ?? 0) !== preview.localRating) ||
+			(preview.localComment !== null &&
+				(remoteComment ?? "") !== preview.localComment)
+		);
+	}
+
+	private hasLocalMetadata(preview: PushPreview): boolean {
+		return preview.localRating !== null || preview.localComment !== null;
 	}
 
 	private async getSubjectCollectionOrNull(
@@ -412,6 +475,23 @@ export class PushService {
 			return BANGUMI_COLLECTION_TYPES.dropped;
 		}
 		return null;
+	}
+
+	private readOptionalRating(value: unknown): number | null {
+		if (value === null || value === undefined || value === "") {
+			return null;
+		}
+		const rating = Number(value);
+		return Number.isInteger(rating) && rating >= 0 && rating <= 10
+			? rating
+			: null;
+	}
+
+	private readOptionalComment(value: unknown): string | null {
+		if (value === null || value === undefined) {
+			return null;
+		}
+		return String(value);
 	}
 
 	private supportsEpisodePush(type: BangumiCollectionType): boolean {

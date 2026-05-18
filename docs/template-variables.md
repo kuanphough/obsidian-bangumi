@@ -14,6 +14,8 @@ The template must include both `{{sync_block_start}}` and `{{sync_block_end}}`. 
 - If an extra API request fails, note generation continues. Markdown variables become empty strings, JSON variables become empty arrays or objects, and the failure is recorded in the sync report.
 - `bangumi_tags` means your personal collection tags. `subject_tags` means public Bangumi subject tags.
 - Bangumi v0 episode collection APIs do not return user per-episode comments, so there is no single-episode comment variable.
+- Episode progress is fetched with pagination when available. Long series are not limited to the first 50 entries.
+- The rendered checklist includes all valid episode types returned by Bangumi: main episodes, SP, OP, ED, PV, MAD, and Other. Main episodes are sorted first, then extra episode types.
 
 - 模板里已经使用的变量会尽量自动拉取。例如使用 `{{summary_section}}` 或 `{{subject_summary}}` 会触发详细条目信息拉取。
 - `Template data toggles / 模板数据开关` 会强制额外拉取数据，即使当前模板暂时没用到这些变量。
@@ -21,6 +23,8 @@ The template must include both `{{sync_block_start}}` and `{{sync_block_end}}`. 
 - 扩展 API 请求失败不会阻止笔记生成。Markdown 变量会输出为空字符串，JSON 变量会输出空数组或空对象，并在同步报告里记录失败原因。
 - `bangumi_tags` 是你的个人收藏标签；`subject_tags` 是 Bangumi 公共条目标签。
 - Bangumi v0 章节收藏接口不返回用户单集评论，因此没有单集评论变量。
+- 章节进度会在接口支持时分页拉取，长篇条目不会只停在前 50 条。
+- 渲染出的 checklist 包含 Bangumi 返回的全部有效章节类型：本篇、SP、OP、ED、PV、MAD 和 Other。本篇优先排序，然后是额外章节类型。
 
 ## Identity / 身份信息
 

@@ -191,7 +191,7 @@ var EN = {
   pushFailed: "Bangumi write-back failed: {{message}}",
   pushEpisodeVerifyFailed: "Bangumi did not confirm these episode changes after write-back: {{ids}}. Try pushing again later.",
   pushFinished: "Bangumi write-back finished: {{episodes}} episode change(s), final status: {{finalStatus}}.{{moved}}{{resync}}",
-  pushFinishedResync: " Re-sync this note to reflect the latest Bangumi status.",
+  pushFinishedResync: " Bangumi changed the final status after the episode update; re-sync this note to refresh local metadata.",
   pushInvalidNote: "Current note is not a valid Bangumi subject note.",
   pushMoved: " Moved note to {{path}}.",
   pushMoveTargetExists: "Write-back succeeded, but the note could not be moved because the target file already exists: {{path}}",
@@ -404,7 +404,7 @@ var ZH = {
   pushFailed: "Bangumi \u5199\u56DE\u5931\u8D25\uFF1A{{message}}",
   pushEpisodeVerifyFailed: "Bangumi \u5199\u56DE\u540E\u6CA1\u6709\u786E\u8BA4\u8FD9\u4E9B\u7AE0\u8282\u53D8\u66F4\uFF1A{{ids}}\u3002\u8BF7\u7A0D\u540E\u518D\u8BD5\u4E00\u6B21\u3002",
   pushFinished: "Bangumi \u5199\u56DE\u5B8C\u6210\uFF1A{{episodes}} \u4E2A\u7AE0\u8282\u53D8\u66F4\uFF0C\u6700\u7EC8\u72B6\u6001\uFF1A{{finalStatus}}\u3002{{moved}}{{resync}}",
-  pushFinishedResync: "\u8BF7\u91CD\u65B0\u540C\u6B65\u8FD9\u6761\u7B14\u8BB0\uFF0C\u4EE5\u53CD\u6620\u6700\u65B0 Bangumi \u72B6\u6001\u3002",
+  pushFinishedResync: "Bangumi \u5728\u7AE0\u8282\u66F4\u65B0\u540E\u81EA\u52A8\u6539\u53D8\u4E86\u6700\u7EC8\u72B6\u6001\uFF0C\u5EFA\u8BAE\u91CD\u65B0\u540C\u6B65\u8FD9\u6761\u7B14\u8BB0\u4EE5\u5237\u65B0\u672C\u5730\u4FE1\u606F\u3002",
   pushInvalidNote: "\u5F53\u524D\u7B14\u8BB0\u4E0D\u662F\u6709\u6548\u7684 Bangumi \u6761\u76EE\u7B14\u8BB0\u3002",
   pushMoved: "\u5DF2\u79FB\u52A8\u7B14\u8BB0\u5230 {{path}}\u3002",
   pushMoveTargetExists: "\u5199\u56DE\u5DF2\u7ECF\u6210\u529F\uFF0C\u4F46\u65E0\u6CD5\u79FB\u52A8\u7B14\u8BB0\uFF0C\u56E0\u4E3A\u76EE\u6807\u6587\u4EF6\u5DF2\u5B58\u5728\uFF1A{{path}}",
@@ -2649,7 +2649,7 @@ var PushService = class {
     this.client = clientFactory();
   }
   async prepareCurrentNotePush() {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     const file = this.app.workspace.getActiveFile();
     if (!(file instanceof import_obsidian8.TFile) || file.extension !== "md") {
       throw new Error(t("pushNoActiveFile"));
@@ -2659,6 +2659,8 @@ var PushService = class {
     const subjectId = Number(frontmatter == null ? void 0 : frontmatter.bangumi_id);
     const localStatus = String((_a = frontmatter == null ? void 0 : frontmatter.status) != null ? _a : "");
     const localCollectionType = this.parseWritableStatus(localStatus);
+    const localRating = this.readOptionalRating(frontmatter == null ? void 0 : frontmatter.rating);
+    const localComment = this.readOptionalComment(frontmatter == null ? void 0 : frontmatter.comment);
     if (!Number.isInteger(subjectId) || subjectId <= 0) {
       throw new Error(t("pushInvalidNote"));
     }
@@ -2727,6 +2729,10 @@ var PushService = class {
       localStatus,
       localCollectionType,
       remoteCollectionType: (_f = remoteCollection == null ? void 0 : remoteCollection.type) != null ? _f : null,
+      localRating,
+      remoteRating: (_g = remoteCollection == null ? void 0 : remoteCollection.rate) != null ? _g : null,
+      localComment,
+      remoteComment: (_h = remoteCollection == null ? void 0 : remoteCollection.comment) != null ? _h : null,
       remoteMissing,
       subjectType,
       markDone,
@@ -2738,20 +2744,15 @@ var PushService = class {
     if (preview.remoteMissing) {
       await this.client.createSubjectCollection({
         subjectId: preview.subjectId,
-        type: preview.localCollectionType
+        type: preview.localCollectionType,
+        ...preview.localComment === null ? {} : { comment: preview.localComment },
+        ...preview.localRating === null ? {} : { rate: preview.localRating }
       });
       const createdCollection = await this.client.getSubjectCollection(
         preview.subjectId,
         preview.username
       );
-      if (createdCollection.type !== preview.localCollectionType) {
-        throw new Error(
-          t("pushStatusVerifyFailed", {
-            expected: collectionStatusLabel(preview.localCollectionType),
-            actual: collectionStatusLabel(createdCollection.type)
-          })
-        );
-      }
+      this.verifyCollectionWrite(preview, createdCollection);
     }
     if (preview.markDone.length > 0) {
       await this.client.patchSubjectEpisodeCollections({
@@ -2781,6 +2782,7 @@ var PushService = class {
       return {
         changedEpisodes: preview.markDone.length + preview.markUndone.length,
         statusChanged: false,
+        metadataChanged: false,
         remoteStatusChanged: true,
         finalStatus: collectionStatusLabel(remoteAfterEpisodes.type),
         shouldResync: true,
@@ -2788,25 +2790,23 @@ var PushService = class {
       };
     }
     let statusChanged = preview.remoteMissing;
+    let metadataChanged = preview.remoteMissing ? this.hasLocalMetadata(preview) : false;
     let finalCollectionType = remoteAfterEpisodes.type;
-    if (remoteAfterEpisodes.type !== preview.localCollectionType) {
+    const needsCollectionPatch = remoteAfterEpisodes.type !== preview.localCollectionType || this.hasMetadataChanges(preview, remoteAfterEpisodes);
+    if (needsCollectionPatch) {
       await this.client.patchSubjectCollection({
         subjectId: preview.subjectId,
-        type: preview.localCollectionType
+        type: preview.localCollectionType,
+        ...preview.localComment === null ? {} : { comment: preview.localComment },
+        ...preview.localRating === null ? {} : { rate: preview.localRating }
       });
       const remoteAfterStatus = await this.client.getSubjectCollection(
         preview.subjectId,
         preview.username
       );
-      if (remoteAfterStatus.type !== preview.localCollectionType) {
-        throw new Error(
-          t("pushStatusVerifyFailed", {
-            expected: collectionStatusLabel(preview.localCollectionType),
-            actual: collectionStatusLabel(remoteAfterStatus.type)
-          })
-        );
-      }
-      statusChanged = true;
+      this.verifyCollectionWrite(preview, remoteAfterStatus);
+      statusChanged = remoteAfterEpisodes.type !== preview.localCollectionType;
+      metadataChanged = this.hasMetadataChanges(preview, remoteAfterEpisodes);
       finalCollectionType = remoteAfterStatus.type;
     }
     const movedPath = await this.moveNoteForFinalStatus(
@@ -2816,9 +2816,10 @@ var PushService = class {
     return {
       changedEpisodes: preview.markDone.length + preview.markUndone.length,
       statusChanged,
+      metadataChanged,
       remoteStatusChanged: false,
       finalStatus: collectionStatusLabel(finalCollectionType),
-      shouldResync: statusChanged,
+      shouldResync: false,
       movedPath
     };
   }
@@ -2859,7 +2860,35 @@ var PushService = class {
     }
   }
   hasChanges(preview) {
-    return preview.remoteMissing || preview.markDone.length > 0 || preview.markUndone.length > 0 || preview.unknownEpisodeIds.length > 0 || preview.remoteCollectionType !== preview.localCollectionType;
+    return preview.remoteMissing || preview.markDone.length > 0 || preview.markUndone.length > 0 || preview.unknownEpisodeIds.length > 0 || preview.remoteCollectionType !== preview.localCollectionType || preview.remoteMissing || this.hasMetadataChanges(preview);
+  }
+  verifyCollectionWrite(preview, collection) {
+    var _a, _b, _c;
+    if (collection.type !== preview.localCollectionType) {
+      throw new Error(
+        t("pushStatusVerifyFailed", {
+          expected: collectionStatusLabel(preview.localCollectionType),
+          actual: collectionStatusLabel(collection.type)
+        })
+      );
+    }
+    if (preview.localRating !== null && ((_a = collection.rate) != null ? _a : 0) !== preview.localRating) {
+      throw new Error(
+        `Bangumi rating verification failed: expected ${preview.localRating}, actual ${(_b = collection.rate) != null ? _b : 0}`
+      );
+    }
+    if (preview.localComment !== null && ((_c = collection.comment) != null ? _c : "") !== preview.localComment) {
+      throw new Error("Bangumi comment verification failed.");
+    }
+  }
+  hasMetadataChanges(preview, remote) {
+    var _a, _b;
+    const remoteRating = (_a = remote == null ? void 0 : remote.rate) != null ? _a : preview.remoteRating;
+    const remoteComment = (_b = remote == null ? void 0 : remote.comment) != null ? _b : preview.remoteComment;
+    return preview.localRating !== null && (remoteRating != null ? remoteRating : 0) !== preview.localRating || preview.localComment !== null && (remoteComment != null ? remoteComment : "") !== preview.localComment;
+  }
+  hasLocalMetadata(preview) {
+    return preview.localRating !== null || preview.localComment !== null;
   }
   async getSubjectCollectionOrNull(subjectId, username) {
     try {
@@ -2935,6 +2964,19 @@ var PushService = class {
       return BANGUMI_COLLECTION_TYPES.dropped;
     }
     return null;
+  }
+  readOptionalRating(value) {
+    if (value === null || value === void 0 || value === "") {
+      return null;
+    }
+    const rating = Number(value);
+    return Number.isInteger(rating) && rating >= 0 && rating <= 10 ? rating : null;
+  }
+  readOptionalComment(value) {
+    if (value === null || value === void 0) {
+      return null;
+    }
+    return String(value);
   }
   supportsEpisodePush(type) {
     return type === BANGUMI_COLLECTION_TYPES.do || type === BANGUMI_COLLECTION_TYPES.collect;
@@ -3980,6 +4022,8 @@ The template must include both \`{{sync_block_start}}\` and \`{{sync_block_end}}
 - If an extra API request fails, note generation continues. Markdown variables become empty strings, JSON variables become empty arrays or objects, and the failure is recorded in the sync report.
 - \`bangumi_tags\` means your personal collection tags. \`subject_tags\` means public Bangumi subject tags.
 - Bangumi v0 episode collection APIs do not return user per-episode comments, so there is no single-episode comment variable.
+- Episode progress is fetched with pagination when available. Long series are not limited to the first 50 entries.
+- The rendered checklist includes all valid episode types returned by Bangumi: main episodes, SP, OP, ED, PV, MAD, and Other. Main episodes are sorted first, then extra episode types.
 
 - \u6A21\u677F\u91CC\u5DF2\u7ECF\u4F7F\u7528\u7684\u53D8\u91CF\u4F1A\u5C3D\u91CF\u81EA\u52A8\u62C9\u53D6\u3002\u4F8B\u5982\u4F7F\u7528 \`{{summary_section}}\` \u6216 \`{{subject_summary}}\` \u4F1A\u89E6\u53D1\u8BE6\u7EC6\u6761\u76EE\u4FE1\u606F\u62C9\u53D6\u3002
 - \`Template data toggles / \u6A21\u677F\u6570\u636E\u5F00\u5173\` \u4F1A\u5F3A\u5236\u989D\u5916\u62C9\u53D6\u6570\u636E\uFF0C\u5373\u4F7F\u5F53\u524D\u6A21\u677F\u6682\u65F6\u6CA1\u7528\u5230\u8FD9\u4E9B\u53D8\u91CF\u3002
@@ -3987,6 +4031,8 @@ The template must include both \`{{sync_block_start}}\` and \`{{sync_block_end}}
 - \u6269\u5C55 API \u8BF7\u6C42\u5931\u8D25\u4E0D\u4F1A\u963B\u6B62\u7B14\u8BB0\u751F\u6210\u3002Markdown \u53D8\u91CF\u4F1A\u8F93\u51FA\u4E3A\u7A7A\u5B57\u7B26\u4E32\uFF0CJSON \u53D8\u91CF\u4F1A\u8F93\u51FA\u7A7A\u6570\u7EC4\u6216\u7A7A\u5BF9\u8C61\uFF0C\u5E76\u5728\u540C\u6B65\u62A5\u544A\u91CC\u8BB0\u5F55\u5931\u8D25\u539F\u56E0\u3002
 - \`bangumi_tags\` \u662F\u4F60\u7684\u4E2A\u4EBA\u6536\u85CF\u6807\u7B7E\uFF1B\`subject_tags\` \u662F Bangumi \u516C\u5171\u6761\u76EE\u6807\u7B7E\u3002
 - Bangumi v0 \u7AE0\u8282\u6536\u85CF\u63A5\u53E3\u4E0D\u8FD4\u56DE\u7528\u6237\u5355\u96C6\u8BC4\u8BBA\uFF0C\u56E0\u6B64\u6CA1\u6709\u5355\u96C6\u8BC4\u8BBA\u53D8\u91CF\u3002
+- \u7AE0\u8282\u8FDB\u5EA6\u4F1A\u5728\u63A5\u53E3\u652F\u6301\u65F6\u5206\u9875\u62C9\u53D6\uFF0C\u957F\u7BC7\u6761\u76EE\u4E0D\u4F1A\u53EA\u505C\u5728\u524D 50 \u6761\u3002
+- \u6E32\u67D3\u51FA\u7684 checklist \u5305\u542B Bangumi \u8FD4\u56DE\u7684\u5168\u90E8\u6709\u6548\u7AE0\u8282\u7C7B\u578B\uFF1A\u672C\u7BC7\u3001SP\u3001OP\u3001ED\u3001PV\u3001MAD \u548C Other\u3002\u672C\u7BC7\u4F18\u5148\u6392\u5E8F\uFF0C\u7136\u540E\u662F\u989D\u5916\u7AE0\u8282\u7C7B\u578B\u3002
 
 ## Identity / \u8EAB\u4EFD\u4FE1\u606F
 
@@ -4045,7 +4091,7 @@ The template must include both \`{{sync_block_start}}\` and \`{{sync_block_end}}
 | Variable / \u53D8\u91CF | English | \u4E2D\u6587 |
 | --- | --- | --- |
 | \`{{progress_done}}\` | Completed episode count, based on episode collection \`type > 0\`. | \u5DF2\u5B8C\u6210\u7AE0\u8282\u6570\uFF0C\u6309\u7AE0\u8282\u6536\u85CF \`type > 0\` \u7EDF\u8BA1\u3002 |
-| \`{{progress_total}}\` | Total count, preferring subject \`eps\`, then fetched episode count. | \u603B\u6570\uFF0C\u4F18\u5148\u6761\u76EE \`eps\`\uFF0C\u5426\u5219\u4F7F\u7528\u5DF2\u62C9\u53D6\u7AE0\u8282\u6570\u3002 |
+| \`{{progress_total}}\` | Total valid fetched episode count, including main episodes and extra episode types such as SP/OP/ED/PV/MAD/Other. | \u5DF2\u62C9\u53D6\u5230\u7684\u6709\u6548\u7AE0\u8282\u603B\u6570\uFF0C\u5305\u542B\u672C\u7BC7\u4EE5\u53CA SP/OP/ED/PV/MAD/Other \u7B49\u989D\u5916\u7AE0\u8282\u7C7B\u578B\u3002 |
 | \`{{progress_percent}}\` | Integer percentage, rounded from \`done / total * 100\`. | \u6574\u6570\u767E\u5206\u6BD4\uFF0C\u56DB\u820D\u4E94\u5165\u3002 |
 | \`{{progress_available}}\` | \`true\` when episode progress was fetched and has valid episodes. | \u6210\u529F\u62C9\u5230\u6709\u6548\u7AE0\u8282\u8FDB\u5EA6\u65F6\u4E3A \`true\`\u3002 |
 | \`{{next_episode_json}}\` | JSON/YAML-safe next unfinished episode label, or empty string. | \u4E0B\u4E00\u96C6/\u7AE0\u8282\uFF0C\u9002\u5408 JSON/YAML\uFF1B\u6CA1\u6709\u65F6\u4E3A\u7A7A\u5B57\u7B26\u4E32\u3002 |
@@ -4693,12 +4739,17 @@ var CollectionStatusModal = class extends import_obsidian12.Modal {
   }
 };
 function renderPushPreview(preview) {
-  var _a;
+  var _a, _b;
   const remoteStatus = preview.remoteMissing ? "not collected" : collectionStatusLabel((_a = preview.remoteCollectionType) != null ? _a : 0);
   const lines = [
     `Subject: bgm-${preview.subjectId}`,
     `File: ${preview.file.path}`,
     `Status: ${remoteStatus} -> ${preview.localStatus}`,
+    `Rating: ${formatPushRating(preview.remoteRating)} -> ${preview.localRating === null ? "(unchanged)" : formatPushRating(preview.localRating)}`,
+    `Comment:`,
+    `  ${formatPushText((_b = preview.remoteComment) != null ? _b : "")}`,
+    "  ->",
+    `  ${preview.localComment === null ? "(unchanged)" : formatPushText(preview.localComment)}`,
     `Mark done: ${preview.markDone.length}`,
     ...preview.markDone.map(
       (change) => `  - EP${change.sort} ${change.title} (bgm-ep:${change.episodeId})`
@@ -4709,4 +4760,10 @@ function renderPushPreview(preview) {
     )
   ];
   return lines.join("\n");
+}
+function formatPushRating(rating) {
+  return rating === null || rating === 0 ? "N/A" : String(rating);
+}
+function formatPushText(value) {
+  return value || "(empty)";
 }

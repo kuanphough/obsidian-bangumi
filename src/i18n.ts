@@ -162,7 +162,8 @@ const EN = {
 		"Bangumi did not confirm these episode changes after write-back: {{ids}}. Try pushing again later.",
 	pushFinished:
 		"Bangumi write-back finished: {{episodes}} episode change(s), final status: {{finalStatus}}.{{moved}}{{resync}}",
-	pushFinishedResync: " Re-sync this note to reflect the latest Bangumi status.",
+	pushFinishedResync:
+		" Bangumi changed the final status after the episode update; re-sync this note to refresh local metadata.",
 	pushInvalidNote: "Current note is not a valid Bangumi subject note.",
 	pushMoved: " Moved note to {{path}}.",
 	pushMoveTargetExists:
@@ -417,7 +418,8 @@ const ZH: Record<LocaleKey, string> = {
 		"Bangumi 写回后没有确认这些章节变更：{{ids}}。请稍后再试一次。",
 	pushFinished:
 		"Bangumi 写回完成：{{episodes}} 个章节变更，最终状态：{{finalStatus}}。{{moved}}{{resync}}",
-	pushFinishedResync: "请重新同步这条笔记，以反映最新 Bangumi 状态。",
+	pushFinishedResync:
+		"Bangumi 在章节更新后自动改变了最终状态，建议重新同步这条笔记以刷新本地信息。",
 	pushInvalidNote: "当前笔记不是有效的 Bangumi 条目笔记。",
 	pushMoved: "已移动笔记到 {{path}}。",
 	pushMoveTargetExists:

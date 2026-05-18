@@ -814,7 +814,7 @@ status: do
 			throw new Error("Status-only push should not fetch episode collections");
 		}
 		if (options.url.endsWith("/v0/users/-/collections/123") && options.method === "PATCH") {
-			assert.equal(options.body, '{"type":4}');
+			assert.equal(options.body, '{"type":4,"comment":"paused here","rate":7}');
 			return { status: 204, text: "", json: undefined, headers: {} };
 		}
 		if (options.url.endsWith("/v0/users/me/collections/123")) {
@@ -827,6 +827,8 @@ status: do
 					type: collectionReads < 3
 						? BANGUMI_COLLECTION_TYPES.do
 						: BANGUMI_COLLECTION_TYPES.onHold,
+					rate: collectionReads < 3 ? 4 : 7,
+					comment: collectionReads < 3 ? "old comment" : "paused here",
 					subject: {
 						id: 123,
 						type: BANGUMI_SUBJECT_TYPES.anime,
@@ -845,6 +847,8 @@ status: do
 		\`---
 bangumi_id: 123
 status: on_hold
+rating: 7
+comment: "paused here"
 ---
 
 <!-- bangumi-sync-start -->
@@ -852,7 +856,9 @@ status: on_hold
 	);
 	frontmatter.set(file.path, {
 		bangumi_id: 123,
-		status: "on_hold"
+		status: "on_hold",
+		rating: 7,
+		comment: "paused here"
 	});
 	const service = new PushService(app, {
 		...DEFAULT_SETTINGS,
@@ -862,10 +868,13 @@ status: on_hold
 	});
 	const preview = await service.prepareCurrentNotePush();
 	assert.equal(preview.localCollectionType, BANGUMI_COLLECTION_TYPES.onHold);
+	assert.equal(preview.localRating, 7);
+	assert.equal(preview.localComment, "paused here");
 	assert.equal(preview.markDone.length, 0);
 	const result = await service.executePreparedPush(preview);
 	requestUrl.handler = null;
 	assert.equal(result.finalStatus, "on_hold");
+	assert.equal(result.metadataChanged, true);
 	assert.equal(result.movedPath, "Bangumi/anime/on_hold/Original [bgm-123].md");
 	assert.equal(file.path, "Bangumi/anime/on_hold/Original [bgm-123].md");
 }

@@ -109,7 +109,7 @@ Keep the token private. It authorizes the plugin to read your Bangumi account da
 | `Incremental sync` | Skip unchanged subjects by Bangumi updated time and recreate missing local notes. |
 | `Daily note sync` | Write newly added or updated in-progress subjects to today's Daily Note block. |
 | `Enable On Air note` | Generate `Bangumi/On Air.md` after sync, grouped by weekday for all broadcasts and your wished/watching anime. |
-| `Enable write-back to Bangumi` | Allow manual Push from the current subject note for episode checklist changes and collection status. Disabled by default; every Push requires confirmation. |
+| `Enable write-back to Bangumi` | Allow manual Push from the current subject note for episode checklist changes and collection status, and allow board status write-back. Disabled by default; every Push requires confirmation. |
 | `Subject note template` | Customize the Markdown template for subject notes. |
 
 ## Sync One Subject
@@ -122,7 +122,7 @@ Run `Bangumi Sync: Sync one subject`, or click `Sync one subject` in settings. T
 
 URLs and IDs show a direct sync option. Keywords search books, anime, music, games, and real-life subjects. Search results include year, score, `bgm-id`, and a subject type tag.
 
-If the subject is already in your Bangumi collection, the plugin uses the real collection status, rating, tags, and comment. If it is not collected, the plugin asks you to choose a local status for note generation and folder classification. This local status is not written back to Bangumi.
+If the subject is already in your Bangumi collection, the plugin uses the real collection status, rating, tags, and comment. If it is not collected, the plugin asks you to choose a status, creates the Bangumi collection first, then generates the local note. The new collection writes only the status; rating, tags, and comment are not filled automatically.
 
 ## Bangumi Board
 
@@ -130,7 +130,9 @@ Run `Bangumi Sync: Open Bangumi board`, or click the board ribbon icon, to open 
 
 The board only scans Bangumi notes under the sync directory, and only lists notes whose frontmatter has `status: do`. The type filter defaults to `anime`, and can be switched to all types, books, music, games, or real-life subjects. The list only shows the subject title and a type badge. Opening the list does not fetch episode progress for every subject; episode progress is loaded only after you select an item.
 
-In the grid UI, clicking an episode only changes the local preview. The plugin writes to Bangumi only after you click `Push changes` and confirm. After remote verification succeeds, the local Markdown checklist and `progress_done` are updated too. You can also change the collection status from the board; every status change opens a comment and rating input, then writes the new status, comment, and rating to Bangumi after confirmation. After a successful status change, the local note is re-rendered so status, comment, and rating in frontmatter and the sync block are updated; classified notes are also moved to the matching status folder.
+In the grid UI, clicking an episode only changes the local preview. The plugin writes to Bangumi only after you click `Push changes` and confirm. After remote verification succeeds, the local Markdown checklist and `progress_done` are updated too. The grid includes main episodes, SP, OP, ED, PV, MAD, and Other. Main episodes are sorted first; non-main episode types are visually marked.
+
+You can also change the collection status from the board. Every status change opens a comment and rating input and shows a diff preview for status, rating, and comment. After confirmation, the new status, comment, and rating are written to Bangumi. After a successful status change, the local note is re-rendered so status, comment, and rating in frontmatter and the sync block are updated; classified notes are also moved to the matching status folder.
 
 ## Write Back to Bangumi
 
@@ -141,7 +143,7 @@ The first version is intentionally narrow:
 - It only handles the currently open subject note. There is no batch write-back.
 - It can write `status` values `wish`, `do`, `collect`, `on_hold`, and `dropped`.
 - Episode checklist changes are only written for `do` / `collect` subjects.
-- It does not write back rating, tags, comments, text outside the sync block, or Daily Note content.
+- Current-note Push writes `status`, `rating`, `comment`, and episode checklist changes from frontmatter. Tags, text outside the sync block, and Daily Note content are not written back yet.
 - After writing, it reads Bangumi again to verify that episode progress and status actually changed. If the remote data does not confirm the write, the plugin reports failure instead of treating it as success.
 - The plugin can write Bangumi progress, but it cannot control Bangumi timeline text or timeline merge rules. When progress records are close in time, Bangumi may merge them into the latest activity.
 - If storage layout is not flat, the current note is moved automatically according to the final remote status after a successful status write-back.
@@ -205,7 +207,7 @@ In incremental sync, only subjects actually written or updated in this run are a
 
 - OAuth login is not supported yet; use manual access tokens.
 - Bangumi's current v0 episode collection endpoint does not return per-episode comment text.
-- Bangumi write-back is still experimental and only supports the current subject note's status plus episode checklist for `do` / `collect` subjects.
+- Bangumi write-back is still experimental. Current-note Push supports status, rating, comment, and episode checklist for `do` / `collect` subjects; board status changes also support status, rating, and comment.
 - The plugin cannot control Bangumi timeline text or timeline merge rules.
 - This plugin is desktop-first. Mobile compatibility may be limited, especially clipboard access, token page opening, Daily Note path detection, and large settings textareas.
 

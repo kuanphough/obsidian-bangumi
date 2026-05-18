@@ -66,6 +66,8 @@ The template must include both \`{{sync_block_start}}\` and \`{{sync_block_end}}
 - If an extra API request fails, note generation continues. Markdown variables become empty strings, JSON variables become empty arrays or objects, and the failure is recorded in the sync report.
 - \`bangumi_tags\` means your personal collection tags. \`subject_tags\` means public Bangumi subject tags.
 - Bangumi v0 episode collection APIs do not return user per-episode comments, so there is no single-episode comment variable.
+- Episode progress is fetched with pagination when available. Long series are not limited to the first 50 entries.
+- The rendered checklist includes all valid episode types returned by Bangumi: main episodes, SP, OP, ED, PV, MAD, and Other. Main episodes are sorted first, then extra episode types.
 
 - 模板里已经使用的变量会尽量自动拉取。例如使用 \`{{summary_section}}\` 或 \`{{subject_summary}}\` 会触发详细条目信息拉取。
 - \`Template data toggles / 模板数据开关\` 会强制额外拉取数据，即使当前模板暂时没用到这些变量。
@@ -73,6 +75,8 @@ The template must include both \`{{sync_block_start}}\` and \`{{sync_block_end}}
 - 扩展 API 请求失败不会阻止笔记生成。Markdown 变量会输出为空字符串，JSON 变量会输出空数组或空对象，并在同步报告里记录失败原因。
 - \`bangumi_tags\` 是你的个人收藏标签；\`subject_tags\` 是 Bangumi 公共条目标签。
 - Bangumi v0 章节收藏接口不返回用户单集评论，因此没有单集评论变量。
+- 章节进度会在接口支持时分页拉取，长篇条目不会只停在前 50 条。
+- 渲染出的 checklist 包含 Bangumi 返回的全部有效章节类型：本篇、SP、OP、ED、PV、MAD 和 Other。本篇优先排序，然后是额外章节类型。
 
 ## Identity / 身份信息
 
@@ -131,7 +135,7 @@ The template must include both \`{{sync_block_start}}\` and \`{{sync_block_end}}
 | Variable / 变量 | English | 中文 |
 | --- | --- | --- |
 | \`{{progress_done}}\` | Completed episode count, based on episode collection \`type > 0\`. | 已完成章节数，按章节收藏 \`type > 0\` 统计。 |
-| \`{{progress_total}}\` | Total count, preferring subject \`eps\`, then fetched episode count. | 总数，优先条目 \`eps\`，否则使用已拉取章节数。 |
+| \`{{progress_total}}\` | Total valid fetched episode count, including main episodes and extra episode types such as SP/OP/ED/PV/MAD/Other. | 已拉取到的有效章节总数，包含本篇以及 SP/OP/ED/PV/MAD/Other 等额外章节类型。 |
 | \`{{progress_percent}}\` | Integer percentage, rounded from \`done / total * 100\`. | 整数百分比，四舍五入。 |
 | \`{{progress_available}}\` | \`true\` when episode progress was fetched and has valid episodes. | 成功拉到有效章节进度时为 \`true\`。 |
 | \`{{next_episode_json}}\` | JSON/YAML-safe next unfinished episode label, or empty string. | 下一集/章节，适合 JSON/YAML；没有时为空字符串。 |
@@ -941,6 +945,11 @@ function renderPushPreview(preview: PushPreview): string {
 		`Subject: bgm-${preview.subjectId}`,
 		`File: ${preview.file.path}`,
 		`Status: ${remoteStatus} -> ${preview.localStatus}`,
+		`Rating: ${formatPushRating(preview.remoteRating)} -> ${preview.localRating === null ? "(unchanged)" : formatPushRating(preview.localRating)}`,
+		`Comment:`,
+		`  ${formatPushText(preview.remoteComment ?? "")}`,
+		"  ->",
+		`  ${preview.localComment === null ? "(unchanged)" : formatPushText(preview.localComment)}`,
 		`Mark done: ${preview.markDone.length}`,
 		...preview.markDone.map(
 			(change) =>
@@ -954,4 +963,12 @@ function renderPushPreview(preview: PushPreview): string {
 	];
 
 	return lines.join("\n");
+}
+
+function formatPushRating(rating: number | null): string {
+	return rating === null || rating === 0 ? "N/A" : String(rating);
+}
+
+function formatPushText(value: string): string {
+	return value || "(empty)";
 }
