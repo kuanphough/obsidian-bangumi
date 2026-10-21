@@ -1156,6 +1156,41 @@ status: do
 	assert.equal(corruptPlugin.settings.incrementalSync, DEFAULT_SETTINGS.incrementalSync);
 }
 
+// DNS fix mode: three states plus migration from the legacy boolean flag
+{
+	assert.equal(DEFAULT_SETTINGS.dnsFixMode, "auto");
+
+	for (const mode of ["auto", "always", "off"]) {
+		const result = sanitizeLoadedSettings({ dnsFixMode: mode });
+		assert.equal(result.settings.dnsFixMode, mode);
+		assert.equal(result.invalidFields.length, 0);
+	}
+
+	const bogus = sanitizeLoadedSettings({ dnsFixMode: "sometimes" });
+	assert.equal(bogus.settings.dnsFixMode, undefined);
+	assert.ok(bogus.invalidFields.includes("dnsFixMode"));
+
+	// 0.2.x stored enableDohDnsFix=true meaning "always prefer DoH".
+	assert.equal(
+		sanitizeLoadedSettings({ enableDohDnsFix: true }).settings.dnsFixMode,
+		"always"
+	);
+	assert.equal(
+		sanitizeLoadedSettings({ enableDohDnsFix: false }).settings.dnsFixMode,
+		"off"
+	);
+	// A stored dnsFixMode wins over the legacy flag.
+	assert.equal(
+		sanitizeLoadedSettings({ dnsFixMode: "off", enableDohDnsFix: true }).settings
+			.dnsFixMode,
+		"off"
+	);
+	assert.equal(
+		sanitizeLoadedSettings({}).settings.dnsFixMode,
+		undefined
+	);
+}
+
 // HTTP retry: 429 + Retry-After then 200
 {
 	requestUrl.calls.length = 0;
