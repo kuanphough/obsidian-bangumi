@@ -100,6 +100,7 @@ BRAT 适合测试开发版。正式发布后，普通用户更建议使用 Obsid
 | `File name format` | 控制条目笔记文件名，默认 `Title [bgm-id].md`。 |
 | `Include on hold/dropped` | 是否同步搁置和抛弃条目。 |
 | `Incremental sync` | 根据 Bangumi 更新时间跳过未变化条目，并补回本地缺失文件。 |
+| `DNS fix (DoH)` | 解析 `api.bgm.tv` 的方式。`自动`（默认）先走系统网络，只有出现网络错误后才改用 DNS-over-HTTPS；`总是` 直接走 DoH；`关闭` 只使用 Obsidian 默认方式。用于系统 DNS 返回错误 bgm.tv 地址、导致同步报网络错误的情况。仅桌面端生效。 |
 | `Daily note sync` | 将本次新增或更新的进行中条目写入今天的 Daily Note 同步块。 |
 | `Enable On Air note` | 同步后生成 `Bangumi/On Air.md`，按星期展示全站放送和你的想看/进行中动画收藏。 |
 | `Enable write-back to Bangumi` | 允许手动 Push 当前条目笔记的章节 checklist 和收藏状态到 Bangumi，也允许看板状态写回。默认关闭，每次 Push 前都会要求确认。 |
@@ -204,6 +205,7 @@ BRAT 适合测试开发版。正式发布后，普通用户更建议使用 Obsid
 - 只使用公开API：带来少量问题，例如Bangumi v0 章节收藏接口不返回用户单集评论，因此无法同步单集评论；不能控制 Bangumi 时间线动态文案或动态合并规则，时间胶囊无法显示完成xx of xx话等。
 - 写回 Bangumi 仍是实验性功能：当前笔记 Push 支持状态、评分、评论和 `do` / `collect` 条目的章节 checklist，看板状态修改也支持状态、评分和评论。
 - 移动端兼容：插件目前以桌面端为主。移动端兼容性可能不佳，尤其是剪贴板、打开 token 页面、Daily Note 路径识别和大文本框设置页布局，请谨慎使用。
+- DNS 修复仅作用于 `api.bgm.tv` 的请求，且仅桌面端生效：它走 Node 网络栈，不经过系统代理；如果你必须靠代理才能上网，请把 `DNS fix (DoH)` 设为 `关闭`，否则会先白等一次失败再回退。笔记里的封面图来自 `lain.bgm.tv`，由 Obsidian 自行加载，不受该设置影响。
 
 ## 反馈与支持
 

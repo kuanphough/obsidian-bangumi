@@ -126,6 +126,12 @@ const EN = {
 	syncConcurrency: "Sync concurrency",
 	syncConcurrencyDesc:
 		"How many subjects to fetch in parallel. Higher is faster but more likely to hit Bangumi rate limits. Default 4.",
+	dnsFix: "DNS fix (DoH)",
+	dnsFixDesc:
+		"Choose how api.bgm.tv is resolved. Auto tries the normal network path first and only switches to DNS-over-HTTPS after a network failure, so users behind a proxy or a normal DNS are unaffected. Always resolves through DoH up front, which skips the first timeout if your system DNS is poisoned. Off keeps the plugin on Obsidian's default transport. Desktop only, and the access token is never sent to the resolver.",
+	dnsFixAuto: "Auto (recommended)",
+	dnsFixAlways: "Always use DoH",
+	dnsFixOff: "Off",
 	issues: "Issues",
 	lastSyncedAt: "Last synced at",
 	music: "Music",
@@ -382,6 +388,12 @@ const ZH: Record<LocaleKey, string> = {
 	syncConcurrency: "同步并发数",
 	syncConcurrencyDesc:
 		"同步时同一时刻并发抓取多少个条目。越高越快，但更容易触发 Bangumi 限流。默认 4。",
+	dnsFix: "DNS 修复（DoH）",
+	dnsFixDesc:
+		"选择 api.bgm.tv 的解析方式。自动：先走系统网络，只有出现网络错误后才改用 DNS-over-HTTPS，因此使用代理或 DNS 正常的用户完全不受影响。总是：直接走 DoH，适合已知系统 DNS 被污染、想省掉首次超时的情况。关闭：只使用 Obsidian 默认方式。仅桌面端生效，token 不会发给解析服务。",
+	dnsFixAuto: "自动（推荐）",
+	dnsFixAlways: "总是使用 DoH",
+	dnsFixOff: "关闭",
 	issues: "问题数",
 	lastSyncedAt: "上次同步时间",
 	music: "音乐",

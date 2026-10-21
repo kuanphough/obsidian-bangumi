@@ -61,6 +61,17 @@ function pad(value) {
   return String(value).padStart(2, "0");
 }
 
+// src/dns-fix.ts
+var DNS_FIX_MODES = {
+  off: "off",
+  auto: "auto",
+  always: "always"
+};
+var DNS_FIX_MODE_VALUES = Object.values(DNS_FIX_MODES);
+function isDnsFixMode(value) {
+  return typeof value === "string" && DNS_FIX_MODE_VALUES.includes(value);
+}
+
 // src/i18n.ts
 var import_obsidian = require("obsidian");
 var EN = {
@@ -160,6 +171,11 @@ var EN = {
   incrementalSyncDesc: "Skip unchanged items by Bangumi updated_at, but recreate missing local files when needed.",
   syncConcurrency: "Sync concurrency",
   syncConcurrencyDesc: "How many subjects to fetch in parallel. Higher is faster but more likely to hit Bangumi rate limits. Default 4.",
+  dnsFix: "DNS fix (DoH)",
+  dnsFixDesc: "Choose how api.bgm.tv is resolved. Auto tries the normal network path first and only switches to DNS-over-HTTPS after a network failure, so users behind a proxy or a normal DNS are unaffected. Always resolves through DoH up front, which skips the first timeout if your system DNS is poisoned. Off keeps the plugin on Obsidian's default transport. Desktop only, and the access token is never sent to the resolver.",
+  dnsFixAuto: "Auto (recommended)",
+  dnsFixAlways: "Always use DoH",
+  dnsFixOff: "Off",
   issues: "Issues",
   lastSyncedAt: "Last synced at",
   music: "Music",
@@ -373,6 +389,11 @@ var ZH = {
   incrementalSyncDesc: "\u6839\u636E Bangumi \u66F4\u65B0\u65F6\u95F4\u8DF3\u8FC7\u672A\u53D8\u5316\u6761\u76EE\uFF0C\u4F46\u4F1A\u5728\u672C\u5730\u6587\u4EF6\u7F3A\u5931\u65F6\u91CD\u65B0\u521B\u5EFA\u3002",
   syncConcurrency: "\u540C\u6B65\u5E76\u53D1\u6570",
   syncConcurrencyDesc: "\u540C\u6B65\u65F6\u540C\u4E00\u65F6\u523B\u5E76\u53D1\u6293\u53D6\u591A\u5C11\u4E2A\u6761\u76EE\u3002\u8D8A\u9AD8\u8D8A\u5FEB\uFF0C\u4F46\u66F4\u5BB9\u6613\u89E6\u53D1 Bangumi \u9650\u6D41\u3002\u9ED8\u8BA4 4\u3002",
+  dnsFix: "DNS \u4FEE\u590D\uFF08DoH\uFF09",
+  dnsFixDesc: "\u9009\u62E9 api.bgm.tv \u7684\u89E3\u6790\u65B9\u5F0F\u3002\u81EA\u52A8\uFF1A\u5148\u8D70\u7CFB\u7EDF\u7F51\u7EDC\uFF0C\u53EA\u6709\u51FA\u73B0\u7F51\u7EDC\u9519\u8BEF\u540E\u624D\u6539\u7528 DNS-over-HTTPS\uFF0C\u56E0\u6B64\u4F7F\u7528\u4EE3\u7406\u6216 DNS \u6B63\u5E38\u7684\u7528\u6237\u5B8C\u5168\u4E0D\u53D7\u5F71\u54CD\u3002\u603B\u662F\uFF1A\u76F4\u63A5\u8D70 DoH\uFF0C\u9002\u5408\u5DF2\u77E5\u7CFB\u7EDF DNS \u88AB\u6C61\u67D3\u3001\u60F3\u7701\u6389\u9996\u6B21\u8D85\u65F6\u7684\u60C5\u51B5\u3002\u5173\u95ED\uFF1A\u53EA\u4F7F\u7528 Obsidian \u9ED8\u8BA4\u65B9\u5F0F\u3002\u4EC5\u684C\u9762\u7AEF\u751F\u6548\uFF0Ctoken \u4E0D\u4F1A\u53D1\u7ED9\u89E3\u6790\u670D\u52A1\u3002",
+  dnsFixAuto: "\u81EA\u52A8\uFF08\u63A8\u8350\uFF09",
+  dnsFixAlways: "\u603B\u662F\u4F7F\u7528 DoH",
+  dnsFixOff: "\u5173\u95ED",
   issues: "\u95EE\u9898\u6570",
   lastSyncedAt: "\u4E0A\u6B21\u540C\u6B65\u65F6\u95F4",
   music: "\u97F3\u4E50",
@@ -1027,6 +1048,15 @@ function sanitizeLoadedSettings(loaded) {
       invalid.push("fileNameFormat");
     }
   }
+  if ("dnsFixMode" in obj) {
+    if (isDnsFixMode(obj.dnsFixMode)) {
+      result.dnsFixMode = obj.dnsFixMode;
+    } else {
+      invalid.push("dnsFixMode");
+    }
+  } else if (typeof obj.enableDohDnsFix === "boolean") {
+    result.dnsFixMode = obj.enableDohDnsFix ? DNS_FIX_MODES.always : DNS_FIX_MODES.off;
+  }
   if ("subjectTypes" in obj) {
     const sanitized = sanitizeNumberEnumArray(
       obj.subjectTypes,
@@ -1090,6 +1120,7 @@ var DEFAULT_SETTINGS = {
   fetchStaff: false,
   fetchCharacters: false,
   fetchRelations: false,
+  dnsFixMode: DNS_FIX_MODES.auto,
   lastSyncedAt: "",
   subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
   collectionTypes: [BANGUMI_COLLECTION_TYPES.do],
@@ -1273,6 +1304,12 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         await this.plugin.saveSettings();
       })
     );
+    new import_obsidian2.Setting(containerEl).setName(t("dnsFix")).setDesc(t("dnsFixDesc")).addDropdown(
+      (dropdown) => dropdown.addOption(DNS_FIX_MODES.auto, t("dnsFixAuto")).addOption(DNS_FIX_MODES.always, t("dnsFixAlways")).addOption(DNS_FIX_MODES.off, t("dnsFixOff")).setValue(this.plugin.settings.dnsFixMode).onChange(async (value) => {
+        this.plugin.settings.dnsFixMode = isDnsFixMode(value) ? value : DNS_FIX_MODES.auto;
+        await this.plugin.saveSettings();
+      })
+    );
     new import_obsidian2.Setting(containerEl).setName(t("dailyNoteSync")).setDesc(t("dailyNoteSyncDesc")).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.dailyNoteSync).onChange(async (enabled) => {
         this.plugin.settings.dailyNoteSync = enabled;
@@ -1399,6 +1436,192 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
 
 // src/bangumi/client.ts
 var import_obsidian3 = require("obsidian");
+
+// src/bangumi/doh.ts
+var DOH_ENDPOINTS = [
+  "https://223.5.5.5/resolve",
+  "https://1.12.12.12/dns-query",
+  "https://1.1.1.1/dns-query",
+  "https://8.8.8.8/resolve"
+];
+var A_RECORD = 1;
+var AAAA_RECORD = 28;
+var CACHE_TTL_MS = 10 * 60 * 1e3;
+var QUERY_TIMEOUT_MS = 3e3;
+var RESOLVE_BUDGET_MS = 6e3;
+var FAILURE_COOLDOWN_MS = 60 * 1e3;
+var addressCache = /* @__PURE__ */ new Map();
+var unavailableUntil = 0;
+function isDohTransportAvailable() {
+  var _a;
+  const versions = (_a = globalThis.process) == null ? void 0 : _a.versions;
+  return typeof (versions == null ? void 0 : versions.node) === "string";
+}
+function nodeRequire(id) {
+  const globalScope = globalThis;
+  if (typeof globalScope.require === "function") {
+    return globalScope.require(id);
+  }
+  if (typeof require === "function") {
+    return require(id);
+  }
+  throw new Error(`Node module "${id}" is unavailable`);
+}
+function invalidateDohCache(hostname) {
+  addressCache.delete(hostname);
+}
+function queryDoh(endpoint, hostname, recordType) {
+  const https = nodeRequire("https");
+  const recordName = recordType === AAAA_RECORD ? "AAAA" : "A";
+  const url = `${endpoint}?name=${encodeURIComponent(hostname)}&type=${recordName}`;
+  return new Promise((resolve, reject) => {
+    const request = https.get(
+      url,
+      {
+        headers: { accept: "application/dns-json" },
+        timeout: QUERY_TIMEOUT_MS
+      },
+      (response) => {
+        let body = "";
+        response.setEncoding("utf8");
+        response.on("data", (chunk) => {
+          body += chunk;
+        });
+        response.on("end", () => {
+          try {
+            const parsed = JSON.parse(body);
+            resolve(Array.isArray(parsed.Answer) ? parsed.Answer : []);
+          } catch (error) {
+            reject(error);
+          }
+        });
+        response.on("error", reject);
+      }
+    );
+    request.on(
+      "timeout",
+      () => request.destroy(new Error("DoH query timed out"))
+    );
+    request.on("error", reject);
+  });
+}
+async function resolveViaDoh(hostname) {
+  const now = Date.now();
+  const cached = addressCache.get(hostname);
+  if (cached && cached.expiresAt > now) {
+    return { address: cached.address, family: cached.family };
+  }
+  if (now < unavailableUntil) {
+    return null;
+  }
+  const deadline = now + RESOLVE_BUDGET_MS;
+  for (const recordType of [A_RECORD, AAAA_RECORD]) {
+    for (const endpoint of DOH_ENDPOINTS) {
+      if (Date.now() >= deadline) break;
+      try {
+        const answers = await queryDoh(endpoint, hostname, recordType);
+        const match = answers.find(
+          (answer) => answer.type === recordType && typeof answer.data === "string"
+        );
+        if (!(match == null ? void 0 : match.data)) continue;
+        const family = recordType === AAAA_RECORD ? 6 : 4;
+        addressCache.set(hostname, {
+          address: match.data,
+          family,
+          expiresAt: Date.now() + CACHE_TTL_MS
+        });
+        return { address: match.data, family };
+      } catch (e) {
+      }
+    }
+    if (Date.now() >= deadline) break;
+  }
+  unavailableUntil = Date.now() + FAILURE_COOLDOWN_MS;
+  return null;
+}
+function collectHeaders(raw) {
+  const headers = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (value === void 0) continue;
+    headers[key] = Array.isArray(value) ? value.join(", ") : value;
+  }
+  return headers;
+}
+async function dohRequest(init) {
+  const https = nodeRequire("https");
+  const parsed = new URL(init.url);
+  const resolved = await resolveViaDoh(parsed.hostname);
+  if (!resolved) {
+    throw new Error(`DoH resolution failed for ${parsed.hostname}`);
+  }
+  return new Promise((resolve, reject) => {
+    var _a;
+    const fail = (error) => {
+      invalidateDohCache(parsed.hostname);
+      reject(error);
+    };
+    const request = https.request(
+      {
+        protocol: parsed.protocol,
+        hostname: parsed.hostname,
+        port: parsed.port || 443,
+        path: `${parsed.pathname}${parsed.search}`,
+        method: (_a = init.method) != null ? _a : "GET",
+        headers: init.headers,
+        timeout: init.timeoutMs,
+        // Connect to the DoH answer while keeping hostname for SNI / certs.
+        lookup: (_hostname, options, callback) => {
+          if (options == null ? void 0 : options.all) {
+            callback(null, [
+              { address: resolved.address, family: resolved.family }
+            ]);
+            return;
+          }
+          callback(null, resolved.address, resolved.family);
+        }
+      },
+      (response) => {
+        const chunks = [];
+        response.on("data", (chunk) => {
+          chunks.push(chunk);
+        });
+        response.on("error", fail);
+        response.on("end", () => {
+          var _a2;
+          const buffer = Buffer.concat(chunks);
+          const text = buffer.toString("utf8");
+          let json;
+          try {
+            json = text.length > 0 ? JSON.parse(text) : void 0;
+          } catch (e) {
+            json = void 0;
+          }
+          resolve({
+            status: (_a2 = response.statusCode) != null ? _a2 : 0,
+            headers: collectHeaders(response.headers),
+            text,
+            json,
+            arrayBuffer: buffer.buffer.slice(
+              buffer.byteOffset,
+              buffer.byteOffset + buffer.byteLength
+            )
+          });
+        });
+      }
+    );
+    request.on(
+      "timeout",
+      () => request.destroy(new Error("Bangumi request timed out"))
+    );
+    request.on("error", fail);
+    if (init.body !== void 0) {
+      request.write(init.body);
+    }
+    request.end();
+  });
+}
+
+// src/bangumi/client.ts
 var DEFAULT_REQUEST_TIMEOUT_MS = 3e4;
 var DEFAULT_MAX_RETRIES = 3;
 var DEFAULT_RETRY_BASE_DELAY_MS = 1e3;
@@ -1424,6 +1647,9 @@ var BangumiClient = class {
   constructor(options) {
     this.options = options;
     this.baseUrl = "https://api.bgm.tv";
+    /** Set once an `auto` mode request has proven the default transport unusable. */
+    this.dohPreferred = false;
+    this.didWarnDohFailure = false;
   }
   async getMe() {
     return this.request("/v0/me");
@@ -1624,17 +1850,60 @@ var BangumiClient = class {
     }
   }
   async executeWithTimeout(path, options) {
-    var _a, _b;
+    var _a, _b, _c;
     const timeoutMs = (_a = this.options.requestTimeoutMs) != null ? _a : DEFAULT_REQUEST_TIMEOUT_MS;
+    const url = `${this.baseUrl}${path}`;
+    const method = (_b = options.method) != null ? _b : "GET";
+    const headers = {
+      Authorization: `Bearer ${this.options.accessToken}`,
+      "User-Agent": this.options.userAgent,
+      ...options.body === void 0 ? {} : { "Content-Type": "application/json" }
+    };
+    const body = options.body === void 0 ? void 0 : JSON.stringify(options.body);
+    const request = { url, method, headers, body, timeoutMs };
+    const mode = (_c = this.options.dnsFixMode) != null ? _c : DNS_FIX_MODES.auto;
+    const dohAvailable = isDohTransportAvailable();
+    const useDohFirst = dohAvailable && (mode === DNS_FIX_MODES.always || mode === DNS_FIX_MODES.auto && this.dohPreferred);
+    if (useDohFirst) {
+      try {
+        return await dohRequest(request);
+      } catch (error) {
+        this.warnDohFailure(error);
+      }
+    }
+    try {
+      return await this.executeWithObsidianTransport(path, request);
+    } catch (error) {
+      if (mode === DNS_FIX_MODES.auto && dohAvailable && !useDohFirst) {
+        try {
+          const response = await dohRequest(request);
+          this.dohPreferred = true;
+          console.info(
+            "[bangumi] default transport failed, switching to DoH for this session"
+          );
+          return response;
+        } catch (dohError) {
+          this.warnDohFailure(dohError);
+        }
+      }
+      throw error;
+    }
+  }
+  warnDohFailure(error) {
+    if (this.didWarnDohFailure) return;
+    this.didWarnDohFailure = true;
+    console.warn(
+      "[bangumi] DoH transport unavailable, falling back to requestUrl",
+      error
+    );
+  }
+  async executeWithObsidianTransport(path, request) {
+    const { timeoutMs } = request;
     const requestPromise = (0, import_obsidian3.requestUrl)({
-      url: `${this.baseUrl}${path}`,
-      method: (_b = options.method) != null ? _b : "GET",
-      headers: {
-        Authorization: `Bearer ${this.options.accessToken}`,
-        "User-Agent": this.options.userAgent,
-        ...options.body === void 0 ? {} : { "Content-Type": "application/json" }
-      },
-      body: options.body === void 0 ? void 0 : JSON.stringify(options.body),
+      url: request.url,
+      method: request.method,
+      headers: request.headers,
+      body: request.body,
       throw: false
     });
     let timer;
@@ -1840,9 +2109,42 @@ var NoteWriter = class {
       await this.app.vault.modify(existingAtPath, next);
       return { file: existingAtPath, changed: true };
     }
-    const file = await this.app.vault.create(path, rendered);
-    index.add(subjectId, file);
-    return { file, changed: true };
+    try {
+      const file = await this.app.vault.create(path, rendered);
+      index.add(subjectId, file);
+      return { file, changed: true };
+    } catch (error) {
+      const adopted = await this.adoptExistingNote(
+        path,
+        rendered,
+        subjectId,
+        index
+      );
+      if (adopted) return adopted;
+      throw error;
+    }
+  }
+  /**
+   * Handle a note that exists on disk but is not visible to the vault index yet.
+   * Returns null when the file genuinely does not exist, so the caller can
+   * surface the original error.
+   */
+  async adoptExistingNote(path, rendered, subjectId, index) {
+    const { adapter, getAbstractFileByPath } = this.app.vault;
+    if (!await adapter.exists(path)) {
+      return null;
+    }
+    const previous = await adapter.read(path);
+    const next = this.renderer.mergeSyncedContent(previous, rendered);
+    if (next !== previous) {
+      await adapter.write(path, next);
+    }
+    const file = getAbstractFileByPath(path);
+    if (file instanceof import_obsidian5.TFile) {
+      index.add(subjectId, file);
+      return { file, changed: next !== previous };
+    }
+    return null;
   }
   async ensureFolder(path) {
     const parts = path.split("/");
@@ -4177,16 +4479,19 @@ var BangumiSyncPlugin = class extends import_obsidian12.Plugin {
     this.cachedClient = null;
     this.cachedClientToken = "";
     this.cachedClientUserAgent = "";
+    this.cachedClientDnsFixMode = "";
     this.progressBoardCache = null;
   }
   getBangumiClient() {
-    if (this.cachedClient === null || this.cachedClientToken !== this.settings.accessToken || this.cachedClientUserAgent !== this.settings.userAgent) {
+    if (this.cachedClient === null || this.cachedClientToken !== this.settings.accessToken || this.cachedClientUserAgent !== this.settings.userAgent || this.cachedClientDnsFixMode !== this.settings.dnsFixMode) {
       this.cachedClient = new BangumiClient({
         accessToken: this.settings.accessToken,
-        userAgent: this.settings.userAgent
+        userAgent: this.settings.userAgent,
+        dnsFixMode: this.settings.dnsFixMode
       });
       this.cachedClientToken = this.settings.accessToken;
       this.cachedClientUserAgent = this.settings.userAgent;
+      this.cachedClientDnsFixMode = this.settings.dnsFixMode;
     }
     return this.cachedClient;
   }

@@ -59,9 +59,56 @@ export class NoteWriter {
 			return { file: existingAtPath, changed: true };
 		}
 
-		const file = await this.app.vault.create(path, rendered);
-		index.add(subjectId, file);
-		return { file, changed: true };
+		// The vault index can lag behind the filesystem (most often right after
+		// Obsidian starts), so create() can fail on a note that is already there.
+		// Fall back to the raw adapter, which talks to the filesystem directly.
+		try {
+			const file = await this.app.vault.create(path, rendered);
+			index.add(subjectId, file);
+			return { file, changed: true };
+		} catch (error) {
+			const adopted = await this.adoptExistingNote(
+				path,
+				rendered,
+				subjectId,
+				index
+			);
+			if (adopted) return adopted;
+			throw error;
+		}
+	}
+
+	/**
+	 * Handle a note that exists on disk but is not visible to the vault index yet.
+	 * Returns null when the file genuinely does not exist, so the caller can
+	 * surface the original error.
+	 */
+	private async adoptExistingNote(
+		path: string,
+		rendered: string,
+		subjectId: number,
+		index: SubjectNoteIndex
+	): Promise<NoteWriteResult | null> {
+		const { adapter, getAbstractFileByPath } = this.app.vault;
+		if (!(await adapter.exists(path))) {
+			return null;
+		}
+
+		const previous = await adapter.read(path);
+		const next = this.renderer.mergeSyncedContent(previous, rendered);
+		if (next !== previous) {
+			await adapter.write(path, next);
+		}
+
+		const file = getAbstractFileByPath(path);
+		if (file instanceof TFile) {
+			index.add(subjectId, file);
+			return { file, changed: next !== previous };
+		}
+
+		// Content is already on disk; the vault will pick it up once indexing
+		// finishes, and the next sync will treat it as an existing note.
+		return null;
 	}
 
 	private async ensureFolder(path: string): Promise<void> {

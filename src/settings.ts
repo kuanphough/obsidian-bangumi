@@ -8,6 +8,11 @@ import {
 	BangumiSubjectType
 } from "./bangumi/types";
 import { formatLocalDateTime } from "./date-format";
+import {
+	DNS_FIX_MODES,
+	type DnsFixMode,
+	isDnsFixMode
+} from "./dns-fix";
 import { t } from "./i18n";
 import { DEFAULT_SUBJECT_NOTE_TEMPLATE } from "./sync/markdown-renderer";
 
@@ -31,6 +36,7 @@ export interface BangumiSyncSettings {
 	fetchStaff: boolean;
 	fetchCharacters: boolean;
 	fetchRelations: boolean;
+	dnsFixMode: DnsFixMode;
 	lastSyncedAt: string;
 	subjectTypes: BangumiSubjectType[];
 	collectionTypes: BangumiCollectionType[];
@@ -149,6 +155,19 @@ export function sanitizeLoadedSettings(
 		}
 	}
 
+	if ("dnsFixMode" in obj) {
+		if (isDnsFixMode(obj.dnsFixMode)) {
+			result.dnsFixMode = obj.dnsFixMode;
+		} else {
+			invalid.push("dnsFixMode");
+		}
+	} else if (typeof obj.enableDohDnsFix === "boolean") {
+		// Legacy 0.2.x flag: `true` meant "always prefer DoH".
+		result.dnsFixMode = obj.enableDohDnsFix
+			? DNS_FIX_MODES.always
+			: DNS_FIX_MODES.off;
+	}
+
 	if ("subjectTypes" in obj) {
 		const sanitized = sanitizeNumberEnumArray(
 			obj.subjectTypes,
@@ -226,6 +245,7 @@ export const DEFAULT_SETTINGS: BangumiSyncSettings = {
 	fetchStaff: false,
 	fetchCharacters: false,
 	fetchRelations: false,
+	dnsFixMode: DNS_FIX_MODES.auto,
 	lastSyncedAt: "",
 	subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
 	collectionTypes: [BANGUMI_COLLECTION_TYPES.do],
@@ -491,6 +511,23 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 					.setDynamicTooltip()
 					.onChange(async (value) => {
 						this.plugin.settings.syncConcurrency = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(t("dnsFix"))
+			.setDesc(t("dnsFixDesc"))
+			.addDropdown((dropdown) =>
+				dropdown
+					.addOption(DNS_FIX_MODES.auto, t("dnsFixAuto"))
+					.addOption(DNS_FIX_MODES.always, t("dnsFixAlways"))
+					.addOption(DNS_FIX_MODES.off, t("dnsFixOff"))
+					.setValue(this.plugin.settings.dnsFixMode)
+					.onChange(async (value) => {
+						this.plugin.settings.dnsFixMode = isDnsFixMode(value)
+							? value
+							: DNS_FIX_MODES.auto;
 						await this.plugin.saveSettings();
 					})
 			);

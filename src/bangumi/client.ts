@@ -14,6 +14,8 @@ import {
 	BangumiUser
 } from "./types";
 import { t } from "../i18n";
+import { DNS_FIX_MODES, type DnsFixMode } from "../dns-fix";
+import { dohRequest, isDohTransportAvailable } from "./doh";
 
 export interface BangumiClientOptions {
 	accessToken: string;
@@ -22,6 +24,8 @@ export interface BangumiClientOptions {
 	maxRetries?: number;
 	retryBaseDelayMs?: number;
 	maxRetryDelayMs?: number;
+	/** How api.bgm.tv should be resolved. Defaults to `auto`. */
+	dnsFixMode?: DnsFixMode;
 }
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
@@ -72,6 +76,9 @@ interface LegacyBangumiSubject {
 
 export class BangumiClient {
 	private readonly baseUrl = "https://api.bgm.tv";
+	/** Set once an `auto` mode request has proven the default transport unusable. */
+	private dohPreferred = false;
+	private didWarnDohFailure = false;
 
 	constructor(private readonly options: BangumiClientOptions) {}
 
@@ -356,18 +363,82 @@ export class BangumiClient {
 	): Promise<RequestUrlResponse> {
 		const timeoutMs =
 			this.options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+		const url = `${this.baseUrl}${path}`;
+		const method = options.method ?? "GET";
+		const headers: Record<string, string> = {
+			Authorization: `Bearer ${this.options.accessToken}`,
+			"User-Agent": this.options.userAgent,
+			...(options.body === undefined
+				? {}
+				: { "Content-Type": "application/json" })
+		};
+		const body =
+			options.body === undefined ? undefined : JSON.stringify(options.body);
+		const request = { url, method, headers, body, timeoutMs };
+
+		const mode = this.options.dnsFixMode ?? DNS_FIX_MODES.auto;
+		const dohAvailable = isDohTransportAvailable();
+		const useDohFirst =
+			dohAvailable &&
+			(mode === DNS_FIX_MODES.always ||
+				(mode === DNS_FIX_MODES.auto && this.dohPreferred));
+
+		if (useDohFirst) {
+			try {
+				return await dohRequest(request);
+			} catch (error) {
+				// Even in `always` mode, fall back so the plugin keeps working.
+				this.warnDohFailure(error);
+			}
+		}
+
+		try {
+			return await this.executeWithObsidianTransport(path, request);
+		} catch (error) {
+			// `auto` mode: the normal transport failed, which on a poisoned
+			// resolver is the expected symptom. Retry through DoH and remember
+			// the decision for the rest of the session.
+			if (mode === DNS_FIX_MODES.auto && dohAvailable && !useDohFirst) {
+				try {
+					const response = await dohRequest(request);
+					this.dohPreferred = true;
+					console.info(
+						"[bangumi] default transport failed, switching to DoH for this session"
+					);
+					return response;
+				} catch (dohError) {
+					this.warnDohFailure(dohError);
+				}
+			}
+			throw error;
+		}
+	}
+
+	private warnDohFailure(error: unknown): void {
+		if (this.didWarnDohFailure) return;
+		this.didWarnDohFailure = true;
+		console.warn(
+			"[bangumi] DoH transport unavailable, falling back to requestUrl",
+			error
+		);
+	}
+
+	private async executeWithObsidianTransport(
+		path: string,
+		request: {
+			url: string;
+			method: string;
+			headers: Record<string, string>;
+			body?: string;
+			timeoutMs: number;
+		}
+	): Promise<RequestUrlResponse> {
+		const { timeoutMs } = request;
 		const requestPromise = requestUrl({
-			url: `${this.baseUrl}${path}`,
-			method: options.method ?? "GET",
-			headers: {
-				Authorization: `Bearer ${this.options.accessToken}`,
-				"User-Agent": this.options.userAgent,
-				...(options.body === undefined
-					? {}
-					: { "Content-Type": "application/json" })
-			},
-			body:
-				options.body === undefined ? undefined : JSON.stringify(options.body),
+			url: request.url,
+			method: request.method,
+			headers: request.headers,
+			body: request.body,
 			throw: false
 		});
 

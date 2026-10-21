@@ -107,6 +107,7 @@ Keep the token private. It authorizes the plugin to read your Bangumi account da
 | `File name format` | File name format. Default: `Title [bgm-id].md`. |
 | `Include on hold/dropped` | Whether to sync on-hold and dropped subjects. |
 | `Incremental sync` | Skip unchanged subjects by Bangumi updated time and recreate missing local notes. |
+| `DNS fix (DoH)` | How `api.bgm.tv` is resolved. `Auto` (default) uses the normal network path first and only switches to DNS-over-HTTPS after a network failure; `Always` resolves through DoH up front; `Off` keeps Obsidian's default transport. Useful when the system DNS returns wrong bgm.tv addresses and syncing fails with network errors. Desktop only. |
 | `Daily note sync` | Write newly added or updated in-progress subjects to today's Daily Note block. |
 | `Enable On Air note` | Generate `Bangumi/On Air.md` after sync, grouped by weekday for all broadcasts and your wished/watching anime. |
 | `Enable write-back to Bangumi` | Allow manual Push from the current subject note for episode checklist changes and collection status, and allow board status write-back. Disabled by default; every Push requires confirmation. |
@@ -211,6 +212,7 @@ In incremental sync, only subjects actually written or updated in this run are a
 - Public APIs only: this brings a few limits. For example, the Bangumi v0 episode collection endpoint does not return per-episode user comments, so per-episode comments cannot be synced; the plugin also cannot control Bangumi timeline text or timeline merge rules, so timeline entries may not show progress like `completed xx of xx episodes`.
 - Bangumi write-back is still experimental: current-note Push supports status, rating, comment, and episode checklist for `do` / `collect` subjects; board status changes also support status, rating, and comment.
 - Mobile compatibility: this plugin is desktop-first. Mobile compatibility may be limited, especially clipboard access, token page opening, Daily Note path detection, and large settings textareas. Use with caution.
+- The DNS fix only covers `api.bgm.tv` requests and is desktop-only: it uses Node's network stack, so it does not go through the system proxy. If you can only reach the internet through a proxy, set `DNS fix (DoH)` to `Off`, otherwise each request waits for one failure before falling back. Cover images come from `lain.bgm.tv` and are loaded by Obsidian itself, so this setting does not affect them.
 
 ## Support
 

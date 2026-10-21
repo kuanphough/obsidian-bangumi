@@ -191,20 +191,24 @@ export default class BangumiSyncPlugin extends Plugin {
 	private cachedClient: BangumiClient | null = null;
 	private cachedClientToken = "";
 	private cachedClientUserAgent = "";
+	private cachedClientDnsFixMode = "";
 	private progressBoardCache: ProgressBoardCache | null = null;
 
 	getBangumiClient(): BangumiClient {
 		if (
 			this.cachedClient === null ||
 			this.cachedClientToken !== this.settings.accessToken ||
-			this.cachedClientUserAgent !== this.settings.userAgent
+			this.cachedClientUserAgent !== this.settings.userAgent ||
+			this.cachedClientDnsFixMode !== this.settings.dnsFixMode
 		) {
 			this.cachedClient = new BangumiClient({
 				accessToken: this.settings.accessToken,
-				userAgent: this.settings.userAgent
+				userAgent: this.settings.userAgent,
+				dnsFixMode: this.settings.dnsFixMode
 			});
 			this.cachedClientToken = this.settings.accessToken;
 			this.cachedClientUserAgent = this.settings.userAgent;
+			this.cachedClientDnsFixMode = this.settings.dnsFixMode;
 		}
 		return this.cachedClient;
 	}
