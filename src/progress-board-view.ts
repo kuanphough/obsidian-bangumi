@@ -22,6 +22,7 @@ import {
 } from "./bangumi/types";
 import { t } from "./i18n";
 import { BANGUMI_STORAGE_LAYOUTS } from "./settings";
+import { buildTargetDirectory } from "./utils/target-directory";
 import { SYNC_BLOCK_END, SYNC_BLOCK_START } from "./sync/markdown-renderer";
 import { SyncService } from "./sync/sync-service";
 import { ProgressBoardItem } from "./sync/progress-board-service";
@@ -547,16 +548,14 @@ export class ProgressBoardView extends ItemView {
 	}
 
 	private getTargetDirectory(type: string, status: string): string {
-		const root = this.plugin.settings.syncDirectory;
-		switch (this.plugin.settings.storageLayout) {
-			case BANGUMI_STORAGE_LAYOUTS.subjectThenCollection:
-				return `${root}/${type}/${status}`;
-			case BANGUMI_STORAGE_LAYOUTS.collectionThenSubject:
-				return `${root}/${status}/${type}`;
-			case BANGUMI_STORAGE_LAYOUTS.flat:
-			default:
-				return root;
-		}
+		return buildTargetDirectory(
+			{
+				root: this.plugin.settings.syncDirectory,
+				layout: this.plugin.settings.storageLayout
+			},
+			type,
+			status
+		);
 	}
 
 	private async ensureFolder(path: string): Promise<void> {

@@ -135,6 +135,10 @@ var EN = {
   connectedAs: "Connected as {{username}}.",
   dailyNoteSync: "Daily note sync",
   dailyNoteSyncDesc: "Add this block to your Daily Note template. In incremental sync, only newly written or updated in-progress subjects are added.",
+  dailyNoteFolder: "Daily note folder",
+  dailyNoteFolderDesc: "Folder that holds your daily notes. Leave empty to use the Daily Notes core plugin setting. Fill this in if you create daily notes with QuickAdd, Periodic Notes, or another method.",
+  dailyNoteFormat: "Daily note date format",
+  dailyNoteFormatDesc: "Moment.js date format used for the daily note file name. Leave empty to use the Daily Notes core plugin setting, falling back to YYYY-MM-DD.",
   dailyNoteSyncBlock: "Daily Note sync block",
   dailyNoteSyncBlockDesc: "Copy this block into your Daily Note template.",
   dailyNoteSyncMarkersMissing: "Daily Note sync block markers were not found. Add the marker block to your Daily Note template first.",
@@ -353,6 +357,10 @@ var ZH = {
   connectedAs: "\u5DF2\u8FDE\u63A5\u4E3A {{username}}\u3002",
   dailyNoteSync: "\u6BCF\u65E5\u65E5\u8BB0\u540C\u6B65",
   dailyNoteSyncDesc: "\u8BF7\u5148\u628A\u4E0B\u9762\u7684\u540C\u6B65\u5757\u653E\u8FDB\u4F60\u7684\u6BCF\u65E5\u65E5\u8BB0\u6A21\u677F\u3002\u589E\u91CF\u540C\u6B65\u65F6\uFF0C\u53EA\u4F1A\u6DFB\u52A0\u672C\u6B21\u5B9E\u9645\u65B0\u589E\u6216\u66F4\u65B0\u7684\u8FDB\u884C\u4E2D\u6761\u76EE\u3002",
+  dailyNoteFolder: "\u65E5\u8BB0\u6587\u4EF6\u5939",
+  dailyNoteFolderDesc: "\u5B58\u653E\u6BCF\u65E5\u65E5\u8BB0\u7684\u6587\u4EF6\u5939\u3002\u7559\u7A7A\u5219\u6CBF\u7528\u5B98\u65B9 Daily Notes \u6838\u5FC3\u63D2\u4EF6\u7684\u8BBE\u7F6E\u3002\u5982\u679C\u4F60\u7528 QuickAdd\u3001Periodic Notes \u7B49\u65B9\u5F0F\u521B\u5EFA\u65E5\u8BB0\uFF0C\u8BF7\u5728\u8FD9\u91CC\u586B\u5199\u3002",
+  dailyNoteFormat: "\u65E5\u8BB0\u65E5\u671F\u683C\u5F0F",
+  dailyNoteFormatDesc: "\u65E5\u8BB0\u6587\u4EF6\u540D\u4F7F\u7528\u7684 moment.js \u65E5\u671F\u683C\u5F0F\u3002\u7559\u7A7A\u5219\u6CBF\u7528\u5B98\u65B9 Daily Notes \u6838\u5FC3\u63D2\u4EF6\u7684\u8BBE\u7F6E\uFF0C\u515C\u5E95\u4E3A YYYY-MM-DD\u3002",
   dailyNoteSyncBlock: "\u6BCF\u65E5\u65E5\u8BB0\u540C\u6B65\u5757",
   dailyNoteSyncBlockDesc: "\u590D\u5236\u8FD9\u6BB5\u540C\u6B65\u5757\u5230\u4F60\u7684\u6BCF\u65E5\u65E5\u8BB0\u6A21\u677F\u91CC\u3002",
   dailyNoteSyncMarkersMissing: "\u6CA1\u6709\u627E\u5230\u6BCF\u65E5\u65E5\u8BB0\u540C\u6B65\u5757\u6807\u8BB0\u3002\u8BF7\u5148\u628A\u540C\u6B65\u5757\u653E\u8FDB\u4F60\u7684\u6BCF\u65E5\u65E5\u8BB0\u6A21\u677F\u3002",
@@ -990,6 +998,8 @@ var STRING_SETTING_KEYS = [
   "username",
   "syncDirectory",
   "lastSyncedAt",
+  "dailyNoteFolder",
+  "dailyNoteFormat",
   "subjectNoteTemplate",
   "userAgent"
 ];
@@ -1114,6 +1124,8 @@ var DEFAULT_SETTINGS = {
   includeOnHoldAndDropped: false,
   incrementalSync: true,
   dailyNoteSync: false,
+  dailyNoteFolder: "",
+  dailyNoteFormat: "",
   enableOnAirNote: false,
   enableWriteBack: false,
   fetchDetailedSubjectInfo: false,
@@ -1313,6 +1325,18 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
     new import_obsidian2.Setting(containerEl).setName(t("dailyNoteSync")).setDesc(t("dailyNoteSyncDesc")).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.dailyNoteSync).onChange(async (enabled) => {
         this.plugin.settings.dailyNoteSync = enabled;
+        await this.plugin.saveSettings();
+      })
+    );
+    new import_obsidian2.Setting(containerEl).setName(t("dailyNoteFolder")).setDesc(t("dailyNoteFolderDesc")).addText(
+      (text) => text.setPlaceholder("Daily").setValue(this.plugin.settings.dailyNoteFolder).onChange(async (value) => {
+        this.plugin.settings.dailyNoteFolder = value;
+        await this.plugin.saveSettings();
+      })
+    );
+    new import_obsidian2.Setting(containerEl).setName(t("dailyNoteFormat")).setDesc(t("dailyNoteFormatDesc")).addText(
+      (text) => text.setPlaceholder("YYYY-MM-DD").setValue(this.plugin.settings.dailyNoteFormat).onChange(async (value) => {
+        this.plugin.settings.dailyNoteFormat = value;
         await this.plugin.saveSettings();
       })
     );
@@ -2069,6 +2093,19 @@ async function mapWithConcurrency(items, concurrency, worker) {
   }
   await Promise.all(workers);
   return results;
+}
+
+// src/utils/target-directory.ts
+function buildTargetDirectory({ root, layout }, subjectType, collectionStatus) {
+  switch (layout) {
+    case BANGUMI_STORAGE_LAYOUTS.subjectThenCollection:
+      return `${root}/${subjectType}/${collectionStatus}`;
+    case BANGUMI_STORAGE_LAYOUTS.collectionThenSubject:
+      return `${root}/${collectionStatus}/${subjectType}`;
+    case BANGUMI_STORAGE_LAYOUTS.flat:
+    default:
+      return root;
+  }
 }
 
 // src/sync/note-writer.ts
@@ -2829,8 +2866,10 @@ var SyncService = class {
   }
   getDailyNotePath() {
     const options = this.getDailyNotesOptions();
-    const fileName = `${(0, import_obsidian7.moment)().format(options.format || "YYYY-MM-DD")}.md`;
-    const folder = (0, import_obsidian7.normalizePath)(options.folder || "");
+    const format = this.settings.dailyNoteFormat.trim() || options.format || "YYYY-MM-DD";
+    const folderInput = this.settings.dailyNoteFolder.trim() || options.folder || "";
+    const fileName = `${(0, import_obsidian7.moment)().format(format)}.md`;
+    const folder = folderInput ? (0, import_obsidian7.normalizePath)(folderInput) : "";
     return (0, import_obsidian7.normalizePath)(folder ? `${folder}/${fileName}` : fileName);
   }
   getDailyNotesOptions() {
@@ -2882,18 +2921,14 @@ var SyncService = class {
     return subjectSupportsProgress && collectionSupportsProgress;
   }
   getTargetDirectory(collection) {
-    const root = this.settings.syncDirectory;
-    const subjectType = subjectTypeLabel(collection.subject.type);
-    const collectionStatus = collectionStatusLabel(collection.type);
-    switch (this.settings.storageLayout) {
-      case BANGUMI_STORAGE_LAYOUTS.subjectThenCollection:
-        return `${root}/${subjectType}/${collectionStatus}`;
-      case BANGUMI_STORAGE_LAYOUTS.collectionThenSubject:
-        return `${root}/${collectionStatus}/${subjectType}`;
-      case BANGUMI_STORAGE_LAYOUTS.flat:
-      default:
-        return root;
-    }
+    return buildTargetDirectory(
+      {
+        root: this.settings.syncDirectory,
+        layout: this.settings.storageLayout
+      },
+      subjectTypeLabel(collection.subject.type),
+      collectionStatusLabel(collection.type)
+    );
   }
   async writeFailureReport(params) {
     const directory = (0, import_obsidian7.normalizePath)(this.settings.syncDirectory);
@@ -4064,16 +4099,14 @@ var ProgressBoardView = class extends import_obsidian11.ItemView {
     this.plugin.invalidateProgressBoardCache();
   }
   getTargetDirectory(type, status) {
-    const root = this.plugin.settings.syncDirectory;
-    switch (this.plugin.settings.storageLayout) {
-      case BANGUMI_STORAGE_LAYOUTS.subjectThenCollection:
-        return `${root}/${type}/${status}`;
-      case BANGUMI_STORAGE_LAYOUTS.collectionThenSubject:
-        return `${root}/${status}/${type}`;
-      case BANGUMI_STORAGE_LAYOUTS.flat:
-      default:
-        return root;
-    }
+    return buildTargetDirectory(
+      {
+        root: this.plugin.settings.syncDirectory,
+        layout: this.plugin.settings.storageLayout
+      },
+      type,
+      status
+    );
   }
   async ensureFolder(path) {
     const parts = path.split("/").filter(Boolean);

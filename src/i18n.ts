@@ -78,6 +78,12 @@ const EN = {
 	dailyNoteSync: "Daily note sync",
 	dailyNoteSyncDesc:
 		"Add this block to your Daily Note template. In incremental sync, only newly written or updated in-progress subjects are added.",
+	dailyNoteFolder: "Daily note folder",
+	dailyNoteFolderDesc:
+		"Folder that holds your daily notes. Leave empty to use the Daily Notes core plugin setting. Fill this in if you create daily notes with QuickAdd, Periodic Notes, or another method.",
+	dailyNoteFormat: "Daily note date format",
+	dailyNoteFormatDesc:
+		"Moment.js date format used for the daily note file name. Leave empty to use the Daily Notes core plugin setting, falling back to YYYY-MM-DD.",
 	dailyNoteSyncBlock: "Daily Note sync block",
 	dailyNoteSyncBlockDesc: "Copy this block into your Daily Note template.",
 	dailyNoteSyncMarkersMissing:
@@ -340,6 +346,12 @@ const ZH: Record<LocaleKey, string> = {
 	dailyNoteSync: "每日日记同步",
 	dailyNoteSyncDesc:
 		"请先把下面的同步块放进你的每日日记模板。增量同步时，只会添加本次实际新增或更新的进行中条目。",
+	dailyNoteFolder: "日记文件夹",
+	dailyNoteFolderDesc:
+		"存放每日日记的文件夹。留空则沿用官方 Daily Notes 核心插件的设置。如果你用 QuickAdd、Periodic Notes 等方式创建日记，请在这里填写。",
+	dailyNoteFormat: "日记日期格式",
+	dailyNoteFormatDesc:
+		"日记文件名使用的 moment.js 日期格式。留空则沿用官方 Daily Notes 核心插件的设置，兜底为 YYYY-MM-DD。",
 	dailyNoteSyncBlock: "每日日记同步块",
 	dailyNoteSyncBlockDesc: "复制这段同步块到你的每日日记模板里。",
 	dailyNoteSyncMarkersMissing:

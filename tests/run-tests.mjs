@@ -95,6 +95,7 @@ import { mapWithConcurrency } from "./src/utils/concurrency.ts";
 import { collectionStatusLabel, subjectTypeLabel } from "./src/bangumi/labels.ts";
 import { BANGUMI_COLLECTION_TYPES, BANGUMI_SUBJECT_TYPES } from "./src/bangumi/types.ts";
 import { DEFAULT_SETTINGS, BANGUMI_FILE_NAME_FORMATS, BANGUMI_STORAGE_LAYOUTS, sanitizeLoadedSettings } from "./src/settings.ts";
+import { buildTargetDirectory } from "./src/utils/target-directory.ts";
 import {
 	DEFAULT_SUBJECT_NOTE_TEMPLATE,
 	LEGACY_DEFAULT_SUBJECT_NOTE_TEMPLATE,
@@ -1189,6 +1190,58 @@ status: do
 		sanitizeLoadedSettings({}).settings.dnsFixMode,
 		undefined
 	);
+}
+
+// Target directory: one helper shared by the sync service and the board
+{
+	const root = "Bangumi";
+	assert.equal(
+		buildTargetDirectory({ root, layout: BANGUMI_STORAGE_LAYOUTS.flat }, "anime", "do"),
+		"Bangumi"
+	);
+	assert.equal(
+		buildTargetDirectory(
+			{ root, layout: BANGUMI_STORAGE_LAYOUTS.subjectThenCollection },
+			"anime",
+			"do"
+		),
+		"Bangumi/anime/do"
+	);
+	assert.equal(
+		buildTargetDirectory(
+			{ root, layout: BANGUMI_STORAGE_LAYOUTS.collectionThenSubject },
+			"anime",
+			"do"
+		),
+		"Bangumi/do/anime"
+	);
+	// Must agree with the labels written into the note frontmatter.
+	assert.equal(
+		buildTargetDirectory(
+			{ root, layout: BANGUMI_STORAGE_LAYOUTS.subjectThenCollection },
+			subjectTypeLabel(BANGUMI_SUBJECT_TYPES.anime),
+			collectionStatusLabel(BANGUMI_COLLECTION_TYPES.do)
+		),
+		"Bangumi/anime/do"
+	);
+}
+
+// Daily note folder / format overrides
+{
+	assert.equal(DEFAULT_SETTINGS.dailyNoteFolder, "");
+	assert.equal(DEFAULT_SETTINGS.dailyNoteFormat, "");
+
+	const withDaily = sanitizeLoadedSettings({
+		dailyNoteFolder: "Daily",
+		dailyNoteFormat: "YYYY/MM/DD"
+	});
+	assert.equal(withDaily.settings.dailyNoteFolder, "Daily");
+	assert.equal(withDaily.settings.dailyNoteFormat, "YYYY/MM/DD");
+	assert.equal(withDaily.invalidFields.length, 0);
+
+	const badDaily = sanitizeLoadedSettings({ dailyNoteFolder: 42 });
+	assert.equal(badDaily.settings.dailyNoteFolder, undefined);
+	assert.ok(badDaily.invalidFields.includes("dailyNoteFolder"));
 }
 
 // HTTP retry: 429 + Retry-After then 200

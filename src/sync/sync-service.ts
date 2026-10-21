@@ -11,12 +11,10 @@ import {
 import { BangumiClient } from "../bangumi/client";
 import { collectionStatusLabel, subjectTypeLabel } from "../bangumi/labels";
 import { formatLocalDateTime } from "../date-format";
-import {
-	BANGUMI_STORAGE_LAYOUTS,
-	BangumiSyncSettings
-} from "../settings";
+import { BangumiSyncSettings } from "../settings";
 import { t } from "../i18n";
 import { mapWithConcurrency } from "../utils/concurrency";
+import { buildTargetDirectory } from "../utils/target-directory";
 import { ensureFolder } from "../utils/vault";
 import {
 	DEFAULT_SUBJECT_NOTE_TEMPLATE,
@@ -829,8 +827,14 @@ export class SyncService {
 
 	private getDailyNotePath(): string {
 		const options = this.getDailyNotesOptions();
-		const fileName = `${moment().format(options.format || "YYYY-MM-DD")}.md`;
-		const folder = normalizePath(options.folder || "");
+		// Explicit settings win, so users on QuickAdd / Periodic Notes are not
+		// stuck with whatever the Daily Notes core plugin happens to say.
+		const format =
+			this.settings.dailyNoteFormat.trim() || options.format || "YYYY-MM-DD";
+		const folderInput =
+			this.settings.dailyNoteFolder.trim() || options.folder || "";
+		const fileName = `${moment().format(format)}.md`;
+		const folder = folderInput ? normalizePath(folderInput) : "";
 		return normalizePath(folder ? `${folder}/${fileName}` : fileName);
 	}
 
@@ -913,19 +917,14 @@ export class SyncService {
 	}
 
 	private getTargetDirectory(collection: BangumiCollection): string {
-		const root = this.settings.syncDirectory;
-		const subjectType = subjectTypeLabel(collection.subject.type);
-		const collectionStatus = collectionStatusLabel(collection.type);
-
-		switch (this.settings.storageLayout) {
-			case BANGUMI_STORAGE_LAYOUTS.subjectThenCollection:
-				return `${root}/${subjectType}/${collectionStatus}`;
-			case BANGUMI_STORAGE_LAYOUTS.collectionThenSubject:
-				return `${root}/${collectionStatus}/${subjectType}`;
-			case BANGUMI_STORAGE_LAYOUTS.flat:
-			default:
-				return root;
-		}
+		return buildTargetDirectory(
+			{
+				root: this.settings.syncDirectory,
+				layout: this.settings.storageLayout
+			},
+			subjectTypeLabel(collection.subject.type),
+			collectionStatusLabel(collection.type)
+		);
 	}
 
 	private async writeFailureReport(params: {

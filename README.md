@@ -102,6 +102,8 @@ BRAT 适合测试开发版。正式发布后，普通用户更建议使用 Obsid
 | `Incremental sync` | 根据 Bangumi 更新时间跳过未变化条目，并补回本地缺失文件。 |
 | `DNS fix (DoH)` | 解析 `api.bgm.tv` 的方式。`自动`（默认）先走系统网络，只有出现网络错误后才改用 DNS-over-HTTPS；`总是` 直接走 DoH；`关闭` 只使用 Obsidian 默认方式。用于系统 DNS 返回错误 bgm.tv 地址、导致同步报网络错误的情况。仅桌面端生效。 |
 | `Daily note sync` | 将本次新增或更新的进行中条目写入今天的 Daily Note 同步块。 |
+| `Daily note folder` | 每日日记所在文件夹。留空则沿用官方 Daily Notes 核心插件的设置；用 QuickAdd / Periodic Notes 等方式建日记时在这里填写。 |
+| `Daily note date format` | 日记文件名使用的 moment.js 日期格式。留空则沿用核心插件设置，兜底 `YYYY-MM-DD`。 |
 | `Enable On Air note` | 同步后生成 `Bangumi/On Air.md`，按星期展示全站放送和你的想看/进行中动画收藏。 |
 | `Enable write-back to Bangumi` | 允许手动 Push 当前条目笔记的章节 checklist 和收藏状态到 Bangumi，也允许看板状态写回。默认关闭，每次 Push 前都会要求确认。 |
 | `Subject note template` | 自定义条目笔记 Markdown 模板。 |
@@ -198,6 +200,8 @@ BRAT 适合测试开发版。正式发布后，普通用户更建议使用 Obsid
 ```
 
 增量同步时，只会添加本次实际新增或更新的进行中条目。
+
+默认会读取官方 Daily Notes 核心插件的文件夹与日期格式设置。如果你用 QuickAdd、Periodic Notes 等方式创建日记，核心插件里可能没有配置，此时插件会去库根目录找 `YYYY-MM-DD.md` 并提示找不到——请用上面的 `Daily note folder` 和 `Daily note date format` 显式指定，这两项优先于核心插件设置。
 
 ## 限制
 

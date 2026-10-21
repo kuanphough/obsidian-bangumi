@@ -109,6 +109,8 @@ Keep the token private. It authorizes the plugin to read your Bangumi account da
 | `Incremental sync` | Skip unchanged subjects by Bangumi updated time and recreate missing local notes. |
 | `DNS fix (DoH)` | How `api.bgm.tv` is resolved. `Auto` (default) uses the normal network path first and only switches to DNS-over-HTTPS after a network failure; `Always` resolves through DoH up front; `Off` keeps Obsidian's default transport. Useful when the system DNS returns wrong bgm.tv addresses and syncing fails with network errors. Desktop only. |
 | `Daily note sync` | Write newly added or updated in-progress subjects to today's Daily Note block. |
+| `Daily note folder` | Folder that holds your daily notes. Leave empty to use the Daily Notes core plugin setting; fill it in when you create daily notes with QuickAdd, Periodic Notes, or another method. |
+| `Daily note date format` | Moment.js date format for the daily note file name. Leave empty to use the core plugin setting, falling back to `YYYY-MM-DD`. |
 | `Enable On Air note` | Generate `Bangumi/On Air.md` after sync, grouped by weekday for all broadcasts and your wished/watching anime. |
 | `Enable write-back to Bangumi` | Allow manual Push from the current subject note for episode checklist changes and collection status, and allow board status write-back. Disabled by default; every Push requires confirmation. |
 | `Subject note template` | Customize the Markdown template for subject notes. |
@@ -205,6 +207,8 @@ The plugin only writes between those markers, for example:
 ```
 
 In incremental sync, only subjects actually written or updated in this run are added.
+
+The plugin reads the folder and date format from the Daily Notes core plugin by default. If you create daily notes with QuickAdd, Periodic Notes, or another method, that core plugin may not be configured, and the plugin will look for `YYYY-MM-DD.md` in the vault root and report that today's note is missing. Use `Daily note folder` and `Daily note date format` to set them explicitly; both take precedence over the core plugin.
 
 ## Current Limits
 

@@ -30,6 +30,8 @@ export interface BangumiSyncSettings {
 	includeOnHoldAndDropped: boolean;
 	incrementalSync: boolean;
 	dailyNoteSync: boolean;
+	dailyNoteFolder: string;
+	dailyNoteFormat: string;
 	enableOnAirNote: boolean;
 	enableWriteBack: boolean;
 	fetchDetailedSubjectInfo: boolean;
@@ -81,6 +83,8 @@ const STRING_SETTING_KEYS = [
 	"username",
 	"syncDirectory",
 	"lastSyncedAt",
+	"dailyNoteFolder",
+	"dailyNoteFormat",
 	"subjectNoteTemplate",
 	"userAgent"
 ] as const satisfies ReadonlyArray<keyof BangumiSyncSettings>;
@@ -239,6 +243,8 @@ export const DEFAULT_SETTINGS: BangumiSyncSettings = {
 	includeOnHoldAndDropped: false,
 	incrementalSync: true,
 	dailyNoteSync: false,
+	dailyNoteFolder: "",
+	dailyNoteFormat: "",
 	enableOnAirNote: false,
 	enableWriteBack: false,
 	fetchDetailedSubjectInfo: false,
@@ -540,6 +546,32 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.dailyNoteSync)
 					.onChange(async (enabled) => {
 						this.plugin.settings.dailyNoteSync = enabled;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(t("dailyNoteFolder"))
+			.setDesc(t("dailyNoteFolderDesc"))
+			.addText((text) =>
+				text
+					.setPlaceholder("Daily")
+					.setValue(this.plugin.settings.dailyNoteFolder)
+					.onChange(async (value) => {
+						this.plugin.settings.dailyNoteFolder = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(t("dailyNoteFormat"))
+			.setDesc(t("dailyNoteFormatDesc"))
+			.addText((text) =>
+				text
+					.setPlaceholder("YYYY-MM-DD")
+					.setValue(this.plugin.settings.dailyNoteFormat)
+					.onChange(async (value) => {
+						this.plugin.settings.dailyNoteFormat = value;
 						await this.plugin.saveSettings();
 					})
 			);
