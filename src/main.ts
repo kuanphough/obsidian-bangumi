@@ -2,6 +2,7 @@ import {
 	App,
 	Modal,
 	Notice,
+	Platform,
 	Plugin,
 	Setting,
 	SuggestModal,
@@ -9,6 +10,17 @@ import {
 	WorkspaceLeaf,
 	normalizePath
 } from "obsidian";
+
+import { looksLikeNetworkError } from "./utils/network-error";
+
+/**
+ * On mobile the built-in DoH transport is unavailable, so a network failure
+ * there usually means a poisoned system resolver. Point the user at encrypted
+ * DNS instead of only showing the raw error.
+ */
+function needsMobileDnsHint(error: unknown): boolean {
+	return !Platform.isDesktopApp && looksLikeNetworkError(error);
+}
 
 import {
 	BangumiSyncSettingTab,
@@ -435,7 +447,14 @@ export default class BangumiSyncPlugin extends Plugin {
 		} catch (error) {
 			const message =
 				error instanceof Error ? error.message : t("unknownError");
-			new Notice(t("testTokenFailed", { message }));
+			new Notice(
+				t(
+					needsMobileDnsHint(error)
+						? "testTokenFailedMobileNetwork"
+						: "testTokenFailed",
+					{ message }
+				)
+			);
 			console.error(error);
 		}
 	}
@@ -797,7 +816,14 @@ export default class BangumiSyncPlugin extends Plugin {
 		} catch (error) {
 			const message =
 				error instanceof Error ? error.message : t("unknownError");
-			new Notice(t("syncFailed", { message }));
+			new Notice(
+				t(
+					needsMobileDnsHint(error)
+						? "syncFailedMobileNetwork"
+						: "syncFailed",
+					{ message }
+				)
+			);
 			console.error(error);
 		}
 	}

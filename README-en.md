@@ -218,6 +218,7 @@ The plugin reads the folder and date format from the Daily Notes core plugin by 
 - Bangumi write-back is still experimental: current-note Push supports status, rating, comment, and episode checklist for `do` / `collect` subjects; board status changes also support status, rating, and comment.
 - Mobile compatibility: this plugin is desktop-first. Mobile compatibility may be limited, especially clipboard access, token page opening, Daily Note path detection, and large settings textareas. Use with caution.
 - The DNS fix only covers `api.bgm.tv` requests and is desktop-only: it uses Node's network stack, so it does not go through the system proxy. If you can only reach the internet through a proxy, set `DNS fix (DoH)` to `Off`, otherwise each request waits for one failure before falling back. Cover images come from `lain.bgm.tv` and are loaded by Obsidian itself, so this setting does not affect them.
+- The built-in DNS fix is unavailable on mobile: there is no Node runtime, and the plugin cannot control how the TLS connection resolves. If your phone's network has the same DNS poisoning, enable encrypted DNS at the OS level: on Android set Private DNS to `dns.alidns.com` (or `one.one.one.one`), on iOS install a DoH/DoT configuration profile, or use a proxy. The setting is greyed out on mobile and shows the same guidance.
 
 ## Support
 

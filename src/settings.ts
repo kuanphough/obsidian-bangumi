@@ -1,4 +1,4 @@
-import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, Platform, PluginSettingTab, Setting } from "obsidian";
 
 import type BangumiSyncPlugin from "./main";
 import {
@@ -523,13 +523,16 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName(t("dnsFix"))
-			.setDesc(t("dnsFixDesc"))
+			.setDesc(
+				Platform.isDesktopApp ? t("dnsFixDesc") : t("dnsFixMobileDesc")
+			)
 			.addDropdown((dropdown) =>
 				dropdown
 					.addOption(DNS_FIX_MODES.auto, t("dnsFixAuto"))
 					.addOption(DNS_FIX_MODES.always, t("dnsFixAlways"))
 					.addOption(DNS_FIX_MODES.off, t("dnsFixOff"))
 					.setValue(this.plugin.settings.dnsFixMode)
+					.setDisabled(!Platform.isDesktopApp)
 					.onChange(async (value) => {
 						this.plugin.settings.dnsFixMode = isDnsFixMode(value)
 							? value

@@ -25,6 +25,39 @@ __export(main_exports, {
 module.exports = __toCommonJS(main_exports);
 var import_obsidian13 = require("obsidian");
 
+// src/utils/network-error.ts
+var NETWORK_ERROR_PATTERNS = [
+  "err_connection",
+  "err_network",
+  "err_internet_disconnected",
+  "err_name_not_resolved",
+  "err_address_unreachable",
+  "err_timed_out",
+  "econnrefused",
+  "econnreset",
+  "econnaborted",
+  "etimedout",
+  "enotfound",
+  "eai_again",
+  "ehostunreach",
+  "networkerror",
+  "failed to fetch",
+  "network request failed",
+  "request timed out",
+  "connection was reset"
+];
+function looksLikeNetworkError(error) {
+  let message = "";
+  if (error instanceof Error) {
+    message = error.message;
+  } else if (typeof error === "string") {
+    message = error;
+  }
+  if (message.length === 0) return false;
+  const lower = message.toLowerCase();
+  return NETWORK_ERROR_PATTERNS.some((pattern) => lower.includes(pattern));
+}
+
 // src/settings.ts
 var import_obsidian2 = require("obsidian");
 
@@ -184,6 +217,7 @@ var EN = {
   dnsFixAuto: "Auto (recommended)",
   dnsFixAlways: "Always use DoH",
   dnsFixOff: "Off",
+  dnsFixMobileDesc: "Not available on mobile: the built-in DNS-over-HTTPS transport needs a desktop runtime. If syncing fails with network errors on mobile, turn on encrypted DNS at the OS level instead - on Android set Private DNS to dns.alidns.com, on iOS install a DoH/DoT configuration profile.",
   issues: "Issues",
   lastSyncedAt: "Last synced at",
   music: "Music",
@@ -247,6 +281,7 @@ var EN = {
   templateVariablesDocFailed: "Could not open template variable documentation: {{message}}",
   testToken: "Test token",
   testTokenFailed: "Token test failed: {{message}}",
+  testTokenFailedMobileNetwork: "Token test failed: {{message}}. The built-in DNS fix only works on desktop, so if this is a network error, turn on encrypted DNS in your system settings (Android: Private DNS to dns.alidns.com; iOS: install a DoH/DoT profile).",
   testTokenSucceeded: "Token is valid. Connected as {{username}}.",
   updateOnAirNote: "Update On Air note",
   subjectType: "Subject type",
@@ -257,6 +292,7 @@ var EN = {
   syncDirectory: "Sync directory",
   syncDirectoryDesc: "Notes will be created under this folder.",
   syncFailed: "Bangumi Sync failed: {{message}}",
+  syncFailedMobileNetwork: "Bangumi Sync failed: {{message}}. The built-in DNS fix only works on desktop, so if this is a network error, turn on encrypted DNS in your system settings (Android: Private DNS to dns.alidns.com; iOS: install a DoH/DoT profile).",
   syncFinished: "Bangumi Sync finished for {{username}}: {{written}} note(s) synced, {{skipped}} skipped, {{incrementalSkipped}} unchanged, {{failed}} issue(s).{{reportCreated}}",
   syncGroupProgress: "{{subjectType}}/{{collectionStatus}} {{current}}/{{total}}: {{written}} synced, {{unchanged}} unchanged, {{skipped}} skipped.",
   syncNow: "Sync now",
@@ -406,6 +442,7 @@ var ZH = {
   dnsFixAuto: "\u81EA\u52A8\uFF08\u63A8\u8350\uFF09",
   dnsFixAlways: "\u603B\u662F\u4F7F\u7528 DoH",
   dnsFixOff: "\u5173\u95ED",
+  dnsFixMobileDesc: "\u79FB\u52A8\u7AEF\u4E0D\u652F\u6301\uFF1A\u5185\u7F6E\u7684 DNS-over-HTTPS \u4F20\u8F93\u5C42\u9700\u8981\u684C\u9762\u8FD0\u884C\u65F6\u3002\u79FB\u52A8\u7AEF\u82E5\u540C\u6B65\u62A5\u7F51\u7EDC\u9519\u8BEF\uFF0C\u8BF7\u5728\u7CFB\u7EDF\u5C42\u5F00\u542F\u52A0\u5BC6 DNS \u2014\u2014 Android \u628A\u300C\u79C1\u4EBA DNS\u300D\u8BBE\u4E3A dns.alidns.com\uFF0CiOS \u5B89\u88C5 DoH/DoT \u914D\u7F6E\u63CF\u8FF0\u6587\u4EF6\u3002",
   issues: "\u95EE\u9898\u6570",
   lastSyncedAt: "\u4E0A\u6B21\u540C\u6B65\u65F6\u95F4",
   music: "\u97F3\u4E50",
@@ -469,6 +506,7 @@ var ZH = {
   templateVariablesDocFailed: "\u65E0\u6CD5\u6253\u5F00\u6A21\u677F\u53D8\u91CF\u6587\u6863\uFF1A{{message}}",
   testToken: "\u6D4B\u8BD5 token",
   testTokenFailed: "Token \u6D4B\u8BD5\u5931\u8D25\uFF1A{{message}}",
+  testTokenFailedMobileNetwork: "Token \u6D4B\u8BD5\u5931\u8D25\uFF1A{{message}}\u3002\u5185\u7F6E DNS \u4FEE\u590D\u4EC5\u5728\u684C\u9762\u7AEF\u751F\u6548\uFF0C\u82E5\u8FD9\u662F\u7F51\u7EDC\u9519\u8BEF\uFF0C\u8BF7\u5728\u7CFB\u7EDF\u8BBE\u7F6E\u91CC\u5F00\u542F\u52A0\u5BC6 DNS\uFF08Android\uFF1A\u79C1\u4EBA DNS \u8BBE\u4E3A dns.alidns.com\uFF1BiOS\uFF1A\u5B89\u88C5 DoH/DoT \u914D\u7F6E\u63CF\u8FF0\u6587\u4EF6\uFF09\u3002",
   testTokenSucceeded: "Token \u6709\u6548\uFF0C\u5DF2\u8FDE\u63A5\u4E3A {{username}}\u3002",
   updateOnAirNote: "\u66F4\u65B0\u6BCF\u65E5\u653E\u9001\u7B14\u8BB0",
   subjectType: "\u6761\u76EE\u7C7B\u578B",
@@ -479,6 +517,7 @@ var ZH = {
   syncDirectory: "\u540C\u6B65\u76EE\u5F55",
   syncDirectoryDesc: "\u7B14\u8BB0\u4F1A\u521B\u5EFA\u5728\u8FD9\u4E2A\u6587\u4EF6\u5939\u4E0B\u3002",
   syncFailed: "Bangumi Sync \u5931\u8D25\uFF1A{{message}}",
+  syncFailedMobileNetwork: "Bangumi Sync \u5931\u8D25\uFF1A{{message}}\u3002\u5185\u7F6E DNS \u4FEE\u590D\u4EC5\u5728\u684C\u9762\u7AEF\u751F\u6548\uFF0C\u82E5\u8FD9\u662F\u7F51\u7EDC\u9519\u8BEF\uFF0C\u8BF7\u5728\u7CFB\u7EDF\u8BBE\u7F6E\u91CC\u5F00\u542F\u52A0\u5BC6 DNS\uFF08Android\uFF1A\u79C1\u4EBA DNS \u8BBE\u4E3A dns.alidns.com\uFF1BiOS\uFF1A\u5B89\u88C5 DoH/DoT \u914D\u7F6E\u63CF\u8FF0\u6587\u4EF6\uFF09\u3002",
   syncFinished: "Bangumi Sync \u5B8C\u6210\uFF1A\u7528\u6237 {{username}}\uFF0C\u540C\u6B65 {{written}} \u6761\uFF0C\u8DF3\u8FC7 {{skipped}} \u6761\uFF0C\u672A\u53D8\u5316 {{incrementalSkipped}} \u6761\uFF0C\u95EE\u9898 {{failed}} \u4E2A\u3002{{reportCreated}}",
   syncGroupProgress: "{{subjectType}}/{{collectionStatus}} {{current}}/{{total}}\uFF1A\u540C\u6B65 {{written}} \u6761\uFF0C\u672A\u53D8\u5316 {{unchanged}} \u6761\uFF0C\u8DF3\u8FC7 {{skipped}} \u6761\u3002",
   syncNow: "\u7ACB\u5373\u540C\u6B65",
@@ -1320,8 +1359,10 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("dnsFix")).setDesc(t("dnsFixDesc")).addDropdown(
-      (dropdown) => dropdown.addOption(DNS_FIX_MODES.auto, t("dnsFixAuto")).addOption(DNS_FIX_MODES.always, t("dnsFixAlways")).addOption(DNS_FIX_MODES.off, t("dnsFixOff")).setValue(this.plugin.settings.dnsFixMode).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(t("dnsFix")).setDesc(
+      import_obsidian2.Platform.isDesktopApp ? t("dnsFixDesc") : t("dnsFixMobileDesc")
+    ).addDropdown(
+      (dropdown) => dropdown.addOption(DNS_FIX_MODES.auto, t("dnsFixAuto")).addOption(DNS_FIX_MODES.always, t("dnsFixAlways")).addOption(DNS_FIX_MODES.off, t("dnsFixOff")).setValue(this.plugin.settings.dnsFixMode).setDisabled(!import_obsidian2.Platform.isDesktopApp).onChange(async (value) => {
         this.plugin.settings.dnsFixMode = isDnsFixMode(value) ? value : DNS_FIX_MODES.auto;
         await this.plugin.saveSettings();
       })
@@ -4442,6 +4483,9 @@ var BoardStatusCommentModal = class extends import_obsidian12.Modal {
 };
 
 // src/main.ts
+function needsMobileDnsHint(error) {
+  return !import_obsidian13.Platform.isDesktopApp && looksLikeNetworkError(error);
+}
 var ACCESS_TOKEN_CREATE_URL = "https://next.bgm.tv/demo/access-token/create";
 var TEMPLATE_VARIABLES_FILE_NAME = "Template Variables.md";
 var SEARCH_SUBJECT_TYPES = [
@@ -4794,7 +4838,12 @@ var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
       new import_obsidian13.Notice(t("testTokenSucceeded", { username: user.username }));
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian13.Notice(t("testTokenFailed", { message }));
+      new import_obsidian13.Notice(
+        t(
+          needsMobileDnsHint(error) ? "testTokenFailedMobileNetwork" : "testTokenFailed",
+          { message }
+        )
+      );
       console.error(error);
     }
   }
@@ -5088,7 +5137,12 @@ var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
       new import_obsidian13.Notice(result.message);
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian13.Notice(t("syncFailed", { message }));
+      new import_obsidian13.Notice(
+        t(
+          needsMobileDnsHint(error) ? "syncFailedMobileNetwork" : "syncFailed",
+          { message }
+        )
+      );
       console.error(error);
     }
   }

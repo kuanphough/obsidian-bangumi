@@ -138,6 +138,8 @@ const EN = {
 	dnsFixAuto: "Auto (recommended)",
 	dnsFixAlways: "Always use DoH",
 	dnsFixOff: "Off",
+	dnsFixMobileDesc:
+		"Not available on mobile: the built-in DNS-over-HTTPS transport needs a desktop runtime. If syncing fails with network errors on mobile, turn on encrypted DNS at the OS level instead - on Android set Private DNS to dns.alidns.com, on iOS install a DoH/DoT configuration profile.",
 	issues: "Issues",
 	lastSyncedAt: "Last synced at",
 	music: "Music",
@@ -214,6 +216,8 @@ const EN = {
 		"Could not open template variable documentation: {{message}}",
 	testToken: "Test token",
 	testTokenFailed: "Token test failed: {{message}}",
+	testTokenFailedMobileNetwork:
+		"Token test failed: {{message}}. The built-in DNS fix only works on desktop, so if this is a network error, turn on encrypted DNS in your system settings (Android: Private DNS to dns.alidns.com; iOS: install a DoH/DoT profile).",
 	testTokenSucceeded: "Token is valid. Connected as {{username}}.",
 	updateOnAirNote: "Update On Air note",
 	subjectType: "Subject type",
@@ -225,6 +229,8 @@ const EN = {
 	syncDirectory: "Sync directory",
 	syncDirectoryDesc: "Notes will be created under this folder.",
 	syncFailed: "Bangumi Sync failed: {{message}}",
+	syncFailedMobileNetwork:
+		"Bangumi Sync failed: {{message}}. The built-in DNS fix only works on desktop, so if this is a network error, turn on encrypted DNS in your system settings (Android: Private DNS to dns.alidns.com; iOS: install a DoH/DoT profile).",
 	syncFinished:
 		"Bangumi Sync finished for {{username}}: {{written}} note(s) synced, {{skipped}} skipped, {{incrementalSkipped}} unchanged, {{failed}} issue(s).{{reportCreated}}",
 	syncGroupProgress:
@@ -406,6 +412,8 @@ const ZH: Record<LocaleKey, string> = {
 	dnsFixAuto: "自动（推荐）",
 	dnsFixAlways: "总是使用 DoH",
 	dnsFixOff: "关闭",
+	dnsFixMobileDesc:
+		"移动端不支持：内置的 DNS-over-HTTPS 传输层需要桌面运行时。移动端若同步报网络错误，请在系统层开启加密 DNS —— Android 把「私人 DNS」设为 dns.alidns.com，iOS 安装 DoH/DoT 配置描述文件。",
 	issues: "问题数",
 	lastSyncedAt: "上次同步时间",
 	music: "音乐",
@@ -480,6 +488,8 @@ const ZH: Record<LocaleKey, string> = {
 	templateVariablesDocFailed: "无法打开模板变量文档：{{message}}",
 	testToken: "测试 token",
 	testTokenFailed: "Token 测试失败：{{message}}",
+	testTokenFailedMobileNetwork:
+		"Token 测试失败：{{message}}。内置 DNS 修复仅在桌面端生效，若这是网络错误，请在系统设置里开启加密 DNS（Android：私人 DNS 设为 dns.alidns.com；iOS：安装 DoH/DoT 配置描述文件）。",
 	testTokenSucceeded: "Token 有效，已连接为 {{username}}。",
 	updateOnAirNote: "更新每日放送笔记",
 	subjectType: "条目类型",
@@ -491,6 +501,8 @@ const ZH: Record<LocaleKey, string> = {
 	syncDirectory: "同步目录",
 	syncDirectoryDesc: "笔记会创建在这个文件夹下。",
 	syncFailed: "Bangumi Sync 失败：{{message}}",
+	syncFailedMobileNetwork:
+		"Bangumi Sync 失败：{{message}}。内置 DNS 修复仅在桌面端生效，若这是网络错误，请在系统设置里开启加密 DNS（Android：私人 DNS 设为 dns.alidns.com；iOS：安装 DoH/DoT 配置描述文件）。",
 	syncFinished:
 		"Bangumi Sync 完成：用户 {{username}}，同步 {{written}} 条，跳过 {{skipped}} 条，未变化 {{incrementalSkipped}} 条，问题 {{failed}} 个。{{reportCreated}}",
 	syncGroupProgress:

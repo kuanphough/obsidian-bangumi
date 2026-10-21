@@ -98,6 +98,7 @@ import { BANGUMI_COLLECTION_TYPES, BANGUMI_SUBJECT_TYPES } from "./src/bangumi/t
 import { DEFAULT_SETTINGS, BANGUMI_FILE_NAME_FORMATS, BANGUMI_STORAGE_LAYOUTS, sanitizeLoadedSettings } from "./src/settings.ts";
 import { buildTargetDirectory } from "./src/utils/target-directory.ts";
 import { rankDohAnswers } from "./src/bangumi/doh.ts";
+import { looksLikeNetworkError } from "./src/utils/network-error.ts";
 import {
 	DEFAULT_SUBJECT_NOTE_TEMPLATE,
 	LEGACY_DEFAULT_SUBJECT_NOTE_TEMPLATE,
@@ -1264,6 +1265,26 @@ status: do
 	// Dead endpoints contribute nothing.
 	assert.deepEqual(rankDohAnswers([[], ["x"], []]), ["x"]);
 	assert.deepEqual(rankDohAnswers([[], []]), []);
+}
+
+// Mobile DNS hint: only network failures should trigger it
+{
+	assert.equal(
+		looksLikeNetworkError(new Error("net::ERR_CONNECTION_TIMED_OUT")),
+		true
+	);
+	assert.equal(looksLikeNetworkError(new Error("ETIMEDOUT")), true);
+	assert.equal(looksLikeNetworkError(new Error("getaddrinfo ENOTFOUND api.bgm.tv")), true);
+	assert.equal(looksLikeNetworkError(new Error("ECONNRESET")), true);
+	assert.equal(looksLikeNetworkError("net::ERR_NAME_NOT_RESOLVED"), true);
+	// API and validation errors must not show the DNS guidance.
+	assert.equal(
+		looksLikeNetworkError(new Error("Bangumi API unauthorized (401) for /v0/me")),
+		false
+	);
+	assert.equal(looksLikeNetworkError(new Error("File already exists.")), false);
+	assert.equal(looksLikeNetworkError(undefined), false);
+	assert.equal(looksLikeNetworkError({}), false);
 }
 
 // HTTP retry: 429 + Retry-After then 200
