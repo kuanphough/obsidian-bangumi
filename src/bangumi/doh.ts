@@ -1,3 +1,4 @@
+import { Platform } from "obsidian";
 import type { RequestUrlResponse } from "obsidian";
 
 /**
@@ -23,9 +24,7 @@ import type { RequestUrlResponse } from "obsidian";
  * isDohTransportAvailable() first.
  */
 
-type DohAnswer = { type?: number; data?: string };
-
-/** Queried in parallel; order only affects the tie-break (see TRUST_PRIORITY). */
+/** Queried in parallel; order only affects the tie-break in rankDohAnswers(). */
 const DOH_ENDPOINTS = [
 	"https://1.12.12.12/dns-query",
 	"https://1.1.1.1/dns-query",
@@ -63,23 +62,29 @@ export interface DohRequestInit {
 }
 
 export function isDohTransportAvailable(): boolean {
-	const versions = (
-		globalThis as { process?: { versions?: Record<string, string> } }
-	).process?.versions;
-	return typeof versions?.node === "string";
+	return Platform.isDesktopApp;
 }
 
-function nodeRequire<T>(id: string): T {
-	const globalScope = globalThis as { require?: (id: string) => unknown };
-	if (typeof globalScope.require === "function") {
-		return globalScope.require(id) as T;
+/** Minimal view of the Electron renderer window needed to reach Node's require. */
+interface NodeCapableWindow extends Window {
+	require?: (id: string) => unknown;
+}
+
+/**
+ * Load a Node builtin through the renderer's `require`. Lazy on purpose: import
+ * the module only when the DoH transport is actually used, so mobile never
+ * touches it.
+ */
+function loadNodeModule<T>(id: string): T {
+	const fromWindow = (window as NodeCapableWindow).require;
+	if (typeof fromWindow === "function") {
+		return fromWindow(id) as T;
 	}
-	// Fall back to the CommonJS `require` of the plugin bundle. Guarded by
-	// `typeof` so this is safe on mobile, where it is undefined.
+	// Fallback for bundles loaded as CommonJS (e.g. the test harness).
 	if (typeof require === "function") {
 		return (require as (id: string) => unknown)(id) as T;
 	}
-	throw new Error(`Node module "${id}" is unavailable`);
+	throw new Error(`Node module "${id}" is unavailable in this environment`);
 }
 
 /** Drop cached data for a hostname so the next lookup re-resolves it. */
@@ -101,12 +106,35 @@ function markBadAddress(address: string): void {
 	badAddresses.set(address, Date.now() + BAD_ADDRESS_TTL_MS);
 }
 
+function toError(value: unknown, fallback: string): Error {
+	if (value instanceof Error) return value;
+	if (typeof value === "string" && value.length > 0) return new Error(value);
+	return new Error(fallback);
+}
+
+/** Pull the A/AAAA records of one record type out of a DoH JSON answer. */
+function extractAddresses(payload: unknown, recordType: number): string[] {
+	if (typeof payload !== "object" || payload === null) return [];
+	const answers = (payload as { Answer?: unknown }).Answer;
+	if (!Array.isArray(answers)) return [];
+
+	const addresses: string[] = [];
+	for (const answer of answers) {
+		if (typeof answer !== "object" || answer === null) continue;
+		const record = answer as { type?: unknown; data?: unknown };
+		if (record.type === recordType && typeof record.data === "string") {
+			addresses.push(record.data);
+		}
+	}
+	return addresses;
+}
+
 function queryDoh(
 	endpoint: string,
 	hostname: string,
 	recordType: number
 ): Promise<string[]> {
-	const https = nodeRequire<typeof import("https")>("https");
+	const https = loadNodeModule<typeof import("https")>("https");
 	const recordName = recordType === AAAA_RECORD ? "AAAA" : "A";
 	const url = `${endpoint}?name=${encodeURIComponent(hostname)}&type=${recordName}`;
 
@@ -125,30 +153,18 @@ function queryDoh(
 				});
 				response.on("end", () => {
 					try {
-						const parsed = JSON.parse(body) as { Answer?: DohAnswer[] };
-						const answers = Array.isArray(parsed.Answer)
-							? parsed.Answer
-							: [];
-						resolve(
-							answers
-								.filter(
-									(answer) =>
-										answer.type === recordType &&
-										typeof answer.data === "string"
-								)
-								.map((answer) => answer.data as string)
-						);
+						resolve(extractAddresses(JSON.parse(body), recordType));
 					} catch (error) {
-						reject(error);
+						reject(toError(error, "DoH response was not valid JSON"));
 					}
 				});
-				response.on("error", reject);
+				response.on("error", (error: Error) => reject(error));
 			}
 		);
 		request.on("timeout", () =>
 			request.destroy(new Error("DoH query timed out"))
 		);
-		request.on("error", reject);
+		request.on("error", (error: Error) => reject(error));
 	});
 }
 
@@ -193,7 +209,7 @@ async function collectAddresses(
 ): Promise<string[] | null> {
 	const results = await Promise.all(
 		DOH_ENDPOINTS.map((endpoint) =>
-			queryDoh(endpoint, hostname, recordType).catch(() => [] as string[])
+			queryDoh(endpoint, hostname, recordType).catch((): string[] => [])
 		)
 	);
 
@@ -258,7 +274,20 @@ function attemptRequest(
 	family: number,
 	timeoutMs: number
 ): Promise<RequestUrlResponse> {
-	const https = nodeRequire<typeof import("https")>("https");
+	const https = loadNodeModule<typeof import("https")>("https");
+
+	// Node 18+ calls lookup with all:true and expects an array back.
+	const lookup: import("net").LookupFunction = (
+		_hostname,
+		options,
+		callback
+	) => {
+		if (options.all) {
+			callback(null, [{ address, family }], family);
+			return;
+		}
+		callback(null, address, family);
+	};
 
 	return new Promise<RequestUrlResponse>((resolve, reject) => {
 		const request = https.request(
@@ -271,22 +300,7 @@ function attemptRequest(
 				headers: init.headers,
 				timeout: timeoutMs,
 				// Connect to the DoH answer while keeping hostname for SNI / certs.
-				lookup: ((
-					_hostname: string,
-					options: { all?: boolean } | undefined,
-					callback: (
-						error: Error | null,
-						value: string | Array<{ address: string; family: number }>,
-						family?: number
-					) => void
-				) => {
-					// Node 18+ calls lookup with all:true and expects an array back.
-					if (options?.all) {
-						callback(null, [{ address, family }]);
-						return;
-					}
-					callback(null, address, family);
-				}) as unknown as import("net").LookupFunction
+				lookup
 			},
 			(response) => {
 				// Any HTTP response means this address works, whatever the status.
@@ -295,7 +309,7 @@ function attemptRequest(
 				response.on("data", (chunk: string) => {
 					chunks.push(chunk);
 				});
-				response.on("error", reject);
+				response.on("error", (error: Error) => reject(error));
 				response.on("end", () => {
 					const text = chunks.join("");
 					let json: unknown;
@@ -304,17 +318,17 @@ function attemptRequest(
 					} catch {
 						json = undefined;
 					}
-					resolve({
+					const result: RequestUrlResponse = {
 						status: response.statusCode ?? 0,
 						headers: collectHeaders(response.headers),
 						text,
 						json,
-						// The DoH transport only carries JSON/text bodies and never fetches
-						// binary payloads (cover images are loaded by Obsidian itself). Keep
-						// this empty instead of pretending to hold bytes; read `text` or
-						// `json` from this transport.
+						// The DoH transport only carries JSON/text bodies and never
+						// fetches binary payloads (cover images are loaded by Obsidian
+						// itself). Read `text` or `json` from this transport.
 						arrayBuffer: new ArrayBuffer(0)
-					} as RequestUrlResponse);
+					};
+					resolve(result);
 				});
 			}
 		);
@@ -322,7 +336,7 @@ function attemptRequest(
 		request.on("timeout", () =>
 			request.destroy(new Error("Bangumi request timed out"))
 		);
-		request.on("error", reject);
+		request.on("error", (error: Error) => reject(error));
 		if (init.body !== undefined) {
 			request.write(init.body);
 		}
@@ -348,16 +362,17 @@ export async function dohRequest(
 		throw new Error(`DoH resolution failed for ${url.hostname}`);
 	}
 
-	const usable = resolved.addresses.filter(
-		(address) => !isBadAddress(address)
-	);
-	const ordered = [...usable, ...resolved.addresses.filter(isBadAddress)];
+	const usable = resolved.addresses.filter((address) => !isBadAddress(address));
+	const ordered = [
+		...usable,
+		...resolved.addresses.filter((address) => isBadAddress(address))
+	];
 	if (ordered.length === 0) {
 		invalidateDohCache(url.hostname);
 		throw new Error(`DoH returned no usable address for ${url.hostname}`);
 	}
 
-	let lastError: unknown;
+	let lastError: Error | null = null;
 	for (const [index, address] of ordered.entries()) {
 		// The top candidate gets the caller's full timeout; retries stay short so
 		// a quarantined address cannot stall the request for long.
@@ -374,14 +389,12 @@ export async function dohRequest(
 				timeoutMs
 			);
 		} catch (error) {
-			lastError = error;
+			lastError = toError(error, `DoH request failed for ${address}`);
 			markBadAddress(address);
 		}
 	}
 
 	// Every candidate failed: the answer set is probably stale.
 	invalidateDohCache(url.hostname);
-	throw lastError instanceof Error
-		? lastError
-		: new Error(`DoH request failed for ${url.hostname}`);
+	throw lastError ?? new Error(`DoH request failed for ${url.hostname}`);
 }

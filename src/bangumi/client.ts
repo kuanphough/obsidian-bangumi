@@ -402,9 +402,6 @@ export class BangumiClient {
 				try {
 					const response = await dohRequest(request);
 					this.dohPreferred = true;
-					console.info(
-						"[bangumi] default transport failed, switching to DoH for this session"
-					);
 					return response;
 				} catch (dohError) {
 					this.warnDohFailure(dohError);

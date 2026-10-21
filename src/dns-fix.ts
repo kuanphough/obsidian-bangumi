@@ -19,7 +19,11 @@ export const DNS_FIX_MODES = {
 
 export type DnsFixMode = (typeof DNS_FIX_MODES)[keyof typeof DNS_FIX_MODES];
 
-export const DNS_FIX_MODE_VALUES = Object.values(DNS_FIX_MODES) as string[];
+export const DNS_FIX_MODE_VALUES: readonly string[] = [
+	DNS_FIX_MODES.off,
+	DNS_FIX_MODES.auto,
+	DNS_FIX_MODES.always
+];
 
 export function isDnsFixMode(value: unknown): value is DnsFixMode {
 	return typeof value === "string" && DNS_FIX_MODE_VALUES.includes(value);

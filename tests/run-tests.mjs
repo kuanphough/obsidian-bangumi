@@ -41,6 +41,7 @@ export class Plugin {
 	addSettingTab() {}
 	registerView() {}
 }
+export const Platform = { isDesktopApp: false, isMobileApp: false, isMobile: false, isDesktop: false };
 export class PluginSettingTab {}
 export class Setting {}
 export class ItemView {
