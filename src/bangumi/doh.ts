@@ -6,17 +6,18 @@ import type { RequestUrlResponse } from "obsidian";
  * Some networks return poisoned addresses for the bgm.tv domains, so
  * Obsidian's requestUrl() times out even though the site itself is fine.
  * This transport resolves the hostname over DoH and then opens the TLS
- * connection straight to the resolved address, while keeping the original
+ * connection straight to a resolved address, while keeping the original
  * hostname for SNI and certificate validation.
  *
- * Design notes:
- * - Only the hostname is ever sent to the DoH resolver. The access token and
- *   every other header stay on the request to api.bgm.tv.
- * - Endpoints are ordered domestic-first, because DoH is encrypted and a
- *   domestic resolver therefore cannot poison the answer, while 1.1.1.1 is
- *   frequently rate limited from mainland China.
- * - The whole resolution has a hard time budget so a blocked network cannot
- *   stall a sync for minutes.
+ * A single resolver cannot be trusted: a domestic DoH endpoint has been
+ * observed answering api.bgm.tv with a dead, non-Cloudflare address while the
+ * others agree. So every lookup asks several endpoints in parallel, ranks the
+ * answers by how many endpoints agree, and the request then tries the ranked
+ * candidates one by one until one actually connects. That way a resolver that
+ * lies just loses the vote instead of breaking the sync.
+ *
+ * Only the hostname is ever sent to a resolver. The access token and every
+ * other header stay on the request to api.bgm.tv.
  *
  * Desktop only: relies on Node's https module. Callers must check
  * isDohTransportAvailable() first.
@@ -24,11 +25,12 @@ import type { RequestUrlResponse } from "obsidian";
 
 type DohAnswer = { type?: number; data?: string };
 
+/** Queried in parallel; order only affects the tie-break (see TRUST_PRIORITY). */
 const DOH_ENDPOINTS = [
-	"https://223.5.5.5/resolve",
 	"https://1.12.12.12/dns-query",
 	"https://1.1.1.1/dns-query",
-	"https://8.8.8.8/resolve"
+	"https://8.8.8.8/resolve",
+	"https://223.5.5.5/resolve"
 ];
 
 const A_RECORD = 1;
@@ -36,17 +38,20 @@ const AAAA_RECORD = 28;
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const QUERY_TIMEOUT_MS = 3_000;
-/** Upper bound for resolving one hostname across all endpoints and records. */
-const RESOLVE_BUDGET_MS = 6_000;
+/** Timeout for retry attempts after the highest-voted candidate failed. */
+const RETRY_ATTEMPT_TIMEOUT_MS = 5_000;
 const FAILURE_COOLDOWN_MS = 60 * 1000;
+const BAD_ADDRESS_TTL_MS = 10 * 60 * 1000;
 
-interface CacheEntry {
-	address: string;
+interface CachedAddresses {
+	addresses: string[];
 	family: number;
 	expiresAt: number;
 }
 
-const addressCache = new Map<string, CacheEntry>();
+const addressCache = new Map<string, CachedAddresses>();
+/** Addresses that already failed to connect, so they are tried last. */
+const badAddresses = new Map<string, number>();
 let unavailableUntil = 0;
 
 export interface DohRequestInit {
@@ -77,21 +82,35 @@ function nodeRequire<T>(id: string): T {
 	throw new Error(`Node module "${id}" is unavailable`);
 }
 
-/** Drop a cached address so the next lookup re-resolves it. */
+/** Drop cached data for a hostname so the next lookup re-resolves it. */
 export function invalidateDohCache(hostname: string): void {
 	addressCache.delete(hostname);
+}
+
+function isBadAddress(address: string): boolean {
+	const until = badAddresses.get(address);
+	if (until === undefined) return false;
+	if (until <= Date.now()) {
+		badAddresses.delete(address);
+		return false;
+	}
+	return true;
+}
+
+function markBadAddress(address: string): void {
+	badAddresses.set(address, Date.now() + BAD_ADDRESS_TTL_MS);
 }
 
 function queryDoh(
 	endpoint: string,
 	hostname: string,
 	recordType: number
-): Promise<DohAnswer[]> {
+): Promise<string[]> {
 	const https = nodeRequire<typeof import("https")>("https");
 	const recordName = recordType === AAAA_RECORD ? "AAAA" : "A";
 	const url = `${endpoint}?name=${encodeURIComponent(hostname)}&type=${recordName}`;
 
-	return new Promise<DohAnswer[]>((resolve, reject) => {
+	return new Promise<string[]>((resolve, reject) => {
 		const request = https.get(
 			url,
 			{
@@ -107,7 +126,18 @@ function queryDoh(
 				response.on("end", () => {
 					try {
 						const parsed = JSON.parse(body) as { Answer?: DohAnswer[] };
-						resolve(Array.isArray(parsed.Answer) ? parsed.Answer : []);
+						const answers = Array.isArray(parsed.Answer)
+							? parsed.Answer
+							: [];
+						resolve(
+							answers
+								.filter(
+									(answer) =>
+										answer.type === recordType &&
+										typeof answer.data === "string"
+								)
+								.map((answer) => answer.data as string)
+						);
 					} catch (error) {
 						reject(error);
 					}
@@ -123,47 +153,87 @@ function queryDoh(
 }
 
 /**
- * Resolve a hostname through DoH, preferring IPv4. Returns null when every
- * endpoint fails or the budget runs out (the caller then falls back).
+ * Rank DoH answers by how many endpoints agree, then by the position the
+ * endpoint reported them in.
+ *
+ * A resolver cannot be trusted on its own: 223.5.5.5 has been observed
+ * answering api.bgm.tv with a dead, non-Cloudflare address while three other
+ * endpoints agreed on the real Cloudflare set. Voting means such an answer is
+ * ranked last instead of being used just because it replied first.
+ */
+export function rankDohAnswers(answerSets: string[][]): string[] {
+	const votes = new Map<string, number>();
+	const order = new Map<string, number>();
+
+	for (const list of answerSets) {
+		if (list.length === 0) continue;
+		for (const address of new Set(list)) {
+			votes.set(address, (votes.get(address) ?? 0) + 1);
+		}
+		for (const [index, address] of list.entries()) {
+			if (!order.has(address)) order.set(address, index);
+		}
+	}
+
+	return [...votes.entries()]
+		.sort((a, b) => {
+			if (b[1] !== a[1]) return b[1] - a[1];
+			return (order.get(a[0]) ?? 99) - (order.get(b[0]) ?? 99);
+		})
+		.map(([address]) => address);
+}
+
+/**
+ * Ask every endpoint in parallel and rank the answers by agreement.
+ * Returns null when nothing usable came back.
+ */
+async function collectAddresses(
+	hostname: string,
+	recordType: number
+): Promise<string[] | null> {
+	const results = await Promise.all(
+		DOH_ENDPOINTS.map((endpoint) =>
+			queryDoh(endpoint, hostname, recordType).catch(() => [] as string[])
+		)
+	);
+
+	if (results.every((list) => list.length === 0)) {
+		return null;
+	}
+
+	const ranked = rankDohAnswers(results);
+	return ranked.length > 0 ? ranked : null;
+}
+
+/**
+ * Resolve a hostname through DoH. Prefers IPv4 and only falls back to IPv6
+ * when no A record came back. Returns the ranked candidates, or null when
+ * every endpoint failed.
  */
 export async function resolveViaDoh(
 	hostname: string
-): Promise<{ address: string; family: number } | null> {
+): Promise<{ addresses: string[]; family: number } | null> {
 	const now = Date.now();
 	const cached = addressCache.get(hostname);
 	if (cached && cached.expiresAt > now) {
-		return { address: cached.address, family: cached.family };
+		return { addresses: cached.addresses, family: cached.family };
 	}
 	if (now < unavailableUntil) {
 		return null;
 	}
 
-	const deadline = now + RESOLVE_BUDGET_MS;
-
-	// Try A records on every endpoint before falling back to AAAA, so a slow
-	// IPv6-only answer cannot eat the whole budget.
-	for (const recordType of [A_RECORD, AAAA_RECORD]) {
-		for (const endpoint of DOH_ENDPOINTS) {
-			if (Date.now() >= deadline) break;
-			try {
-				const answers = await queryDoh(endpoint, hostname, recordType);
-				const match = answers.find(
-					(answer) =>
-						answer.type === recordType && typeof answer.data === "string"
-				);
-				if (!match?.data) continue;
-				const family = recordType === AAAA_RECORD ? 6 : 4;
-				addressCache.set(hostname, {
-					address: match.data,
-					family,
-					expiresAt: Date.now() + CACHE_TTL_MS
-				});
-				return { address: match.data, family };
-			} catch {
-				// Try the next endpoint.
-			}
-		}
-		if (Date.now() >= deadline) break;
+	for (const [recordType, family] of [
+		[A_RECORD, 4],
+		[AAAA_RECORD, 6]
+	] as const) {
+		const addresses = await collectAddresses(hostname, recordType);
+		if (!addresses || addresses.length === 0) continue;
+		addressCache.set(hostname, {
+			addresses,
+			family,
+			expiresAt: Date.now() + CACHE_TTL_MS
+		});
+		return { addresses, family };
 	}
 
 	unavailableUntil = Date.now() + FAILURE_COOLDOWN_MS;
@@ -181,67 +251,53 @@ function collectHeaders(
 	return headers;
 }
 
-/**
- * Perform an HTTPS request that resolves the host through DoH. The returned
- * object mirrors the shape of Obsidian's RequestUrlResponse so it can be used
- * interchangeably by the client.
- */
-export async function dohRequest(
-	init: DohRequestInit
+function attemptRequest(
+	url: URL,
+	init: DohRequestInit,
+	address: string,
+	family: number,
+	timeoutMs: number
 ): Promise<RequestUrlResponse> {
 	const https = nodeRequire<typeof import("https")>("https");
-	const parsed = new URL(init.url);
-	const resolved = await resolveViaDoh(parsed.hostname);
-	if (!resolved) {
-		throw new Error(`DoH resolution failed for ${parsed.hostname}`);
-	}
 
 	return new Promise<RequestUrlResponse>((resolve, reject) => {
-		const fail = (error: unknown): void => {
-			// The cached address may be stale (Cloudflare rotates IPs); drop it
-			// so the next attempt resolves again instead of failing for 10 min.
-			invalidateDohCache(parsed.hostname);
-			reject(error);
-		};
-
 		const request = https.request(
 			{
-				protocol: parsed.protocol,
-				hostname: parsed.hostname,
-				port: parsed.port || 443,
-				path: `${parsed.pathname}${parsed.search}`,
+				protocol: url.protocol,
+				hostname: url.hostname,
+				port: url.port || 443,
+				path: `${url.pathname}${url.search}`,
 				method: init.method ?? "GET",
 				headers: init.headers,
-				timeout: init.timeoutMs,
+				timeout: timeoutMs,
 				// Connect to the DoH answer while keeping hostname for SNI / certs.
 				lookup: ((
 					_hostname: string,
 					options: { all?: boolean } | undefined,
 					callback: (
 						error: Error | null,
-						address: string | Array<{ address: string; family: number }>,
+						value: string | Array<{ address: string; family: number }>,
 						family?: number
 					) => void
 				) => {
 					// Node 18+ calls lookup with all:true and expects an array back.
 					if (options?.all) {
-						callback(null, [
-							{ address: resolved.address, family: resolved.family }
-						]);
+						callback(null, [{ address, family }]);
 						return;
 					}
-					callback(null, resolved.address, resolved.family);
+					callback(null, address, family);
 				}) as unknown as import("net").LookupFunction
 			},
 			(response) => {
-				const chunks: Buffer[] = [];
-				response.on("data", (chunk: Buffer) => {
+				// Any HTTP response means this address works, whatever the status.
+				const chunks: string[] = [];
+				response.setEncoding("utf8");
+				response.on("data", (chunk: string) => {
 					chunks.push(chunk);
 				});
-				response.on("error", fail);
+				response.on("error", reject);
 				response.on("end", () => {
-					const buffer = Buffer.concat(chunks);
-					const text = buffer.toString("utf8");
+					const text = chunks.join("");
 					let json: unknown;
 					try {
 						json = text.length > 0 ? JSON.parse(text) : undefined;
@@ -253,10 +309,7 @@ export async function dohRequest(
 						headers: collectHeaders(response.headers),
 						text,
 						json,
-						arrayBuffer: buffer.buffer.slice(
-							buffer.byteOffset,
-							buffer.byteOffset + buffer.byteLength
-						) as ArrayBuffer
+						arrayBuffer: new ArrayBuffer(0)
 					} as RequestUrlResponse);
 				});
 			}
@@ -265,10 +318,66 @@ export async function dohRequest(
 		request.on("timeout", () =>
 			request.destroy(new Error("Bangumi request timed out"))
 		);
-		request.on("error", fail);
+		request.on("error", reject);
 		if (init.body !== undefined) {
 			request.write(init.body);
 		}
 		request.end();
 	});
+}
+
+/**
+ * Perform an HTTPS request that resolves the host through DoH. The returned
+ * object mirrors the shape of Obsidian's RequestUrlResponse so it can be used
+ * interchangeably by the client.
+ *
+ * Candidates are tried in vote order. A candidate that fails to connect is
+ * quarantined and the next one is used, so one lying resolver cannot take the
+ * whole sync down.
+ */
+export async function dohRequest(
+	init: DohRequestInit
+): Promise<RequestUrlResponse> {
+	const url = new URL(init.url);
+	const resolved = await resolveViaDoh(url.hostname);
+	if (!resolved) {
+		throw new Error(`DoH resolution failed for ${url.hostname}`);
+	}
+
+	const usable = resolved.addresses.filter(
+		(address) => !isBadAddress(address)
+	);
+	const ordered = [...usable, ...resolved.addresses.filter(isBadAddress)];
+	if (ordered.length === 0) {
+		invalidateDohCache(url.hostname);
+		throw new Error(`DoH returned no usable address for ${url.hostname}`);
+	}
+
+	let lastError: unknown;
+	for (const [index, address] of ordered.entries()) {
+		// The top candidate gets the caller's full timeout; retries stay short so
+		// a quarantined address cannot stall the request for long.
+		const timeoutMs =
+			index === 0
+				? init.timeoutMs
+				: Math.min(init.timeoutMs, RETRY_ATTEMPT_TIMEOUT_MS);
+		try {
+			return await attemptRequest(
+				url,
+				init,
+				address,
+				resolved.family,
+				timeoutMs
+			);
+		} catch (error) {
+			lastError = error;
+			markBadAddress(address);
+		}
+	}
+
+	// Every candidate failed: the answer set is probably stale.
+	invalidateDohCache(url.hostname);
+	throw lastError instanceof Error
+		? lastError
+		: new Error(`DoH request failed for ${url.hostname}`);
 }

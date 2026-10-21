@@ -1463,18 +1463,20 @@ var import_obsidian3 = require("obsidian");
 
 // src/bangumi/doh.ts
 var DOH_ENDPOINTS = [
-  "https://223.5.5.5/resolve",
   "https://1.12.12.12/dns-query",
   "https://1.1.1.1/dns-query",
-  "https://8.8.8.8/resolve"
+  "https://8.8.8.8/resolve",
+  "https://223.5.5.5/resolve"
 ];
 var A_RECORD = 1;
 var AAAA_RECORD = 28;
 var CACHE_TTL_MS = 10 * 60 * 1e3;
 var QUERY_TIMEOUT_MS = 3e3;
-var RESOLVE_BUDGET_MS = 6e3;
+var RETRY_ATTEMPT_TIMEOUT_MS = 5e3;
 var FAILURE_COOLDOWN_MS = 60 * 1e3;
+var BAD_ADDRESS_TTL_MS = 10 * 60 * 1e3;
 var addressCache = /* @__PURE__ */ new Map();
+var badAddresses = /* @__PURE__ */ new Map();
 var unavailableUntil = 0;
 function isDohTransportAvailable() {
   var _a;
@@ -1493,6 +1495,18 @@ function nodeRequire(id) {
 }
 function invalidateDohCache(hostname) {
   addressCache.delete(hostname);
+}
+function isBadAddress(address) {
+  const until = badAddresses.get(address);
+  if (until === void 0) return false;
+  if (until <= Date.now()) {
+    badAddresses.delete(address);
+    return false;
+  }
+  return true;
+}
+function markBadAddress(address) {
+  badAddresses.set(address, Date.now() + BAD_ADDRESS_TTL_MS);
 }
 function queryDoh(endpoint, hostname, recordType) {
   const https = nodeRequire("https");
@@ -1514,7 +1528,12 @@ function queryDoh(endpoint, hostname, recordType) {
         response.on("end", () => {
           try {
             const parsed = JSON.parse(body);
-            resolve(Array.isArray(parsed.Answer) ? parsed.Answer : []);
+            const answers = Array.isArray(parsed.Answer) ? parsed.Answer : [];
+            resolve(
+              answers.filter(
+                (answer) => answer.type === recordType && typeof answer.data === "string"
+              ).map((answer) => answer.data)
+            );
           } catch (error) {
             reject(error);
           }
@@ -1529,36 +1548,58 @@ function queryDoh(endpoint, hostname, recordType) {
     request.on("error", reject);
   });
 }
+function rankDohAnswers(answerSets) {
+  var _a;
+  const votes = /* @__PURE__ */ new Map();
+  const order = /* @__PURE__ */ new Map();
+  for (const list of answerSets) {
+    if (list.length === 0) continue;
+    for (const address of new Set(list)) {
+      votes.set(address, ((_a = votes.get(address)) != null ? _a : 0) + 1);
+    }
+    for (const [index, address] of list.entries()) {
+      if (!order.has(address)) order.set(address, index);
+    }
+  }
+  return [...votes.entries()].sort((a, b) => {
+    var _a2, _b;
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return ((_a2 = order.get(a[0])) != null ? _a2 : 99) - ((_b = order.get(b[0])) != null ? _b : 99);
+  }).map(([address]) => address);
+}
+async function collectAddresses(hostname, recordType) {
+  const results = await Promise.all(
+    DOH_ENDPOINTS.map(
+      (endpoint) => queryDoh(endpoint, hostname, recordType).catch(() => [])
+    )
+  );
+  if (results.every((list) => list.length === 0)) {
+    return null;
+  }
+  const ranked = rankDohAnswers(results);
+  return ranked.length > 0 ? ranked : null;
+}
 async function resolveViaDoh(hostname) {
   const now = Date.now();
   const cached = addressCache.get(hostname);
   if (cached && cached.expiresAt > now) {
-    return { address: cached.address, family: cached.family };
+    return { addresses: cached.addresses, family: cached.family };
   }
   if (now < unavailableUntil) {
     return null;
   }
-  const deadline = now + RESOLVE_BUDGET_MS;
-  for (const recordType of [A_RECORD, AAAA_RECORD]) {
-    for (const endpoint of DOH_ENDPOINTS) {
-      if (Date.now() >= deadline) break;
-      try {
-        const answers = await queryDoh(endpoint, hostname, recordType);
-        const match = answers.find(
-          (answer) => answer.type === recordType && typeof answer.data === "string"
-        );
-        if (!(match == null ? void 0 : match.data)) continue;
-        const family = recordType === AAAA_RECORD ? 6 : 4;
-        addressCache.set(hostname, {
-          address: match.data,
-          family,
-          expiresAt: Date.now() + CACHE_TTL_MS
-        });
-        return { address: match.data, family };
-      } catch (e) {
-      }
-    }
-    if (Date.now() >= deadline) break;
+  for (const [recordType, family] of [
+    [A_RECORD, 4],
+    [AAAA_RECORD, 6]
+  ]) {
+    const addresses = await collectAddresses(hostname, recordType);
+    if (!addresses || addresses.length === 0) continue;
+    addressCache.set(hostname, {
+      addresses,
+      family,
+      expiresAt: Date.now() + CACHE_TTL_MS
+    });
+    return { addresses, family };
   }
   unavailableUntil = Date.now() + FAILURE_COOLDOWN_MS;
   return null;
@@ -1571,49 +1612,38 @@ function collectHeaders(raw) {
   }
   return headers;
 }
-async function dohRequest(init) {
+function attemptRequest(url, init, address, family, timeoutMs) {
   const https = nodeRequire("https");
-  const parsed = new URL(init.url);
-  const resolved = await resolveViaDoh(parsed.hostname);
-  if (!resolved) {
-    throw new Error(`DoH resolution failed for ${parsed.hostname}`);
-  }
   return new Promise((resolve, reject) => {
     var _a;
-    const fail = (error) => {
-      invalidateDohCache(parsed.hostname);
-      reject(error);
-    };
     const request = https.request(
       {
-        protocol: parsed.protocol,
-        hostname: parsed.hostname,
-        port: parsed.port || 443,
-        path: `${parsed.pathname}${parsed.search}`,
+        protocol: url.protocol,
+        hostname: url.hostname,
+        port: url.port || 443,
+        path: `${url.pathname}${url.search}`,
         method: (_a = init.method) != null ? _a : "GET",
         headers: init.headers,
-        timeout: init.timeoutMs,
+        timeout: timeoutMs,
         // Connect to the DoH answer while keeping hostname for SNI / certs.
         lookup: (_hostname, options, callback) => {
           if (options == null ? void 0 : options.all) {
-            callback(null, [
-              { address: resolved.address, family: resolved.family }
-            ]);
+            callback(null, [{ address, family }]);
             return;
           }
-          callback(null, resolved.address, resolved.family);
+          callback(null, address, family);
         }
       },
       (response) => {
         const chunks = [];
+        response.setEncoding("utf8");
         response.on("data", (chunk) => {
           chunks.push(chunk);
         });
-        response.on("error", fail);
+        response.on("error", reject);
         response.on("end", () => {
           var _a2;
-          const buffer = Buffer.concat(chunks);
-          const text = buffer.toString("utf8");
+          const text = chunks.join("");
           let json;
           try {
             json = text.length > 0 ? JSON.parse(text) : void 0;
@@ -1625,10 +1655,7 @@ async function dohRequest(init) {
             headers: collectHeaders(response.headers),
             text,
             json,
-            arrayBuffer: buffer.buffer.slice(
-              buffer.byteOffset,
-              buffer.byteOffset + buffer.byteLength
-            )
+            arrayBuffer: new ArrayBuffer(0)
           });
         });
       }
@@ -1637,12 +1664,45 @@ async function dohRequest(init) {
       "timeout",
       () => request.destroy(new Error("Bangumi request timed out"))
     );
-    request.on("error", fail);
+    request.on("error", reject);
     if (init.body !== void 0) {
       request.write(init.body);
     }
     request.end();
   });
+}
+async function dohRequest(init) {
+  const url = new URL(init.url);
+  const resolved = await resolveViaDoh(url.hostname);
+  if (!resolved) {
+    throw new Error(`DoH resolution failed for ${url.hostname}`);
+  }
+  const usable = resolved.addresses.filter(
+    (address) => !isBadAddress(address)
+  );
+  const ordered = [...usable, ...resolved.addresses.filter(isBadAddress)];
+  if (ordered.length === 0) {
+    invalidateDohCache(url.hostname);
+    throw new Error(`DoH returned no usable address for ${url.hostname}`);
+  }
+  let lastError;
+  for (const [index, address] of ordered.entries()) {
+    const timeoutMs = index === 0 ? init.timeoutMs : Math.min(init.timeoutMs, RETRY_ATTEMPT_TIMEOUT_MS);
+    try {
+      return await attemptRequest(
+        url,
+        init,
+        address,
+        resolved.family,
+        timeoutMs
+      );
+    } catch (error) {
+      lastError = error;
+      markBadAddress(address);
+    }
+  }
+  invalidateDohCache(url.hostname);
+  throw lastError instanceof Error ? lastError : new Error(`DoH request failed for ${url.hostname}`);
 }
 
 // src/bangumi/client.ts
@@ -2167,16 +2227,16 @@ var NoteWriter = class {
    * surface the original error.
    */
   async adoptExistingNote(path, rendered, subjectId, index) {
-    const { adapter, getAbstractFileByPath } = this.app.vault;
-    if (!await adapter.exists(path)) {
+    const vault = this.app.vault;
+    if (!await vault.adapter.exists(path)) {
       return null;
     }
-    const previous = await adapter.read(path);
+    const previous = await vault.adapter.read(path);
     const next = this.renderer.mergeSyncedContent(previous, rendered);
     if (next !== previous) {
-      await adapter.write(path, next);
+      await vault.adapter.write(path, next);
     }
-    const file = getAbstractFileByPath(path);
+    const file = vault.getAbstractFileByPath(path);
     if (file instanceof import_obsidian5.TFile) {
       index.add(subjectId, file);
       return { file, changed: next !== previous };

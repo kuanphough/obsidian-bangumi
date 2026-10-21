@@ -96,6 +96,7 @@ import { collectionStatusLabel, subjectTypeLabel } from "./src/bangumi/labels.ts
 import { BANGUMI_COLLECTION_TYPES, BANGUMI_SUBJECT_TYPES } from "./src/bangumi/types.ts";
 import { DEFAULT_SETTINGS, BANGUMI_FILE_NAME_FORMATS, BANGUMI_STORAGE_LAYOUTS, sanitizeLoadedSettings } from "./src/settings.ts";
 import { buildTargetDirectory } from "./src/utils/target-directory.ts";
+import { rankDohAnswers } from "./src/bangumi/doh.ts";
 import {
 	DEFAULT_SUBJECT_NOTE_TEMPLATE,
 	LEGACY_DEFAULT_SUBJECT_NOTE_TEMPLATE,
@@ -1242,6 +1243,26 @@ status: do
 	const badDaily = sanitizeLoadedSettings({ dailyNoteFolder: 42 });
 	assert.equal(badDaily.settings.dailyNoteFolder, undefined);
 	assert.ok(badDaily.invalidFields.includes("dailyNoteFolder"));
+}
+
+// DoH answer ranking: one lying resolver must not win
+{
+	const real = ["172.67.73.67", "104.26.9.23", "104.26.8.23"];
+	// Regression: 223.5.5.5 answered api.bgm.tv with a dead, non-Cloudflare IP
+	// while three other endpoints agreed. The liar must rank last.
+	const ranked = rankDohAnswers([
+		["128.121.243.235"],
+		real,
+		[...real].reverse(),
+		real
+	]);
+	assert.deepEqual(ranked, [...real, "128.121.243.235"]);
+
+	// Unanimous answers keep their reported order.
+	assert.deepEqual(rankDohAnswers([["a", "b"], ["a", "b"]]), ["a", "b"]);
+	// Dead endpoints contribute nothing.
+	assert.deepEqual(rankDohAnswers([[], ["x"], []]), ["x"]);
+	assert.deepEqual(rankDohAnswers([[], []]), []);
 }
 
 // HTTP retry: 429 + Retry-After then 200

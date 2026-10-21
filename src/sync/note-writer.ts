@@ -89,18 +89,19 @@ export class NoteWriter {
 		subjectId: number,
 		index: SubjectNoteIndex
 	): Promise<NoteWriteResult | null> {
-		const { adapter, getAbstractFileByPath } = this.app.vault;
-		if (!(await adapter.exists(path))) {
+		const vault = this.app.vault;
+		if (!(await vault.adapter.exists(path))) {
 			return null;
 		}
 
-		const previous = await adapter.read(path);
+		const previous = await vault.adapter.read(path);
 		const next = this.renderer.mergeSyncedContent(previous, rendered);
 		if (next !== previous) {
-			await adapter.write(path, next);
+			await vault.adapter.write(path, next);
 		}
 
-		const file = getAbstractFileByPath(path);
+		// Call through the vault instance: these methods rely on `this`.
+		const file = vault.getAbstractFileByPath(path);
 		if (file instanceof TFile) {
 			index.add(subjectId, file);
 			return { file, changed: next !== previous };
