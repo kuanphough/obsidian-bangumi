@@ -1655,6 +1655,10 @@ function attemptRequest(url, init, address, family, timeoutMs) {
             headers: collectHeaders(response.headers),
             text,
             json,
+            // The DoH transport only carries JSON/text bodies and never fetches
+            // binary payloads (cover images are loaded by Obsidian itself). Keep
+            // this empty instead of pretending to hold bytes; read `text` or
+            // `json` from this transport.
             arrayBuffer: new ArrayBuffer(0)
           });
         });

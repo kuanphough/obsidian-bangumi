@@ -21,6 +21,7 @@ Bangumi Sync 是一个 Obsidian 插件，用于把 Bangumi 收藏同步到本地
 - 追番看板：提供进行中看板，集中查看 `status: do` 条目，并用格子界面安全 Push 章节进度。
 - 写回bangumi：支持显式 Push 当前条目笔记的章节进度和状态到 Bangumi，并在写回后重新校验远端结果。
 - 错误审查：同步失败时生成 `Bangumi Sync Report.md`，方便排查问题。
+- 网络容错：内置 DNS-over-HTTPS 兜底。当系统 DNS 返回错误的 bgm.tv 地址、导致同步报网络错误时，插件会自动改用 DoH 解析；默认先走原有通道，不影响代理或 DNS 正常的用户，也可手动关闭。
 
 ## 界面展示
 ### 基础功能
@@ -55,9 +56,9 @@ Bangumi Sync 是一个 Obsidian 插件，用于把 Bangumi 收藏同步到本地
 
 ### 手动安装
 
-1. 下载发布包中的 `manifest.json` 和 `main.js`。
+1. 下载发布包中的 `manifest.json`、`main.js` 和 `styles.css`。
 2. 在你的 Obsidian 库中创建目录：`.obsidian/plugins/bangumi-note/`。
-3. 将 `manifest.json` 和 `main.js` 放入该目录。
+3. 将这三个文件放入该目录。
 4. 重启 Obsidian 或刷新插件列表。
 5. 在设置 → 第三方插件中启用 `bangumi`。
 

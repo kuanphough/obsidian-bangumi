@@ -19,6 +19,7 @@ Bangumi Sync is an Obsidian plugin for turning Bangumi collections into local no
 - Progress board: review `status: do` subjects in one board and safely push episode progress from a grid UI.
 - Write back to Bangumi: explicitly push the current subject note's episode progress and status back to Bangumi, with remote verification after write-back.
 - Issue review: generate `Bangumi Sync Report.md` when sync issues occur.
+- Network resilience: built-in DNS-over-HTTPS fallback. When the system DNS returns wrong bgm.tv addresses and syncing fails with network errors, the plugin can resolve through DoH instead. It keeps the normal network path first by default, so users behind a proxy or with a healthy DNS are unaffected, and it can be turned off.
 
 ## Screenshots
 
@@ -62,9 +63,9 @@ Bangumi Sync is an Obsidian plugin for turning Bangumi collections into local no
 
 ### Manual Installation
 
-1. Download `manifest.json` and `main.js` from a release.
+1. Download `manifest.json`, `main.js`, and `styles.css` from a release.
 2. Create `.obsidian/plugins/bangumi-note/` in your vault.
-3. Put `manifest.json` and `main.js` into that folder.
+3. Put those three files into that folder.
 4. Restart Obsidian or reload community plugins.
 5. Enable `bangumi` in Settings → Community plugins.
 
