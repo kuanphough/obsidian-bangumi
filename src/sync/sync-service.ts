@@ -18,7 +18,7 @@ import {
 	BANGUMI_SUBJECT_TYPES,
 	BangumiSubjectExtras
 } from "../bangumi/types";
-import { BangumiClient } from "../bangumi/client";
+import { BangumiApiError, BangumiClient } from "../bangumi/client";
 import { collectionStatusLabel, subjectTypeLabel } from "../bangumi/labels";
 import { formatLocalDateTime } from "../date-format";
 import { BangumiSyncSettings } from "../settings";
@@ -31,6 +31,14 @@ import {
 	MarkdownRenderer
 } from "./markdown-renderer";
 import { NoteWriter } from "./note-writer";
+import {
+	LocalNoteStatus,
+	STATUS_DRIFT_MAX_REMOTE_CHECKS,
+	StatusDriftEntry,
+	StatusDriftSummary,
+	partitionLocalNotes,
+	readLocalNoteStatuses
+} from "./status-drift";
 import { SubjectNoteIndex } from "./subject-note-index";
 
 export interface SyncResult {
@@ -42,6 +50,8 @@ export interface SyncResult {
 	totalCollections: number;
 	failures: SyncFailure[];
 	reportPath?: string;
+	/** Local notes whose remote collection status no longer matches. */
+	statusDrift?: StatusDriftSummary;
 	message: string;
 }
 
@@ -342,6 +352,8 @@ export class SyncService {
 			}
 		}
 
+		const statusDrift = await this.collectStatusDrift(client, seenSubjectIds);
+
 		let reportPath: string | undefined;
 		if (failures.length > 0) {
 			options.onProgress?.({
@@ -384,6 +396,7 @@ export class SyncService {
 			totalCollections,
 			failures,
 			reportPath,
+			statusDrift,
 			message
 		};
 	}
@@ -871,6 +884,70 @@ export class SyncService {
 	}): string {
 		const title = episode.name_cn || episode.name || "";
 		return title ? `EP${episode.sort} ${title}` : `EP${episode.sort}`;
+	}
+
+	private async collectStatusDrift(
+		client: BangumiClient,
+		seenSubjectIds: ReadonlySet<number>
+	): Promise<StatusDriftSummary | undefined> {
+		let notes: LocalNoteStatus[];
+		try {
+			notes = readLocalNoteStatuses(this.app, this.settings.syncDirectory);
+		} catch (error) {
+			console.error("Bangumi Sync failed to read local note statuses", error);
+			return undefined;
+		}
+		if (notes.length === 0) return undefined;
+
+		const { inScope, outOfScope } = partitionLocalNotes(notes, {
+			subjectTypes: this.settings.subjectTypes,
+			collectionStatuses: this.getEffectiveCollectionTypes()
+		});
+
+		const missing = inScope.filter(
+			(note) => !seenSubjectIds.has(note.subjectId)
+		);
+		if (missing.length === 0 && outOfScope.length === 0) return undefined;
+
+		const stale: StatusDriftEntry[] = [];
+		let truncated = false;
+
+		for (const note of missing) {
+			if (stale.length >= STATUS_DRIFT_MAX_REMOTE_CHECKS) {
+				truncated = true;
+				break;
+			}
+			try {
+				const remote = await client.getSubjectCollection(note.subjectId);
+				const remoteStatus = collectionStatusLabel(remote.type);
+				if (remoteStatus === note.status) continue;
+				stale.push({
+					path: note.path,
+					subjectId: note.subjectId,
+					title: note.title,
+					localStatus: note.status,
+					remoteStatus
+				});
+			} catch (error) {
+				if (error instanceof BangumiApiError && error.status === 404) {
+					stale.push({
+						path: note.path,
+						subjectId: note.subjectId,
+						title: note.title,
+						localStatus: note.status,
+						remoteStatus: null
+					});
+				} else {
+					console.error(
+						`Bangumi Sync failed to verify status for ${note.subjectId}`,
+						error
+					);
+				}
+			}
+		}
+
+		if (stale.length === 0 && outOfScope.length === 0) return undefined;
+		return { outOfScope: outOfScope.length, stale, truncated };
 	}
 
 	private getEffectiveCollectionTypes(): BangumiCollectionType[] {

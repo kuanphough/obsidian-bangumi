@@ -58,9 +58,6 @@ function looksLikeNetworkError(error) {
   return NETWORK_ERROR_PATTERNS.some((pattern) => lower.includes(pattern));
 }
 
-// src/settings.ts
-var import_obsidian4 = require("obsidian");
-
 // src/bangumi/types.ts
 var BANGUMI_COLLECTION_TYPES = {
   wish: 1,
@@ -77,36 +74,38 @@ var BANGUMI_SUBJECT_TYPES = {
   real: 6
 };
 
-// src/date-format.ts
-function formatLocalDateTime(value) {
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "";
+// src/bangumi/labels.ts
+function collectionStatusLabel(type) {
+  switch (type) {
+    case BANGUMI_COLLECTION_TYPES.wish:
+      return "wish";
+    case BANGUMI_COLLECTION_TYPES.collect:
+      return "collect";
+    case BANGUMI_COLLECTION_TYPES.do:
+      return "do";
+    case BANGUMI_COLLECTION_TYPES.onHold:
+      return "on_hold";
+    case BANGUMI_COLLECTION_TYPES.dropped:
+      return "dropped";
+    default:
+      return String(type);
   }
-  const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1);
-  const day = pad(date.getDate());
-  const hour = pad(date.getHours());
-  const minute = pad(date.getMinutes());
-  return `${year}-${month}-${day} ${hour}:${minute}`;
 }
-function pad(value) {
-  return String(value).padStart(2, "0");
-}
-
-// src/dns-fix.ts
-var DNS_FIX_MODES = {
-  off: "off",
-  auto: "auto",
-  always: "always"
-};
-var DNS_FIX_MODE_VALUES = [
-  DNS_FIX_MODES.off,
-  DNS_FIX_MODES.auto,
-  DNS_FIX_MODES.always
-];
-function isDnsFixMode(value) {
-  return typeof value === "string" && DNS_FIX_MODE_VALUES.includes(value);
+function subjectTypeLabel(type) {
+  switch (type) {
+    case BANGUMI_SUBJECT_TYPES.book:
+      return "book";
+    case BANGUMI_SUBJECT_TYPES.anime:
+      return "anime";
+    case BANGUMI_SUBJECT_TYPES.music:
+      return "music";
+    case BANGUMI_SUBJECT_TYPES.game:
+      return "game";
+    case BANGUMI_SUBJECT_TYPES.real:
+      return "real";
+    default:
+      return String(type);
+  }
 }
 
 // src/i18n.ts
@@ -218,6 +217,13 @@ var EN = {
   dnsFixAlways: "Always use DoH",
   dnsFixOff: "Off",
   dnsFixMobileDesc: "Not available on mobile: the built-in DNS-over-HTTPS transport needs a desktop runtime. If syncing fails with network errors on mobile, turn on encrypted DNS at the OS level instead - on Android set Private DNS to dns.alidns.com, on iOS install a DoH/DoT configuration profile.",
+  statusDriftItem: "{{title}} ({{from}} -> {{to}})",
+  statusDriftItemUncollected: "{{title}} (no longer collected)",
+  statusDriftSeparator: "; ",
+  statusDriftStale: "{{count}} local note(s) no longer match Bangumi: {{items}}",
+  statusDriftStaleMore: "{{count}} local note(s) no longer match Bangumi: {{items}} and {{rest}} more",
+  statusDriftOutOfScope: "Another {{count}} local note(s) are outside the current sync scope (subject type or collection status not selected).",
+  statusDriftHint: "Use Sync one subject to refresh a note, or select that collection status in settings.",
   folderNaming: "Folder naming",
   folderNamingDesc: "Language used for the classification folder names. Note frontmatter always keeps the English codes (type / status), so switching this never rewrites existing notes. Use the migrate button below to move notes into the new folders.",
   folderNamingEnglish: "English (anime / do)",
@@ -460,6 +466,13 @@ var ZH = {
   dnsFixAlways: "\u603B\u662F\u4F7F\u7528 DoH",
   dnsFixOff: "\u5173\u95ED",
   dnsFixMobileDesc: "\u79FB\u52A8\u7AEF\u4E0D\u652F\u6301\uFF1A\u5185\u7F6E\u7684 DNS-over-HTTPS \u4F20\u8F93\u5C42\u9700\u8981\u684C\u9762\u8FD0\u884C\u65F6\u3002\u79FB\u52A8\u7AEF\u82E5\u540C\u6B65\u62A5\u7F51\u7EDC\u9519\u8BEF\uFF0C\u8BF7\u5728\u7CFB\u7EDF\u5C42\u5F00\u542F\u52A0\u5BC6 DNS \u2014\u2014 Android \u628A\u300C\u79C1\u4EBA DNS\u300D\u8BBE\u4E3A dns.alidns.com\uFF0CiOS \u5B89\u88C5 DoH/DoT \u914D\u7F6E\u63CF\u8FF0\u6587\u4EF6\u3002",
+  statusDriftItem: "{{title}}\uFF08{{from}} \u2192 {{to}}\uFF09",
+  statusDriftItemUncollected: "{{title}}\uFF08\u5DF2\u4E0D\u5728\u6536\u85CF\uFF09",
+  statusDriftSeparator: "\uFF1B",
+  statusDriftStale: "\u68C0\u6D4B\u5230 {{count}} \u6761\u672C\u5730\u7B14\u8BB0\u7684\u6536\u85CF\u72B6\u6001\u4E0E Bangumi \u4E0D\u4E00\u81F4\uFF1A{{items}}",
+  statusDriftStaleMore: "\u68C0\u6D4B\u5230 {{count}} \u6761\u672C\u5730\u7B14\u8BB0\u7684\u6536\u85CF\u72B6\u6001\u4E0E Bangumi \u4E0D\u4E00\u81F4\uFF1A{{items}} \u7B49\uFF08\u53E6\u6709 {{rest}} \u6761\uFF09",
+  statusDriftOutOfScope: "\u53E6\u6709 {{count}} \u6761\u672C\u5730\u7B14\u8BB0\u4E0D\u5728\u5F53\u524D\u540C\u6B65\u8303\u56F4\uFF08\u6761\u76EE\u7C7B\u578B\u6216\u6536\u85CF\u72B6\u6001\u672A\u52FE\u9009\uFF09\u3002",
+  statusDriftHint: "\u53EF\u7528 Sync one subject \u66F4\u65B0\u5355\u6761\uFF0C\u6216\u5728\u8BBE\u7F6E\u91CC\u52FE\u9009\u5BF9\u5E94\u6536\u85CF\u72B6\u6001\u3002",
   folderNaming: "\u5206\u7C7B\u6587\u4EF6\u5939\u547D\u540D",
   folderNamingDesc: "\u5206\u7C7B\u6587\u4EF6\u5939\u4F7F\u7528\u54EA\u79CD\u8BED\u8A00\u547D\u540D\u3002\u7B14\u8BB0 frontmatter \u59CB\u7EC8\u4FDD\u7559\u82F1\u6587\u4EE3\u7801\uFF08type / status\uFF09\uFF0C\u6240\u4EE5\u5207\u6362\u547D\u540D\u4E0D\u4F1A\u6539\u52A8\u5DF2\u6709\u7B14\u8BB0\u3002\u5207\u6362\u540E\u53EF\u7528\u4E0B\u65B9\u6309\u94AE\u628A\u7B14\u8BB0\u8FC1\u79FB\u5230\u65B0\u76EE\u5F55\u3002",
   folderNamingEnglish: "\u82F1\u6587\uFF08anime / do\uFF09",
@@ -609,6 +622,167 @@ function t(key, values = {}) {
   );
 }
 
+// src/utils/vault.ts
+var import_obsidian2 = require("obsidian");
+async function ensureFolder(app, path) {
+  const parts = (0, import_obsidian2.normalizePath)(path).split("/").filter(Boolean);
+  let current = "";
+  for (const part of parts) {
+    current = current ? `${current}/${part}` : part;
+    if (!app.vault.getAbstractFileByPath(current)) {
+      await app.vault.createFolder(current);
+    }
+  }
+}
+function getMarkdownFilesInFolder(app, path) {
+  const root = app.vault.getAbstractFileByPath((0, import_obsidian2.normalizePath)(path));
+  if (root instanceof import_obsidian2.TFile) {
+    return root.extension === "md" ? [root] : [];
+  }
+  if (!(root instanceof import_obsidian2.TFolder)) {
+    return [];
+  }
+  const files = [];
+  collectMarkdownFiles(root, files);
+  return files;
+}
+function collectMarkdownFiles(folder, files) {
+  for (const child of folder.children) {
+    if (child instanceof import_obsidian2.TFile) {
+      if (child.extension === "md") {
+        files.push(child);
+      }
+      continue;
+    }
+    if (child instanceof import_obsidian2.TFolder) {
+      collectMarkdownFiles(child, files);
+    }
+  }
+}
+
+// src/sync/status-drift.ts
+var STATUS_DRIFT_MAX_REMOTE_CHECKS = 30;
+var NOTICE_MAX_ITEMS = 3;
+function readLocalNoteStatuses(app, syncDirectory) {
+  const notes = [];
+  for (const file of getMarkdownFilesInFolder(app, syncDirectory)) {
+    const cache = app.metadataCache.getFileCache(file);
+    const raw = cache == null ? void 0 : cache.frontmatter;
+    if (typeof raw !== "object" || raw === null) continue;
+    const frontmatter = raw;
+    const subjectId = frontmatter.bangumi_id;
+    const subjectType = frontmatter.type;
+    const status = frontmatter.status;
+    if (typeof subjectId !== "number" || typeof subjectType !== "string" || typeof status !== "string") {
+      continue;
+    }
+    const title = typeof frontmatter.title === "string" && frontmatter.title.length > 0 ? frontmatter.title : file.basename;
+    notes.push({ path: file.path, subjectId, subjectType, status, title });
+  }
+  return notes;
+}
+function partitionLocalNotes(notes, scope) {
+  const types = new Set(scope.subjectTypes.map((type) => subjectTypeLabel(type)));
+  const statuses = new Set(
+    scope.collectionStatuses.map((status) => collectionStatusLabel(status))
+  );
+  const inScope = [];
+  const outOfScope = [];
+  for (const note of notes) {
+    if (types.has(note.subjectType) && statuses.has(note.status)) {
+      inScope.push(note);
+    } else {
+      outOfScope.push(note);
+    }
+  }
+  return { inScope, outOfScope };
+}
+function statusDisplayName(code) {
+  switch (code) {
+    case collectionStatusLabel(BANGUMI_COLLECTION_TYPES.wish):
+      return t("wish");
+    case collectionStatusLabel(BANGUMI_COLLECTION_TYPES.collect):
+      return t("collected");
+    case collectionStatusLabel(BANGUMI_COLLECTION_TYPES.do):
+      return t("watching");
+    case collectionStatusLabel(BANGUMI_COLLECTION_TYPES.onHold):
+      return t("onHold");
+    case collectionStatusLabel(BANGUMI_COLLECTION_TYPES.dropped):
+      return t("dropped");
+    default:
+      return code;
+  }
+}
+function formatStatusDriftNotice(summary) {
+  const parts = [];
+  if (summary.stale.length > 0) {
+    const items = summary.stale.slice(0, NOTICE_MAX_ITEMS).map(
+      (entry) => entry.remoteStatus === null ? t("statusDriftItemUncollected", { title: entry.title }) : t("statusDriftItem", {
+        title: entry.title,
+        from: statusDisplayName(entry.localStatus),
+        to: statusDisplayName(entry.remoteStatus)
+      })
+    ).join(t("statusDriftSeparator"));
+    const count = summary.stale.length > NOTICE_MAX_ITEMS ? t("statusDriftStaleMore", {
+      count: summary.stale.length,
+      items,
+      rest: summary.stale.length - NOTICE_MAX_ITEMS
+    }) : t("statusDriftStale", {
+      count: summary.stale.length,
+      items
+    });
+    parts.push(count);
+  }
+  if (summary.outOfScope > 0) {
+    parts.push(t("statusDriftOutOfScope", { count: summary.outOfScope }));
+  }
+  if (parts.length === 0) return "";
+  parts.push(t("statusDriftHint"));
+  return parts.join(" ");
+}
+var KNOWN_SUBJECT_TYPE_CODES = [
+  subjectTypeLabel(BANGUMI_SUBJECT_TYPES.book),
+  subjectTypeLabel(BANGUMI_SUBJECT_TYPES.anime),
+  subjectTypeLabel(BANGUMI_SUBJECT_TYPES.music),
+  subjectTypeLabel(BANGUMI_SUBJECT_TYPES.game),
+  subjectTypeLabel(BANGUMI_SUBJECT_TYPES.real)
+];
+
+// src/settings.ts
+var import_obsidian4 = require("obsidian");
+
+// src/date-format.ts
+function formatLocalDateTime(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hour = pad(date.getHours());
+  const minute = pad(date.getMinutes());
+  return `${year}-${month}-${day} ${hour}:${minute}`;
+}
+function pad(value) {
+  return String(value).padStart(2, "0");
+}
+
+// src/dns-fix.ts
+var DNS_FIX_MODES = {
+  off: "off",
+  auto: "auto",
+  always: "always"
+};
+var DNS_FIX_MODE_VALUES = [
+  DNS_FIX_MODES.off,
+  DNS_FIX_MODES.auto,
+  DNS_FIX_MODES.always
+];
+function isDnsFixMode(value) {
+  return typeof value === "string" && DNS_FIX_MODE_VALUES.includes(value);
+}
+
 // src/bangumi/episodes.ts
 function episodeTypeLabel(type) {
   switch (type) {
@@ -640,40 +814,6 @@ function sortEpisodeCollectionsByTypeThenSort(episodes) {
     if (!right.episode) return -1;
     return compareEpisodesByTypeThenSort(left.episode, right.episode);
   });
-}
-
-// src/bangumi/labels.ts
-function collectionStatusLabel(type) {
-  switch (type) {
-    case BANGUMI_COLLECTION_TYPES.wish:
-      return "wish";
-    case BANGUMI_COLLECTION_TYPES.collect:
-      return "collect";
-    case BANGUMI_COLLECTION_TYPES.do:
-      return "do";
-    case BANGUMI_COLLECTION_TYPES.onHold:
-      return "on_hold";
-    case BANGUMI_COLLECTION_TYPES.dropped:
-      return "dropped";
-    default:
-      return String(type);
-  }
-}
-function subjectTypeLabel(type) {
-  switch (type) {
-    case BANGUMI_SUBJECT_TYPES.book:
-      return "book";
-    case BANGUMI_SUBJECT_TYPES.anime:
-      return "anime";
-    case BANGUMI_SUBJECT_TYPES.music:
-      return "music";
-    case BANGUMI_SUBJECT_TYPES.game:
-      return "game";
-    case BANGUMI_SUBJECT_TYPES.real:
-      return "real";
-    default:
-      return String(type);
-  }
 }
 
 // src/sync/markdown-renderer.ts
@@ -1135,44 +1275,6 @@ function buildTargetDirectory({ root, layout, naming }, subjectType, collectionS
     case BANGUMI_STORAGE_LAYOUTS.flat:
     default:
       return root;
-  }
-}
-
-// src/utils/vault.ts
-var import_obsidian2 = require("obsidian");
-async function ensureFolder(app, path) {
-  const parts = (0, import_obsidian2.normalizePath)(path).split("/").filter(Boolean);
-  let current = "";
-  for (const part of parts) {
-    current = current ? `${current}/${part}` : part;
-    if (!app.vault.getAbstractFileByPath(current)) {
-      await app.vault.createFolder(current);
-    }
-  }
-}
-function getMarkdownFilesInFolder(app, path) {
-  const root = app.vault.getAbstractFileByPath((0, import_obsidian2.normalizePath)(path));
-  if (root instanceof import_obsidian2.TFile) {
-    return root.extension === "md" ? [root] : [];
-  }
-  if (!(root instanceof import_obsidian2.TFolder)) {
-    return [];
-  }
-  const files = [];
-  collectMarkdownFiles(root, files);
-  return files;
-}
-function collectMarkdownFiles(folder, files) {
-  for (const child of folder.children) {
-    if (child instanceof import_obsidian2.TFile) {
-      if (child.extension === "md") {
-        files.push(child);
-      }
-      continue;
-    }
-    if (child instanceof import_obsidian2.TFolder) {
-      collectMarkdownFiles(child, files);
-    }
   }
 }
 
@@ -2922,6 +3024,7 @@ var SyncService = class {
         console.error("Bangumi Sync failed to write daily note sync block", error);
       }
     }
+    const statusDrift = await this.collectStatusDrift(client, seenSubjectIds);
     let reportPath;
     if (failures.length > 0) {
       (_d = options.onProgress) == null ? void 0 : _d.call(options, {
@@ -2961,6 +3064,7 @@ var SyncService = class {
       totalCollections,
       failures,
       reportPath,
+      statusDrift,
       message
     };
   }
@@ -3326,6 +3430,61 @@ var SyncService = class {
   getEpisodeTitle(episode) {
     const title = episode.name_cn || episode.name || "";
     return title ? `EP${episode.sort} ${title}` : `EP${episode.sort}`;
+  }
+  async collectStatusDrift(client, seenSubjectIds) {
+    let notes;
+    try {
+      notes = readLocalNoteStatuses(this.app, this.settings.syncDirectory);
+    } catch (error) {
+      console.error("Bangumi Sync failed to read local note statuses", error);
+      return void 0;
+    }
+    if (notes.length === 0) return void 0;
+    const { inScope, outOfScope } = partitionLocalNotes(notes, {
+      subjectTypes: this.settings.subjectTypes,
+      collectionStatuses: this.getEffectiveCollectionTypes()
+    });
+    const missing = inScope.filter(
+      (note) => !seenSubjectIds.has(note.subjectId)
+    );
+    if (missing.length === 0 && outOfScope.length === 0) return void 0;
+    const stale = [];
+    let truncated = false;
+    for (const note of missing) {
+      if (stale.length >= STATUS_DRIFT_MAX_REMOTE_CHECKS) {
+        truncated = true;
+        break;
+      }
+      try {
+        const remote = await client.getSubjectCollection(note.subjectId);
+        const remoteStatus = collectionStatusLabel(remote.type);
+        if (remoteStatus === note.status) continue;
+        stale.push({
+          path: note.path,
+          subjectId: note.subjectId,
+          title: note.title,
+          localStatus: note.status,
+          remoteStatus
+        });
+      } catch (error) {
+        if (error instanceof BangumiApiError && error.status === 404) {
+          stale.push({
+            path: note.path,
+            subjectId: note.subjectId,
+            title: note.title,
+            localStatus: note.status,
+            remoteStatus: null
+          });
+        } else {
+          console.error(
+            `Bangumi Sync failed to verify status for ${note.subjectId}`,
+            error
+          );
+        }
+      }
+    }
+    if (stale.length === 0 && outOfScope.length === 0) return void 0;
+    return { outOfScope: outOfScope.length, stale, truncated };
   }
   getEffectiveCollectionTypes() {
     if (this.settings.includeOnHoldAndDropped) {
@@ -5459,6 +5618,9 @@ var BangumiSyncPlugin = class extends import_obsidian14.Plugin {
         }
       }
       new import_obsidian14.Notice(result.message);
+      if (result.statusDrift) {
+        new import_obsidian14.Notice(formatStatusDriftNotice(result.statusDrift));
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
       new import_obsidian14.Notice(

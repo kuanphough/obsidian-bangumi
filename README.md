@@ -154,6 +154,7 @@ If a matching local subject note exists, the title links to that note. Otherwise
 - To reduce API requests, episode progress is fetched by default only for `wish` / `do` / `collect` book, anime, and real-life subjects. Games, music, on-hold, and dropped subjects skip episode progress.
 - Episode progress failures do not block note generation; reports show that progress content was not fetched.
 - One failed subject does not stop the whole sync. Issues are summarized at the end.
+- After each sync the plugin checks the notes already in the sync directory against your collection scope, and reports any whose remote status changed to a status you are not syncing, so a note cannot silently keep an outdated status.
 - When syncing one subject, the plugin checks whether the subject is already collected first. For uncollected subjects, there may be a short wait before the local-status picker appears.
 
 ### Note Template
@@ -371,6 +372,7 @@ BRAT 适合测试开发版。正式发布后，普通用户更建议使用 Obsid
 - 为减少 API 请求，章节进度默认只会为书籍、动画、三次元的 `wish` / `do` / `collect` 条目拉取；游戏、音乐、搁置和抛弃条目会跳过章节进度。
 - 章节进度拉取失败不会阻止条目笔记生成，报告中会显示“没拉到进度内容”。
 - 某个条目失败不会中断整次同步，结束后会汇总问题并生成报告。
+- 每次同步结束后会核对同步目录内已有笔记的收藏状态：如果某条在 Bangumi 上被改成了你没有勾选的状态，会在提示里列出，避免笔记静默停留在旧状态。
 - 单独同步条目时，插件会先检查该条目是否已收藏；对于未收藏条目，选择本地状态前可能会有短暂等待。
 
 ### 笔记模板

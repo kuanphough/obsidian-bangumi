@@ -102,6 +102,10 @@ import {
 	statusFolderName,
 	subjectFolderName
 } from "./src/utils/folder-naming.ts";
+import {
+	formatStatusDriftNotice,
+	partitionLocalNotes
+} from "./src/sync/status-drift.ts";
 import { rankDohAnswers } from "./src/bangumi/doh.ts";
 import { looksLikeNetworkError } from "./src/utils/network-error.ts";
 import {
@@ -1358,6 +1362,67 @@ status: do
 	assert.equal(looksLikeNetworkError(new Error("File already exists.")), false);
 	assert.equal(looksLikeNetworkError(undefined), false);
 	assert.equal(looksLikeNetworkError({}), false);
+}
+
+// Status drift: local notes versus the current sync scope
+{
+	const notes = [
+		{ path: "a.md", subjectId: 1, subjectType: "anime", status: "do", title: "A" },
+		{ path: "b.md", subjectId: 2, subjectType: "real", status: "do", title: "B" },
+		{ path: "c.md", subjectId: 3, subjectType: "anime", status: "collect", title: "C" }
+	];
+
+	const wide = partitionLocalNotes(notes, {
+		subjectTypes: [2, 6],
+		collectionStatuses: [3]
+	});
+	assert.deepEqual(wide.inScope.map((note) => note.subjectId), [1, 2]);
+	assert.deepEqual(wide.outOfScope.map((note) => note.subjectId), [3]);
+
+	// Narrowing the subject types pushes the real-life note out of scope too.
+	const narrow = partitionLocalNotes(notes, {
+		subjectTypes: [2],
+		collectionStatuses: [3]
+	});
+	assert.deepEqual(narrow.inScope.map((note) => note.subjectId), [1]);
+	assert.deepEqual(narrow.outOfScope.map((note) => note.subjectId), [2, 3]);
+
+	// Every note stays accounted for.
+	assert.equal(wide.inScope.length + wide.outOfScope.length, notes.length);
+}
+
+// Status drift notice text
+{
+	const summary = {
+		outOfScope: 1,
+		truncated: false,
+		stale: [
+			{
+				path: "x.md",
+				subjectId: 9,
+				title: "ZZZ",
+				localStatus: "do",
+				remoteStatus: "collect"
+			},
+			{
+				path: "y.md",
+				subjectId: 10,
+				title: "Gone",
+				localStatus: "do",
+				remoteStatus: null
+			}
+		]
+	};
+	const text = formatStatusDriftNotice(summary);
+	assert.ok(text.includes("ZZZ"), "notice should name the drifted note");
+	assert.ok(text.includes("Gone"), "notice should name the uncollected note");
+	assert.ok(text.length > 0);
+
+	// Nothing to report means no notice at all.
+	assert.equal(
+		formatStatusDriftNotice({ outOfScope: 0, truncated: false, stale: [] }),
+		""
+	);
 }
 
 // HTTP retry: 429 + Retry-After then 200

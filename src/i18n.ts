@@ -140,6 +140,17 @@ const EN = {
 	dnsFixOff: "Off",
 	dnsFixMobileDesc:
 		"Not available on mobile: the built-in DNS-over-HTTPS transport needs a desktop runtime. If syncing fails with network errors on mobile, turn on encrypted DNS at the OS level instead - on Android set Private DNS to dns.alidns.com, on iOS install a DoH/DoT configuration profile.",
+	statusDriftItem: "{{title}} ({{from}} -> {{to}})",
+	statusDriftItemUncollected: "{{title}} (no longer collected)",
+	statusDriftSeparator: "; ",
+	statusDriftStale:
+		"{{count}} local note(s) no longer match Bangumi: {{items}}",
+	statusDriftStaleMore:
+		"{{count}} local note(s) no longer match Bangumi: {{items}} and {{rest}} more",
+	statusDriftOutOfScope:
+		"Another {{count}} local note(s) are outside the current sync scope (subject type or collection status not selected).",
+	statusDriftHint:
+		"Use Sync one subject to refresh a note, or select that collection status in settings.",
 	folderNaming: "Folder naming",
 	folderNamingDesc:
 		"Language used for the classification folder names. Note frontmatter always keeps the English codes (type / status), so switching this never rewrites existing notes. Use the migrate button below to move notes into the new folders.",
@@ -436,6 +447,17 @@ const ZH: Record<LocaleKey, string> = {
 	dnsFixOff: "关闭",
 	dnsFixMobileDesc:
 		"移动端不支持：内置的 DNS-over-HTTPS 传输层需要桌面运行时。移动端若同步报网络错误，请在系统层开启加密 DNS —— Android 把「私人 DNS」设为 dns.alidns.com，iOS 安装 DoH/DoT 配置描述文件。",
+	statusDriftItem: "{{title}}（{{from}} → {{to}}）",
+	statusDriftItemUncollected: "{{title}}（已不在收藏）",
+	statusDriftSeparator: "；",
+	statusDriftStale:
+		"检测到 {{count}} 条本地笔记的收藏状态与 Bangumi 不一致：{{items}}",
+	statusDriftStaleMore:
+		"检测到 {{count}} 条本地笔记的收藏状态与 Bangumi 不一致：{{items}} 等（另有 {{rest}} 条）",
+	statusDriftOutOfScope:
+		"另有 {{count}} 条本地笔记不在当前同步范围（条目类型或收藏状态未勾选）。",
+	statusDriftHint:
+		"可用 Sync one subject 更新单条，或在设置里勾选对应收藏状态。",
 	folderNaming: "分类文件夹命名",
 	folderNamingDesc:
 		"分类文件夹使用哪种语言命名。笔记 frontmatter 始终保留英文代码（type / status），所以切换命名不会改动已有笔记。切换后可用下方按钮把笔记迁移到新目录。",

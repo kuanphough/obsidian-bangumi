@@ -12,6 +12,7 @@ import {
 } from "obsidian";
 
 import { looksLikeNetworkError } from "./utils/network-error";
+import { formatStatusDriftNotice } from "./sync/status-drift";
 
 /**
  * On mobile the built-in DoH transport is unavailable, so a network failure
@@ -813,6 +814,9 @@ export default class BangumiSyncPlugin extends Plugin {
 				}
 			}
 			new Notice(result.message);
+			if (result.statusDrift) {
+				new Notice(formatStatusDriftNotice(result.statusDrift));
+			}
 		} catch (error) {
 			const message =
 				error instanceof Error ? error.message : t("unknownError");
