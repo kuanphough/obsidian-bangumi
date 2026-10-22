@@ -71,20 +71,78 @@ interface NodeCapableWindow extends Window {
 }
 
 /**
- * Load a Node builtin through the renderer's `require`. Lazy on purpose: import
- * the module only when the DoH transport is actually used, so mobile never
- * touches it.
+ * Minimal structural types for the two Node HTTPS entry points we use.
+ *
+ * Declared locally instead of `typeof import("https")`: when a type checker
+ * cannot resolve `@types/node`, that import silently degrades to `any` and
+ * everything downstream (request, response, headers) becomes unsafe. Local
+ * structural types keep this file typed no matter how the host resolves Node.
  */
-function loadNodeModule<T>(id: string): T {
+interface NodeResponse {
+	setEncoding(encoding: string): void;
+	on(event: "data", listener: (chunk: string) => void): void;
+	on(event: "end", listener: () => void): void;
+	on(event: "error", listener: (error: Error) => void): void;
+	headers: Record<string, string | string[] | undefined>;
+	statusCode?: number;
+}
+
+interface NodeRequest {
+	on(event: "timeout", listener: () => void): void;
+	on(event: "error", listener: (error: Error) => void): void;
+	destroy(error?: Error): void;
+	write(chunk: string): void;
+	end(): void;
+}
+
+type LookupCallback = (
+	error: Error | null,
+	address: string | Array<{ address: string; family: number }>,
+	family?: number
+) => void;
+
+interface NodeHttps {
+	get(
+		url: string,
+		options: { headers?: Record<string, string>; timeout?: number },
+		callback: (response: NodeResponse) => void
+	): NodeRequest;
+	request(
+		options: {
+			protocol: string;
+			hostname: string;
+			port: number | string;
+			path: string;
+			method: string;
+			headers?: Record<string, string>;
+			timeout: number;
+			lookup: (
+				hostname: string,
+				options: { all?: boolean },
+				callback: LookupCallback
+			) => void;
+		},
+		callback: (response: NodeResponse) => void
+	): NodeRequest;
+}
+
+/**
+ * Load Node's `https` through the renderer's `require`. Lazy on purpose: the
+ * module is only touched when the DoH transport is actually used, so mobile
+ * never reaches it.
+ */
+function loadHttps(): NodeHttps {
 	const fromWindow = (window as NodeCapableWindow).require;
-	if (typeof fromWindow === "function") {
-		return fromWindow(id) as T;
+	const loader: ((id: string) => unknown) | undefined =
+		typeof fromWindow === "function"
+			? fromWindow
+			: typeof require === "function"
+				? (require as (id: string) => unknown)
+				: undefined;
+	if (!loader) {
+		throw new Error('Node module "https" is unavailable in this environment');
 	}
-	// Fallback for bundles loaded as CommonJS (e.g. the test harness).
-	if (typeof require === "function") {
-		return (require as (id: string) => unknown)(id) as T;
-	}
-	throw new Error(`Node module "${id}" is unavailable in this environment`);
+	return loader("https") as NodeHttps;
 }
 
 /** Drop cached data for a hostname so the next lookup re-resolves it. */
@@ -134,7 +192,7 @@ function queryDoh(
 	hostname: string,
 	recordType: number
 ): Promise<string[]> {
-	const https = loadNodeModule<typeof import("https")>("https");
+	const https = loadHttps();
 	const recordName = recordType === AAAA_RECORD ? "AAAA" : "A";
 	const url = `${endpoint}?name=${encodeURIComponent(hostname)}&type=${recordName}`;
 
@@ -274,14 +332,14 @@ function attemptRequest(
 	family: number,
 	timeoutMs: number
 ): Promise<RequestUrlResponse> {
-	const https = loadNodeModule<typeof import("https")>("https");
+	const https = loadHttps();
 
 	// Node 18+ calls lookup with all:true and expects an array back.
-	const lookup: import("net").LookupFunction = (
-		_hostname,
-		options,
-		callback
-	) => {
+	const lookup = (
+		_hostname: string,
+		options: { all?: boolean },
+		callback: LookupCallback
+	): void => {
 		if (options.all) {
 			callback(null, [{ address, family }], family);
 			return;

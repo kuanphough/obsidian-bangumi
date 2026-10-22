@@ -151,7 +151,7 @@ export function sanitizeLoadedSettings(
 
 	if ("storageLayout" in obj) {
 		const value = obj.storageLayout;
-		const allowed = Object.values(BANGUMI_STORAGE_LAYOUTS) as string[];
+		const allowed: readonly string[] = Object.values(BANGUMI_STORAGE_LAYOUTS);
 		if (typeof value === "string" && allowed.includes(value)) {
 			result.storageLayout = value as BangumiStorageLayout;
 		} else {
@@ -169,7 +169,7 @@ export function sanitizeLoadedSettings(
 
 	if ("fileNameFormat" in obj) {
 		const value = obj.fileNameFormat;
-		const allowed = Object.values(BANGUMI_FILE_NAME_FORMATS) as string[];
+		const allowed: readonly string[] = Object.values(BANGUMI_FILE_NAME_FORMATS);
 		if (typeof value === "string" && allowed.includes(value)) {
 			result.fileNameFormat = value as BangumiFileNameFormat;
 		} else {
@@ -193,7 +193,7 @@ export function sanitizeLoadedSettings(
 	if ("subjectTypes" in obj) {
 		const sanitized = sanitizeNumberEnumArray(
 			obj.subjectTypes,
-			Object.values(BANGUMI_SUBJECT_TYPES) as number[]
+			Object.values(BANGUMI_SUBJECT_TYPES)
 		);
 		if (sanitized) {
 			result.subjectTypes = sanitized.values as BangumiSubjectType[];
@@ -206,7 +206,7 @@ export function sanitizeLoadedSettings(
 	if ("collectionTypes" in obj) {
 		const sanitized = sanitizeNumberEnumArray(
 			obj.collectionTypes,
-			Object.values(BANGUMI_COLLECTION_TYPES) as number[]
+			Object.values(BANGUMI_COLLECTION_TYPES)
 		);
 		if (sanitized) {
 			result.collectionTypes = sanitized.values as BangumiCollectionType[];

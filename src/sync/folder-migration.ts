@@ -163,7 +163,7 @@ export class FolderMigration {
 			for (const path of ordered) {
 				const folder = this.app.vault.getAbstractFileByPath(path);
 				if (folder instanceof TFolder && folder.children.length === 0) {
-					await this.app.vault.delete(folder, true);
+					await this.app.fileManager.trashFile(folder);
 					removed += 1;
 					changed = true;
 				}

@@ -1277,7 +1277,7 @@ var FolderMigration = class {
       for (const path of ordered) {
         const folder = this.app.vault.getAbstractFileByPath(path);
         if (folder instanceof import_obsidian3.TFolder && folder.children.length === 0) {
-          await this.app.vault.delete(folder, true);
+          await this.app.fileManager.trashFile(folder);
           removed += 1;
           changed = true;
         }
@@ -1901,15 +1901,13 @@ var unavailableUntil = 0;
 function isDohTransportAvailable() {
   return import_obsidian5.Platform.isDesktopApp;
 }
-function loadNodeModule(id) {
+function loadHttps() {
   const fromWindow = window.require;
-  if (typeof fromWindow === "function") {
-    return fromWindow(id);
+  const loader = typeof fromWindow === "function" ? fromWindow : typeof require === "function" ? require : void 0;
+  if (!loader) {
+    throw new Error('Node module "https" is unavailable in this environment');
   }
-  if (typeof require === "function") {
-    return require(id);
-  }
-  throw new Error(`Node module "${id}" is unavailable in this environment`);
+  return loader("https");
 }
 function invalidateDohCache(hostname) {
   addressCache.delete(hostname);
@@ -1946,7 +1944,7 @@ function extractAddresses(payload, recordType) {
   return addresses;
 }
 function queryDoh(endpoint, hostname, recordType) {
-  const https = loadNodeModule("https");
+  const https = loadHttps();
   const recordName = recordType === AAAA_RECORD ? "AAAA" : "A";
   const url = `${endpoint}?name=${encodeURIComponent(hostname)}&type=${recordName}`;
   return new Promise((resolve, reject) => {
@@ -2044,7 +2042,7 @@ function collectHeaders(raw) {
   return headers;
 }
 function attemptRequest(url, init, address, family, timeoutMs) {
-  const https = loadNodeModule("https");
+  const https = loadHttps();
   const lookup = (_hostname, options, callback) => {
     if (options.all) {
       callback(null, [{ address, family }], family);
