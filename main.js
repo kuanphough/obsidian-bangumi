@@ -3037,7 +3037,8 @@ var SyncService = class {
       client,
       writer,
       noteIndex,
-      seenSubjectIds
+      seenSubjectIds,
+      username
     );
     if (statusDrift) {
       written += statusDrift.updated.length;
@@ -3490,7 +3491,8 @@ var SyncService = class {
    * Notes excluded by the subject **type** selection are only counted, never
    * rewritten: that exclusion is a deliberate scope choice.
    */
-  async reconcileLocalNoteStatuses(client, writer, noteIndex, seenSubjectIds) {
+  async reconcileLocalNoteStatuses(client, writer, noteIndex, seenSubjectIds, username) {
+    if (!username || username === "-") return void 0;
     let notes;
     try {
       notes = readLocalNoteStatuses(this.app, this.settings.syncDirectory);
@@ -3515,7 +3517,10 @@ var SyncService = class {
         break;
       }
       try {
-        const collection = await client.getSubjectCollection(note.subjectId);
+        const collection = await client.getSubjectCollection(
+          note.subjectId,
+          username
+        );
         const remoteStatus = collectionStatusLabel(collection.type);
         if (remoteStatus === note.status) continue;
         let episodes = [];

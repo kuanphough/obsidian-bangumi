@@ -356,7 +356,8 @@ export class SyncService {
 			client,
 			writer,
 			noteIndex,
-			seenSubjectIds
+			seenSubjectIds,
+			username
 		);
 		if (statusDrift) {
 			written += statusDrift.updated.length;
@@ -951,8 +952,13 @@ export class SyncService {
 		client: BangumiClient,
 		writer: NoteWriter,
 		noteIndex: SubjectNoteIndex,
-		seenSubjectIds: ReadonlySet<number>
+		seenSubjectIds: ReadonlySet<number>,
+		username: string
 	): Promise<StatusDriftSummary | undefined> {
+		// Without a real username the per-subject endpoint answers 404, which would
+		// look like "no longer collected" for every note. Skip rather than lie.
+		if (!username || username === "-") return undefined;
+
 		let notes: LocalNoteStatus[];
 		try {
 			notes = readLocalNoteStatuses(this.app, this.settings.syncDirectory);
@@ -981,7 +987,10 @@ export class SyncService {
 				break;
 			}
 			try {
-				const collection = await client.getSubjectCollection(note.subjectId);
+				const collection = await client.getSubjectCollection(
+					note.subjectId,
+					username
+				);
 				const remoteStatus = collectionStatusLabel(collection.type);
 				if (remoteStatus === note.status) continue;
 
