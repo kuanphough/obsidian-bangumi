@@ -145,11 +145,9 @@ export class MarkdownRenderer {
 			comment,
 			comment_json: JSON.stringify(comment),
 			cover: cover ?? "",
-			cover_image: subject.localCoverPath
-				? `![[${subject.localCoverPath}]]`
-				: remoteCover
-					? `![](${remoteCover})`
-					: "",
+			cover_image:
+				subject.localCoverEmbed ??
+				(remoteCover ? `![](${remoteCover})` : ""),
 			cover_yaml: this.renderYamlScalar(cover ?? ""),
 			eps_total: String(bangumiSubject.eps ?? ""),
 			last_done_episode_json: JSON.stringify(

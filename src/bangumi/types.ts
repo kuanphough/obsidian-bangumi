@@ -163,4 +163,6 @@ export interface BangumiSyncedSubject {
 	extras?: BangumiSubjectExtras;
 	/** Vault path of a locally stored cover, when cover localization is on. */
 	localCoverPath?: string;
+	/** Full embed markup for the local cover, already in the vault's link style. */
+	localCoverEmbed?: string;
 }

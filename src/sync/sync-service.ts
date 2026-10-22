@@ -298,7 +298,11 @@ export class SyncService {
 								episodes,
 								episodeSyncError,
 								extras,
-								localCoverPath
+								localCoverPath,
+								localCoverEmbed:
+									localCoverPath === undefined
+										? undefined
+										: this.coverEmbed(localCoverPath)
 							},
 							noteIndex
 						);
@@ -911,6 +915,44 @@ export class SyncService {
 		return title ? `EP${episode.sort} ${title}` : `EP${episode.sort}`;
 	}
 
+	/**
+	 * Read a value from Obsidian's own config (`.obsidian/app.json`).
+	 *
+	 * `getConfig` is untyped, so the result is narrowed to `unknown` right away to
+	 * keep the value from flowing through this file as `any`.
+	 */
+	private readVaultConfig(key: string): unknown {
+		const vault = this.app.vault as unknown as {
+			getConfig?: (key: string) => unknown;
+		};
+		return typeof vault.getConfig === "function"
+			? vault.getConfig(key)
+			: undefined;
+	}
+
+	/**
+	 * Whether the user prefers Markdown links over wikilinks.
+	 *
+	 * Obsidian stores the inverse: `useMarkdownLinks: true` means "do not use
+	 * `[[Wikilinks]]`".
+	 */
+	private prefersMarkdownLinks(): boolean {
+		return this.readVaultConfig("useMarkdownLinks") === true;
+	}
+
+	/**
+	 * Embed markup for a local cover, matching the user's link preference.
+	 *
+	 * Markdown links always use a vault-absolute path here: notes are moved
+	 * between folders when their collection status changes, so a path relative to
+	 * the note would break on the next move.
+	 */
+	private coverEmbed(vaultPath: string): string {
+		return this.prefersMarkdownLinks()
+			? `![](/${vaultPath})`
+			: `![[${vaultPath}]]`;
+	}
+
 	/** Folder that receives localized covers, without a trailing slash. */
 	private coverBaseDirectory(): string {
 		const custom = this.settings.coverFolder.trim();
@@ -918,6 +960,27 @@ export class SyncService {
 		if (custom.length > 0 && !custom.includes("..")) {
 			return normalizePath(custom);
 		}
+
+		// Otherwise follow Obsidian's attachment folder, which is where most users
+		// already keep images. Some of its values are unusable here: the Obsidian
+		// default (`/`, vault root) would scatter covers, and `./...` means "next to
+		// the current note", which moves around as the note is relocated.
+		const attachment = this.readVaultConfig("attachmentFolderPath");
+		if (typeof attachment === "string") {
+			const value = attachment.trim();
+			const isVaultRoot = value === "" || value === "/";
+			const isNoteRelative =
+				value === "." || value.startsWith("./") || value.startsWith("../");
+			if (
+				value.length > 0 &&
+				!isVaultRoot &&
+				!isNoteRelative &&
+				!value.includes("..")
+			) {
+				return normalizePath(value);
+			}
+		}
+
 		return normalizePath(`${this.settings.syncDirectory}/covers`);
 	}
 
@@ -1036,7 +1099,7 @@ export class SyncService {
 			const content = await this.app.vault.read(file);
 			const next = content
 				.split(`![](${cover})`)
-				.join(`![[${path}]]`)
+				.join(this.coverEmbed(path))
 				.split(cover)
 				.join(path);
 			if (next !== content) {
@@ -1067,7 +1130,17 @@ export class SyncService {
 		const targetDirectory = normalizePath(this.getTargetDirectory(collection));
 		const result = await writer.writeSubjectNote(
 			targetDirectory,
-			{ collection, episodes, episodeSyncError, extras, localCoverPath },
+			{
+				collection,
+				episodes,
+				episodeSyncError,
+				extras,
+				localCoverPath,
+				localCoverEmbed:
+					localCoverPath === undefined
+						? undefined
+						: this.coverEmbed(localCoverPath)
+			},
 			noteIndex
 		);
 

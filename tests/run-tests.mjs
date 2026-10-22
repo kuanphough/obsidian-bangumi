@@ -1440,7 +1440,10 @@ status: do
 	assert.ok(remote.includes("![](https://example.com/cover.jpg)"));
 
 	const local = new MarkdownRenderer().renderSubjectNote(
-		makeSubject({ localCoverPath: "Bangumi/covers/123.jpg" })
+		makeSubject({
+			localCoverPath: "Bangumi/covers/123.jpg",
+			localCoverEmbed: "![[Bangumi/covers/123.jpg]]"
+		})
 	);
 	assert.ok(local.includes("![[Bangumi/covers/123.jpg]]"));
 	assert.ok(local.includes("Bangumi/covers/123.jpg"));
@@ -1448,6 +1451,16 @@ status: do
 		!local.includes("![](https://example.com/cover.jpg)"),
 		"localized cover must not keep the remote image link"
 	);
+
+	// Markdown-link users get a vault-absolute markdown image instead.
+	const markdown = new MarkdownRenderer().renderSubjectNote(
+		makeSubject({
+			localCoverPath: "01-Attachment/123.jpg",
+			localCoverEmbed: "![](/01-Attachment/123.jpg)"
+		})
+	);
+	assert.ok(markdown.includes("![](/01-Attachment/123.jpg)"));
+	assert.ok(!markdown.includes("![["));
 }
 
 // HTTP retry: 429 + Retry-After then 200

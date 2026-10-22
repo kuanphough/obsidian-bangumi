@@ -940,7 +940,7 @@ var MarkdownRenderer = class {
     this.template = template;
   }
   renderSubjectNote(subject) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _A, _B, _C;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D;
     const bangumiSubject = subject.collection.subject;
     const title = bangumiSubject.name_cn || bangumiSubject.name;
     const remoteCover = ((_a = bangumiSubject.images) == null ? void 0 : _a.large) || ((_b = bangumiSubject.images) == null ? void 0 : _b.common);
@@ -963,9 +963,9 @@ var MarkdownRenderer = class {
       comment,
       comment_json: JSON.stringify(comment),
       cover: cover != null ? cover : "",
-      cover_image: subject.localCoverPath ? `![[${subject.localCoverPath}]]` : remoteCover ? `![](${remoteCover})` : "",
+      cover_image: (_j = subject.localCoverEmbed) != null ? _j : remoteCover ? `![](${remoteCover})` : "",
       cover_yaml: this.renderYamlScalar(cover != null ? cover : ""),
-      eps_total: String((_j = bangumiSubject.eps) != null ? _j : ""),
+      eps_total: String((_k = bangumiSubject.eps) != null ? _k : ""),
       last_done_episode_json: JSON.stringify(
         progressSummary.lastDoneEpisodeTitle
       ),
@@ -980,26 +980,26 @@ var MarkdownRenderer = class {
       progress_percent: String(progressSummary.percent),
       progress_total: String(progressSummary.total),
       rating: String(rating),
-      characters: this.renderCharacters((_l = (_k = subject.extras) == null ? void 0 : _k.characters) != null ? _l : []),
-      characters_json: JSON.stringify((_n = (_m = subject.extras) == null ? void 0 : _m.characters) != null ? _n : []),
-      relations: this.renderRelations((_p = (_o = subject.extras) == null ? void 0 : _o.relations) != null ? _p : []),
-      relations_json: JSON.stringify((_r = (_q = subject.extras) == null ? void 0 : _q.relations) != null ? _r : []),
+      characters: this.renderCharacters((_m = (_l = subject.extras) == null ? void 0 : _l.characters) != null ? _m : []),
+      characters_json: JSON.stringify((_o = (_n = subject.extras) == null ? void 0 : _n.characters) != null ? _o : []),
+      relations: this.renderRelations((_q = (_p = subject.extras) == null ? void 0 : _p.relations) != null ? _q : []),
+      relations_json: JSON.stringify((_s = (_r = subject.extras) == null ? void 0 : _r.relations) != null ? _s : []),
       status,
-      staff: this.renderStaff((_t = (_s = subject.extras) == null ? void 0 : _s.staff) != null ? _t : []),
-      staff_json: JSON.stringify((_v = (_u = subject.extras) == null ? void 0 : _u.staff) != null ? _v : []),
+      staff: this.renderStaff((_u = (_t = subject.extras) == null ? void 0 : _t.staff) != null ? _u : []),
+      staff_json: JSON.stringify((_w = (_v = subject.extras) == null ? void 0 : _v.staff) != null ? _w : []),
       subject_collection_stats: this.renderCollectionStats(
         bangumiSubject.collection
       ),
       subject_collection_stats_json: JSON.stringify(
-        (_w = bangumiSubject.collection) != null ? _w : {}
+        (_x = bangumiSubject.collection) != null ? _x : {}
       ),
-      subject_infobox: this.renderInfobox((_x = bangumiSubject.infobox) != null ? _x : []),
-      subject_infobox_json: JSON.stringify((_y = bangumiSubject.infobox) != null ? _y : []),
+      subject_infobox: this.renderInfobox((_y = bangumiSubject.infobox) != null ? _y : []),
+      subject_infobox_json: JSON.stringify((_z = bangumiSubject.infobox) != null ? _z : []),
       subject_rating: this.renderSubjectRating(bangumiSubject.rating),
-      subject_rating_json: JSON.stringify((_z = bangumiSubject.rating) != null ? _z : {}),
-      subject_summary: (_A = bangumiSubject.summary) != null ? _A : "",
-      subject_tags: this.renderSubjectTags((_B = bangumiSubject.tags) != null ? _B : []),
-      subject_tags_json: JSON.stringify((_C = bangumiSubject.tags) != null ? _C : []),
+      subject_rating_json: JSON.stringify((_A = bangumiSubject.rating) != null ? _A : {}),
+      subject_summary: (_B = bangumiSubject.summary) != null ? _B : "",
+      subject_tags: this.renderSubjectTags((_C = bangumiSubject.tags) != null ? _C : []),
+      subject_tags_json: JSON.stringify((_D = bangumiSubject.tags) != null ? _D : []),
       summary_section: summarySection,
       sync_block_end: SYNC_BLOCK_END,
       sync_block_start: SYNC_BLOCK_START,
@@ -3099,7 +3099,8 @@ var SyncService = class {
                 episodes,
                 episodeSyncError,
                 extras,
-                localCoverPath
+                localCoverPath,
+                localCoverEmbed: localCoverPath === void 0 ? void 0 : this.coverEmbed(localCoverPath)
               },
               noteIndex
             );
@@ -3576,11 +3577,49 @@ var SyncService = class {
     const title = episode.name_cn || episode.name || "";
     return title ? `EP${episode.sort} ${title}` : `EP${episode.sort}`;
   }
+  /**
+   * Read a value from Obsidian's own config (`.obsidian/app.json`).
+   *
+   * `getConfig` is untyped, so the result is narrowed to `unknown` right away to
+   * keep the value from flowing through this file as `any`.
+   */
+  readVaultConfig(key) {
+    const vault = this.app.vault;
+    return typeof vault.getConfig === "function" ? vault.getConfig(key) : void 0;
+  }
+  /**
+   * Whether the user prefers Markdown links over wikilinks.
+   *
+   * Obsidian stores the inverse: `useMarkdownLinks: true` means "do not use
+   * `[[Wikilinks]]`".
+   */
+  prefersMarkdownLinks() {
+    return this.readVaultConfig("useMarkdownLinks") === true;
+  }
+  /**
+   * Embed markup for a local cover, matching the user's link preference.
+   *
+   * Markdown links always use a vault-absolute path here: notes are moved
+   * between folders when their collection status changes, so a path relative to
+   * the note would break on the next move.
+   */
+  coverEmbed(vaultPath) {
+    return this.prefersMarkdownLinks() ? `![](/${vaultPath})` : `![[${vaultPath}]]`;
+  }
   /** Folder that receives localized covers, without a trailing slash. */
   coverBaseDirectory() {
     const custom = this.settings.coverFolder.trim();
     if (custom.length > 0 && !custom.includes("..")) {
       return (0, import_obsidian9.normalizePath)(custom);
+    }
+    const attachment = this.readVaultConfig("attachmentFolderPath");
+    if (typeof attachment === "string") {
+      const value = attachment.trim();
+      const isVaultRoot = value === "" || value === "/";
+      const isNoteRelative = value === "." || value.startsWith("./") || value.startsWith("../");
+      if (value.length > 0 && !isVaultRoot && !isNoteRelative && !value.includes("..")) {
+        return (0, import_obsidian9.normalizePath)(value);
+      }
     }
     return (0, import_obsidian9.normalizePath)(`${this.settings.syncDirectory}/covers`);
   }
@@ -3679,7 +3718,7 @@ var SyncService = class {
         }
       }
       const content = await this.app.vault.read(file);
-      const next = content.split(`![](${cover})`).join(`![[${path}]]`).split(cover).join(path);
+      const next = content.split(`![](${cover})`).join(this.coverEmbed(path)).split(cover).join(path);
       if (next !== content) {
         await this.app.vault.modify(file, next);
         localized += 1;
@@ -3699,7 +3738,14 @@ var SyncService = class {
     const targetDirectory = (0, import_obsidian9.normalizePath)(this.getTargetDirectory(collection));
     const result = await writer.writeSubjectNote(
       targetDirectory,
-      { collection, episodes, episodeSyncError, extras, localCoverPath },
+      {
+        collection,
+        episodes,
+        episodeSyncError,
+        extras,
+        localCoverPath,
+        localCoverEmbed: localCoverPath === void 0 ? void 0 : this.coverEmbed(localCoverPath)
+      },
       noteIndex
     );
     const currentDirectory = (0, import_obsidian9.normalizePath)((_b = (_a = result.file.parent) == null ? void 0 : _a.path) != null ? _b : "");
