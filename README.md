@@ -82,7 +82,7 @@ Keep the token private. It authorizes the plugin to read your Bangumi account da
 | `Storage layout` | Store notes flat, by subject type, or by collection status. |
 | `Folder naming` | Whether classification folders use English codes (`anime`/`do`) or Chinese (动画/在看). Note frontmatter always keeps the English codes, so switching never rewrites existing notes. Chinese follows Bangumi's per-type wording: books use 想读/读过/在读, music uses 想听/听过/在听, everything else uses 想看/看过/在看. |
 | `Migrate classification folders` | Move existing notes from the previous folder naming to the current one. A preview is shown first and notes whose target path already exists are skipped; only available when the storage layout is not flat. |
-| `File name format` | File name format. Default: `Title [bgm-id].md`. |
+| `File name format` | How note file names are built from the subject title and the Bangumi subject id. Three formats are available. |
 | `Include on hold/dropped` | Whether to sync on-hold and dropped subjects. |
 | `Incremental sync` | Skip unchanged subjects by Bangumi updated time and recreate missing local notes. |
 | `DNS fix (DoH)` | How `api.bgm.tv` is resolved. `Auto` (default) uses the normal network path first and only switches to DNS-over-HTTPS after a network failure; `Always` resolves through DoH up front; `Off` keeps Obsidian's default transport. Useful when the system DNS returns wrong bgm.tv addresses and syncing fails with network errors. Desktop only. |
@@ -129,7 +129,7 @@ The first version is intentionally narrow:
 - The plugin can write Bangumi progress, but it cannot control Bangumi timeline text or timeline merge rules. When progress records are close in time, Bangumi may merge them into the latest activity.
 - If storage layout is not flat, the current note is moved automatically according to the final remote status after a successful status write-back.
 
-Older notes without `<!-- bgm-ep:... -->` episode markers must be synced once before they can be pushed.
+Older notes without `bgm-ep` episode markers must be synced once before they can be pushed.
 
 ### On Air Note
 
@@ -137,7 +137,7 @@ After enabling `Enable On Air note`, every `Sync now` run updates the standalone
 
 The first version uses Bangumi's legacy `/calendar` weekly anime broadcast data. The note has two sections: `My Collections` only shows your `wish` and `do` anime collections; `All On Air` shows the full Bangumi calendar list. Both sections are grouped from Monday to Sunday.
 
-Rows in the collection section use this todo format. Episode progress is no longer fetched per subject, which keeps refreshes much faster:
+Rows in the collection section use a plain task-list format. Episode progress is no longer fetched per subject, which keeps refreshes much faster:
 
 ```markdown
 - [ ] [[Local subject note|Title]] · status: do
@@ -158,16 +158,11 @@ If a matching local subject note exists, the title links to that note. Otherwise
 
 ### Note Template
 
-`Subject note template` must include:
-
-```markdown
-{{sync_block_start}}
-{{sync_block_end}}
-```
+`Subject note template` must keep the sync-block open and close markers. The default template already includes them.
 
 The default frontmatter keeps basic lookup fields plus `progress_done`. Fuller progress variables such as `progress_total`, `progress_percent`, next episode, and last completed episode are still available for custom templates.
 
-See [Subject Note Template Variables](docs/template-variables.md) for the full variable reference. The settings button also creates and opens a local `Template Variables.md` file under your sync directory.
+See [Subject Note Template Variables](docs/template-variables.md) for the exact marker tokens and the full variable reference. The settings button also creates and opens a local `Template Variables.md` file under your sync directory.
 
 ### Daily Note Sync
 
@@ -304,7 +299,7 @@ BRAT 适合测试开发版。正式发布后，普通用户更建议使用 Obsid
 | `Storage layout` | 控制是否按条目类型或收藏状态分文件夹。 |
 | `Folder naming` | 分类文件夹用英文代码（`anime`/`do`）还是中文（`动画`/`在看`）。笔记 frontmatter 始终保留英文，切换不会改动已有笔记。中文按 Bangumi 用词区分条目类型：书籍用想读/读过/在读，音乐用想听/听过/在听，其余用想看/看过/在看。 |
 | `Migrate classification folders` | 把已有笔记从原来的目录命名迁移到当前命名。执行前会显示预览，目标位置已存在同名笔记的会被跳过；仅在非「不分类」布局下可用。 |
-| `File name format` | 控制条目笔记文件名，默认 `Title [bgm-id].md`。 |
+| `File name format` | 条目笔记文件名如何由标题和 Bangumi 条目 ID 组合，共三种格式。 |
 | `Include on hold/dropped` | 是否同步搁置和抛弃条目。 |
 | `Incremental sync` | 根据 Bangumi 更新时间跳过未变化条目，并补回本地缺失文件。 |
 | `DNS fix (DoH)` | 解析 `api.bgm.tv` 的方式。`自动`（默认）先走系统网络，只有出现网络错误后才改用 DNS-over-HTTPS；`总是` 直接走 DoH；`关闭` 只使用 Obsidian 默认方式。用于系统 DNS 返回错误 bgm.tv 地址、导致同步报网络错误的情况。仅桌面端生效。 |
@@ -351,7 +346,7 @@ BRAT 适合测试开发版。正式发布后，普通用户更建议使用 Obsid
 - 插件可以写回 Bangumi 进度，但不能控制 Bangumi 时间线动态文案或动态合并规则；多条进度记录时间接近时，Bangumi 可能会自动合并到最新动态。
 - 如果存储逻辑不是“不分类”，状态写回成功后会按最终远端状态自动移动当前笔记。
 
-旧笔记如果没有 `<!-- bgm-ep:... -->` 章节标记，需要先重新同步一次再 Push。
+旧笔记如果没有 `bgm-ep` 章节标记，需要先重新同步一次再 Push。
 
 ### 每日放送
 
@@ -359,7 +354,7 @@ BRAT 适合测试开发版。正式发布后，普通用户更建议使用 Obsid
 
 第一版使用 Bangumi legacy `/calendar` 一周动画放送表。笔记里会生成两个分区：`My Collections` 只显示你的 `wish` 和 `do` 动画收藏；`All On Air` 显示 Bangumi 日历里的完整放送列表。两个分区都按星期一到星期日分组。
 
-收藏分区每条是 todo 格式，不再逐条拉取章节进度，刷新速度更快：
+收藏分区每条是普通任务列表格式，不再逐条拉取章节进度，刷新速度更快：
 
 ```markdown
 - [ ] [[本地条目笔记|标题]] · status: do
@@ -380,16 +375,11 @@ BRAT 适合测试开发版。正式发布后，普通用户更建议使用 Obsid
 
 ### 笔记模板
 
-`Subject note template` 必须包含：
-
-```markdown
-{{sync_block_start}}
-{{sync_block_end}}
-```
+`Subject note template` 必须保留同步块的起止标记。默认模板已经包含这两个标记。
 
 默认 frontmatter 只保留基础检索字段和 `progress_done`。如果需要 `progress_total`、`progress_percent`、下一集、最后完成集等字段，可以在自定义模板里手动加回。
 
-完整变量说明见 [Subject Note Template Variables](docs/template-variables.md)。设置页按钮也会在同步目录下创建并打开本地 `Template Variables.md`。
+起止标记的具体写法与完整变量说明见 [Subject Note Template Variables](docs/template-variables.md)。设置页按钮也会在同步目录下创建并打开本地 `Template Variables.md`。
 
 ### 每日日记同步
 
