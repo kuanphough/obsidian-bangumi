@@ -551,7 +551,8 @@ export class ProgressBoardView extends ItemView {
 		return buildTargetDirectory(
 			{
 				root: this.plugin.settings.syncDirectory,
-				layout: this.plugin.settings.storageLayout
+				layout: this.plugin.settings.storageLayout,
+				naming: this.plugin.settings.folderNaming
 			},
 			type,
 			status

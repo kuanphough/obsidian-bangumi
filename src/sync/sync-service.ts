@@ -920,7 +920,8 @@ export class SyncService {
 		return buildTargetDirectory(
 			{
 				root: this.settings.syncDirectory,
-				layout: this.settings.storageLayout
+				layout: this.settings.storageLayout,
+				naming: this.settings.folderNaming
 			},
 			subjectTypeLabel(collection.subject.type),
 			collectionStatusLabel(collection.type)

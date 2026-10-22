@@ -98,6 +98,8 @@ BRAT 适合测试开发版。正式发布后，普通用户更建议使用 Obsid
 | `Access token` | Bangumi access token。可以手动粘贴，也可以从剪贴板填入。 |
 | `Sync directory` | 同步笔记的根目录，默认 `Bangumi`。 |
 | `Storage layout` | 控制是否按条目类型或收藏状态分文件夹。 |
+| `Folder naming` | 分类文件夹用英文代码（`anime`/`do`）还是中文（`动画`/`在看`）。笔记 frontmatter 始终保留英文，切换不会改动已有笔记。中文按 Bangumi 用词区分条目类型：书籍用想读/读过/在读，音乐用想听/听过/在听，其余用想看/看过/在看。 |
+| `Migrate classification folders` | 把已有笔记从原来的目录命名迁移到当前命名。执行前会显示预览，目标位置已存在同名笔记的会被跳过；仅在非「不分类」布局下可用。 |
 | `File name format` | 控制条目笔记文件名，默认 `Title [bgm-id].md`。 |
 | `Include on hold/dropped` | 是否同步搁置和抛弃条目。 |
 | `Incremental sync` | 根据 Bangumi 更新时间跳过未变化条目，并补回本地缺失文件。 |

@@ -1,4 +1,4 @@
-import { App, Notice, Platform, PluginSettingTab, Setting } from "obsidian";
+import { App, Modal, Notice, Platform, PluginSettingTab, Setting } from "obsidian";
 
 import type BangumiSyncPlugin from "./main";
 import {
@@ -15,6 +15,15 @@ import {
 } from "./dns-fix";
 import { t } from "./i18n";
 import { DEFAULT_SUBJECT_NOTE_TEMPLATE } from "./sync/markdown-renderer";
+import {
+	FOLDER_NAMINGS,
+	FolderNaming,
+	isFolderNaming
+} from "./utils/folder-naming";
+import {
+	FolderMigration,
+	FolderMigrationPlan
+} from "./sync/folder-migration";
 
 export interface BangumiSyncSettings {
 	accessToken: string;
@@ -26,6 +35,7 @@ export interface BangumiSyncSettings {
 	username: string;
 	syncDirectory: string;
 	storageLayout: BangumiStorageLayout;
+	folderNaming: FolderNaming;
 	fileNameFormat: BangumiFileNameFormat;
 	includeOnHoldAndDropped: boolean;
 	incrementalSync: boolean;
@@ -149,6 +159,14 @@ export function sanitizeLoadedSettings(
 		}
 	}
 
+	if ("folderNaming" in obj) {
+		if (isFolderNaming(obj.folderNaming)) {
+			result.folderNaming = obj.folderNaming;
+		} else {
+			invalid.push("folderNaming");
+		}
+	}
+
 	if ("fileNameFormat" in obj) {
 		const value = obj.fileNameFormat;
 		const allowed = Object.values(BANGUMI_FILE_NAME_FORMATS) as string[];
@@ -239,6 +257,7 @@ export const DEFAULT_SETTINGS: BangumiSyncSettings = {
 	username: "",
 	syncDirectory: "Bangumi",
 	storageLayout: BANGUMI_STORAGE_LAYOUTS.flat,
+	folderNaming: FOLDER_NAMINGS.english,
 	fileNameFormat: BANGUMI_FILE_NAME_FORMATS.titleThenId,
 	includeOnHoldAndDropped: false,
 	incrementalSync: true,
@@ -464,6 +483,37 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 						this.display();
 					});
 			});
+
+		new Setting(containerEl)
+			.setName(t("folderNaming"))
+			.setDesc(t("folderNamingDesc"))
+			.addDropdown((dropdown) =>
+				dropdown
+					.addOption(FOLDER_NAMINGS.english, t("folderNamingEnglish"))
+					.addOption(FOLDER_NAMINGS.chinese, t("folderNamingChinese"))
+					.setValue(this.plugin.settings.folderNaming)
+					.onChange(async (value) => {
+						this.plugin.settings.folderNaming = isFolderNaming(value)
+							? value
+							: FOLDER_NAMINGS.english;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		if (
+			this.plugin.settings.storageLayout !== BANGUMI_STORAGE_LAYOUTS.flat
+		) {
+			new Setting(containerEl)
+				.setName(t("migrateFolders"))
+				.setDesc(t("migrateFoldersDesc"))
+				.addButton((button) =>
+					button
+						.setButtonText(t("migrateFoldersButton"))
+						.onClick(() => {
+							void this.openFolderMigration();
+						})
+				);
+		}
 
 		new Setting(containerEl)
 			.setName(t("fileNameFormat"))
@@ -776,5 +826,114 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 					this.display();
 				})
 			);
+	}
+
+	private async openFolderMigration(): Promise<void> {
+		const migration = new FolderMigration(this.app, this.plugin.settings);
+		const plan = migration.buildPlan();
+
+		if (plan.moves.length === 0 && plan.conflicts.length === 0) {
+			new Notice(t("migrateFoldersNothing"));
+			return;
+		}
+
+		const confirmed = await new Promise<boolean>((resolve) => {
+			new FolderMigrationModal(this.app, plan, resolve).open();
+		});
+		if (!confirmed) return;
+
+		try {
+			new Notice(t("migrateFoldersRunning"));
+			const result = await migration.execute(plan);
+			this.plugin.invalidateProgressBoardCache();
+			new Notice(
+				t("migrateFoldersDone", {
+					moved: result.moved,
+					conflicts: result.conflicts
+				})
+			);
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : t("unknownError");
+			new Notice(t("migrateFoldersFailed", { message }));
+			console.error(error);
+		}
+	}
+}
+
+class FolderMigrationModal extends Modal {
+	private resolved = false;
+
+	constructor(
+		app: App,
+		private readonly plan: FolderMigrationPlan,
+		private readonly resolve: (confirmed: boolean) => void
+	) {
+		super(app);
+	}
+
+	onOpen(): void {
+		const { contentEl } = this;
+		contentEl.empty();
+
+		new Setting(contentEl).setName(t("migrateFoldersTitle")).setHeading();
+		contentEl.createEl("p", {
+			text: t("migrateFoldersIntro", {
+				moves: this.plan.moves.length,
+				conflicts: this.plan.conflicts.length
+			})
+		});
+
+		const lines = this.plan.moves
+			.slice(0, 40)
+			.map((move) => `${move.from}  ->  ${move.to}`);
+		if (this.plan.moves.length > 40) {
+			lines.push(
+				t("migrateFoldersMore", { count: this.plan.moves.length - 40 })
+			);
+		}
+		if (lines.length > 0) {
+			contentEl
+				.createEl("pre", { text: lines.join("\n") })
+				.addClass("bangumi-note-push-preview");
+		}
+
+		if (this.plan.conflicts.length > 0) {
+			contentEl.createEl("p", { text: t("migrateFoldersConflictNote") });
+			const conflicts = this.plan.conflicts
+				.slice(0, 10)
+				.map((move) => move.from);
+			contentEl
+				.createEl("pre", { text: conflicts.join("\n") })
+				.addClass("bangumi-note-push-preview");
+		}
+
+		new Setting(contentEl)
+			.addButton((button) =>
+				button.setButtonText(t("migrateFoldersCancel")).onClick(() => {
+					this.finish(false);
+					this.close();
+				})
+			)
+			.addButton((button) =>
+				button
+					.setButtonText(t("migrateFoldersConfirm"))
+					.setCta()
+					.onClick(() => {
+						this.finish(true);
+						this.close();
+					})
+			);
+	}
+
+	onClose(): void {
+		this.contentEl.empty();
+		this.finish(false);
+	}
+
+	private finish(confirmed: boolean): void {
+		if (this.resolved) return;
+		this.resolved = true;
+		this.resolve(confirmed);
 	}
 }

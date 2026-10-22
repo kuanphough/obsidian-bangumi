@@ -105,6 +105,8 @@ Keep the token private. It authorizes the plugin to read your Bangumi account da
 | `Access token` | Bangumi access token. Paste manually or fill from clipboard. |
 | `Sync directory` | Root folder for synced notes. Default: `Bangumi`. |
 | `Storage layout` | Store notes flat, by subject type, or by collection status. |
+| `Folder naming` | Whether classification folders use English codes (`anime`/`do`) or Chinese (动画/在看). Note frontmatter always keeps the English codes, so switching never rewrites existing notes. Chinese follows Bangumi's per-type wording: books use 想读/读过/在读, music uses 想听/听过/在听, everything else uses 想看/看过/在看. |
+| `Migrate classification folders` | Move existing notes from the previous folder naming to the current one. A preview is shown first and notes whose target path already exists are skipped; only available when the storage layout is not flat. |
 | `File name format` | File name format. Default: `Title [bgm-id].md`. |
 | `Include on hold/dropped` | Whether to sync on-hold and dropped subjects. |
 | `Incremental sync` | Skip unchanged subjects by Bangumi updated time and recreate missing local notes. |

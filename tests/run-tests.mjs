@@ -97,6 +97,11 @@ import { collectionStatusLabel, subjectTypeLabel } from "./src/bangumi/labels.ts
 import { BANGUMI_COLLECTION_TYPES, BANGUMI_SUBJECT_TYPES } from "./src/bangumi/types.ts";
 import { DEFAULT_SETTINGS, BANGUMI_FILE_NAME_FORMATS, BANGUMI_STORAGE_LAYOUTS, sanitizeLoadedSettings } from "./src/settings.ts";
 import { buildTargetDirectory } from "./src/utils/target-directory.ts";
+import {
+	FOLDER_NAMINGS,
+	statusFolderName,
+	subjectFolderName
+} from "./src/utils/folder-naming.ts";
 import { rankDohAnswers } from "./src/bangumi/doh.ts";
 import { looksLikeNetworkError } from "./src/utils/network-error.ts";
 import {
@@ -1195,16 +1200,23 @@ status: do
 	);
 }
 
-// Target directory: one helper shared by the sync service and the board
+// Target directory: one helper shared by the sync service, board and migration
 {
 	const root = "Bangumi";
+	const en = FOLDER_NAMINGS.english;
+	const zh = FOLDER_NAMINGS.chinese;
+
 	assert.equal(
-		buildTargetDirectory({ root, layout: BANGUMI_STORAGE_LAYOUTS.flat }, "anime", "do"),
+		buildTargetDirectory(
+			{ root, layout: BANGUMI_STORAGE_LAYOUTS.flat, naming: en },
+			"anime",
+			"do"
+		),
 		"Bangumi"
 	);
 	assert.equal(
 		buildTargetDirectory(
-			{ root, layout: BANGUMI_STORAGE_LAYOUTS.subjectThenCollection },
+			{ root, layout: BANGUMI_STORAGE_LAYOUTS.subjectThenCollection, naming: en },
 			"anime",
 			"do"
 		),
@@ -1212,7 +1224,7 @@ status: do
 	);
 	assert.equal(
 		buildTargetDirectory(
-			{ root, layout: BANGUMI_STORAGE_LAYOUTS.collectionThenSubject },
+			{ root, layout: BANGUMI_STORAGE_LAYOUTS.collectionThenSubject, naming: en },
 			"anime",
 			"do"
 		),
@@ -1221,12 +1233,73 @@ status: do
 	// Must agree with the labels written into the note frontmatter.
 	assert.equal(
 		buildTargetDirectory(
-			{ root, layout: BANGUMI_STORAGE_LAYOUTS.subjectThenCollection },
+			{ root, layout: BANGUMI_STORAGE_LAYOUTS.subjectThenCollection, naming: en },
 			subjectTypeLabel(BANGUMI_SUBJECT_TYPES.anime),
 			collectionStatusLabel(BANGUMI_COLLECTION_TYPES.do)
 		),
 		"Bangumi/anime/do"
 	);
+
+	// Chinese naming follows Bangumi's per-type wording.
+	assert.equal(
+		buildTargetDirectory(
+			{ root, layout: BANGUMI_STORAGE_LAYOUTS.subjectThenCollection, naming: zh },
+			"book",
+			"do"
+		),
+		"Bangumi/书籍/在读"
+	);
+	assert.equal(
+		buildTargetDirectory(
+			{ root, layout: BANGUMI_STORAGE_LAYOUTS.subjectThenCollection, naming: zh },
+			"music",
+			"wish"
+		),
+		"Bangumi/音乐/想听"
+	);
+	assert.equal(
+		buildTargetDirectory(
+			{ root, layout: BANGUMI_STORAGE_LAYOUTS.subjectThenCollection, naming: zh },
+			"anime",
+			"collect"
+		),
+		"Bangumi/动画/看过"
+	);
+	// collection-then-subject splits the status folder per subject type.
+	assert.equal(
+		buildTargetDirectory(
+			{ root, layout: BANGUMI_STORAGE_LAYOUTS.collectionThenSubject, naming: zh },
+			"anime",
+			"do"
+		),
+		"Bangumi/在看/动画"
+	);
+	assert.equal(
+		buildTargetDirectory(
+			{ root, layout: BANGUMI_STORAGE_LAYOUTS.collectionThenSubject, naming: zh },
+			"book",
+			"do"
+		),
+		"Bangumi/在读/书籍"
+	);
+	// Shared wording, and a missing naming must never rename anything.
+	assert.equal(statusFolderName("game", "on_hold", zh), "搁置");
+	assert.equal(statusFolderName("game", "dropped", zh), "抛弃");
+	assert.equal(subjectFolderName("real", zh), "三次元");
+	assert.equal(subjectFolderName("anime", undefined), "anime");
+	assert.equal(statusFolderName("anime", "do", undefined), "do");
+}
+
+// Folder naming setting validation
+{
+	assert.equal(DEFAULT_SETTINGS.folderNaming, "english");
+	assert.equal(
+		sanitizeLoadedSettings({ folderNaming: "chinese" }).settings.folderNaming,
+		"chinese"
+	);
+	const badNaming = sanitizeLoadedSettings({ folderNaming: "klingon" });
+	assert.equal(badNaming.settings.folderNaming, undefined);
+	assert.ok(badNaming.invalidFields.includes("folderNaming"));
 }
 
 // Daily note folder / format overrides

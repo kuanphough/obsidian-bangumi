@@ -140,6 +140,28 @@ const EN = {
 	dnsFixOff: "Off",
 	dnsFixMobileDesc:
 		"Not available on mobile: the built-in DNS-over-HTTPS transport needs a desktop runtime. If syncing fails with network errors on mobile, turn on encrypted DNS at the OS level instead - on Android set Private DNS to dns.alidns.com, on iOS install a DoH/DoT configuration profile.",
+	folderNaming: "Folder naming",
+	folderNamingDesc:
+		"Language used for the classification folder names. Note frontmatter always keeps the English codes (type / status), so switching this never rewrites existing notes. Use the migrate button below to move notes into the new folders.",
+	folderNamingEnglish: "English (anime / do)",
+	folderNamingChinese: "Chinese (Bangumi wording)",
+	migrateFolders: "Migrate classification folders",
+	migrateFoldersDesc:
+		"Move notes from the previous folder naming to the current one. A preview is shown first, and notes whose target path already exists are skipped.",
+	migrateFoldersButton: "Preview and migrate",
+	migrateFoldersTitle: "Migrate classification folders",
+	migrateFoldersIntro:
+		"{{moves}} notes will move to the current naming. {{conflicts}} notes will be skipped because the target path already exists.",
+	migrateFoldersMore: "... and {{count}} more",
+	migrateFoldersConflictNote:
+		"These notes already exist at the target path and will be left where they are:",
+	migrateFoldersNothing: "No folders need migrating.",
+	migrateFoldersRunning: "Migrating classification folders...",
+	migrateFoldersDone:
+		"Migration finished: {{moved}} notes moved, {{conflicts}} skipped.",
+	migrateFoldersFailed: "Folder migration failed: {{message}}",
+	migrateFoldersConfirm: "Migrate",
+	migrateFoldersCancel: "Cancel",
 	issues: "Issues",
 	lastSyncedAt: "Last synced at",
 	music: "Music",
@@ -341,7 +363,7 @@ const ZH: Record<LocaleKey, string> = {
 	clipboardTokenMissing: "剪贴板里没有 access token。",
 	copy: "复制",
 	copiedDailyNoteSyncBlock: "已复制每日日记同步块。",
-	collected: "已收藏",
+	collected: "看过",
 	collectedDesc: "同步标记为已看/已读/已完成的条目。",
 	collectionStatuses: "收藏状态",
 	collectionStatus: "收藏状态",
@@ -364,7 +386,7 @@ const ZH: Record<LocaleKey, string> = {
 		"没有找到每日日记同步块标记。请先把同步块放进你的每日日记模板。",
 	dailyNoteSyncNoteMissing:
 		"没有找到今天的每日日记：{{path}}",
-	dropped: "已抛弃",
+	dropped: "抛弃",
 	droppedDesc: "同步标记为抛弃的条目。",
 	enableWriteBack: "启用写回 Bangumi",
 	enableWriteBackDesc:
@@ -414,6 +436,28 @@ const ZH: Record<LocaleKey, string> = {
 	dnsFixOff: "关闭",
 	dnsFixMobileDesc:
 		"移动端不支持：内置的 DNS-over-HTTPS 传输层需要桌面运行时。移动端若同步报网络错误，请在系统层开启加密 DNS —— Android 把「私人 DNS」设为 dns.alidns.com，iOS 安装 DoH/DoT 配置描述文件。",
+	folderNaming: "分类文件夹命名",
+	folderNamingDesc:
+		"分类文件夹使用哪种语言命名。笔记 frontmatter 始终保留英文代码（type / status），所以切换命名不会改动已有笔记。切换后可用下方按钮把笔记迁移到新目录。",
+	folderNamingEnglish: "英文（anime / do）",
+	folderNamingChinese: "中文（BGM 用词）",
+	migrateFolders: "迁移分类文件夹",
+	migrateFoldersDesc:
+		"把笔记从原来的目录命名迁移到当前命名。执行前会先显示预览，目标位置已存在同名笔记的会被跳过。",
+	migrateFoldersButton: "预览并迁移",
+	migrateFoldersTitle: "迁移分类文件夹",
+	migrateFoldersIntro:
+		"将把 {{moves}} 条笔记迁移到当前命名。{{conflicts}} 条因目标位置已存在同名文件被跳过。",
+	migrateFoldersMore: "……另有 {{count}} 条",
+	migrateFoldersConflictNote:
+		"以下笔记在目标位置已存在，将保持原样不动：",
+	migrateFoldersNothing: "没有需要迁移的文件夹。",
+	migrateFoldersRunning: "正在迁移分类文件夹……",
+	migrateFoldersDone:
+		"迁移完成：移动 {{moved}} 条，跳过 {{conflicts}} 条。",
+	migrateFoldersFailed: "文件夹迁移失败：{{message}}",
+	migrateFoldersConfirm: "开始迁移",
+	migrateFoldersCancel: "取消",
 	issues: "问题数",
 	lastSyncedAt: "上次同步时间",
 	music: "音乐",
@@ -535,7 +579,7 @@ const ZH: Record<LocaleKey, string> = {
 	user: "用户",
 	username: "Username",
 	usernameDesc: "可选。留空时，插件会在同步时使用 /v0/me。",
-	watching: "进行中",
+	watching: "在看",
 	watchingDesc: "同步当前正在看/读/玩的条目。",
 	weekdayMonday: "星期一",
 	weekdayTuesday: "星期二",

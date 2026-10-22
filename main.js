@@ -23,7 +23,7 @@ __export(main_exports, {
   default: () => BangumiSyncPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian13 = require("obsidian");
+var import_obsidian14 = require("obsidian");
 
 // src/utils/network-error.ts
 var NETWORK_ERROR_PATTERNS = [
@@ -59,7 +59,7 @@ function looksLikeNetworkError(error) {
 }
 
 // src/settings.ts
-var import_obsidian2 = require("obsidian");
+var import_obsidian4 = require("obsidian");
 
 // src/bangumi/types.ts
 var BANGUMI_COLLECTION_TYPES = {
@@ -218,6 +218,23 @@ var EN = {
   dnsFixAlways: "Always use DoH",
   dnsFixOff: "Off",
   dnsFixMobileDesc: "Not available on mobile: the built-in DNS-over-HTTPS transport needs a desktop runtime. If syncing fails with network errors on mobile, turn on encrypted DNS at the OS level instead - on Android set Private DNS to dns.alidns.com, on iOS install a DoH/DoT configuration profile.",
+  folderNaming: "Folder naming",
+  folderNamingDesc: "Language used for the classification folder names. Note frontmatter always keeps the English codes (type / status), so switching this never rewrites existing notes. Use the migrate button below to move notes into the new folders.",
+  folderNamingEnglish: "English (anime / do)",
+  folderNamingChinese: "Chinese (Bangumi wording)",
+  migrateFolders: "Migrate classification folders",
+  migrateFoldersDesc: "Move notes from the previous folder naming to the current one. A preview is shown first, and notes whose target path already exists are skipped.",
+  migrateFoldersButton: "Preview and migrate",
+  migrateFoldersTitle: "Migrate classification folders",
+  migrateFoldersIntro: "{{moves}} notes will move to the current naming. {{conflicts}} notes will be skipped because the target path already exists.",
+  migrateFoldersMore: "... and {{count}} more",
+  migrateFoldersConflictNote: "These notes already exist at the target path and will be left where they are:",
+  migrateFoldersNothing: "No folders need migrating.",
+  migrateFoldersRunning: "Migrating classification folders...",
+  migrateFoldersDone: "Migration finished: {{moved}} notes moved, {{conflicts}} skipped.",
+  migrateFoldersFailed: "Folder migration failed: {{message}}",
+  migrateFoldersConfirm: "Migrate",
+  migrateFoldersCancel: "Cancel",
   issues: "Issues",
   lastSyncedAt: "Last synced at",
   music: "Music",
@@ -387,7 +404,7 @@ var ZH = {
   clipboardTokenMissing: "\u526A\u8D34\u677F\u91CC\u6CA1\u6709 access token\u3002",
   copy: "\u590D\u5236",
   copiedDailyNoteSyncBlock: "\u5DF2\u590D\u5236\u6BCF\u65E5\u65E5\u8BB0\u540C\u6B65\u5757\u3002",
-  collected: "\u5DF2\u6536\u85CF",
+  collected: "\u770B\u8FC7",
   collectedDesc: "\u540C\u6B65\u6807\u8BB0\u4E3A\u5DF2\u770B/\u5DF2\u8BFB/\u5DF2\u5B8C\u6210\u7684\u6761\u76EE\u3002",
   collectionStatuses: "\u6536\u85CF\u72B6\u6001",
   collectionStatus: "\u6536\u85CF\u72B6\u6001",
@@ -405,7 +422,7 @@ var ZH = {
   dailyNoteSyncBlockDesc: "\u590D\u5236\u8FD9\u6BB5\u540C\u6B65\u5757\u5230\u4F60\u7684\u6BCF\u65E5\u65E5\u8BB0\u6A21\u677F\u91CC\u3002",
   dailyNoteSyncMarkersMissing: "\u6CA1\u6709\u627E\u5230\u6BCF\u65E5\u65E5\u8BB0\u540C\u6B65\u5757\u6807\u8BB0\u3002\u8BF7\u5148\u628A\u540C\u6B65\u5757\u653E\u8FDB\u4F60\u7684\u6BCF\u65E5\u65E5\u8BB0\u6A21\u677F\u3002",
   dailyNoteSyncNoteMissing: "\u6CA1\u6709\u627E\u5230\u4ECA\u5929\u7684\u6BCF\u65E5\u65E5\u8BB0\uFF1A{{path}}",
-  dropped: "\u5DF2\u629B\u5F03",
+  dropped: "\u629B\u5F03",
   droppedDesc: "\u540C\u6B65\u6807\u8BB0\u4E3A\u629B\u5F03\u7684\u6761\u76EE\u3002",
   enableWriteBack: "\u542F\u7528\u5199\u56DE Bangumi",
   enableWriteBackDesc: "\u5141\u8BB8\u4ECE\u5F53\u524D\u7B14\u8BB0\u663E\u5F0F Push \u5230 Bangumi\u3002\u8FD9\u4F1A\u4FEE\u6539\u4F60\u7684 Bangumi \u8D26\u53F7\u6570\u636E\uFF1B\u6BCF\u6B21 Push \u524D\u4ECD\u9700\u786E\u8BA4\u3002",
@@ -443,6 +460,23 @@ var ZH = {
   dnsFixAlways: "\u603B\u662F\u4F7F\u7528 DoH",
   dnsFixOff: "\u5173\u95ED",
   dnsFixMobileDesc: "\u79FB\u52A8\u7AEF\u4E0D\u652F\u6301\uFF1A\u5185\u7F6E\u7684 DNS-over-HTTPS \u4F20\u8F93\u5C42\u9700\u8981\u684C\u9762\u8FD0\u884C\u65F6\u3002\u79FB\u52A8\u7AEF\u82E5\u540C\u6B65\u62A5\u7F51\u7EDC\u9519\u8BEF\uFF0C\u8BF7\u5728\u7CFB\u7EDF\u5C42\u5F00\u542F\u52A0\u5BC6 DNS \u2014\u2014 Android \u628A\u300C\u79C1\u4EBA DNS\u300D\u8BBE\u4E3A dns.alidns.com\uFF0CiOS \u5B89\u88C5 DoH/DoT \u914D\u7F6E\u63CF\u8FF0\u6587\u4EF6\u3002",
+  folderNaming: "\u5206\u7C7B\u6587\u4EF6\u5939\u547D\u540D",
+  folderNamingDesc: "\u5206\u7C7B\u6587\u4EF6\u5939\u4F7F\u7528\u54EA\u79CD\u8BED\u8A00\u547D\u540D\u3002\u7B14\u8BB0 frontmatter \u59CB\u7EC8\u4FDD\u7559\u82F1\u6587\u4EE3\u7801\uFF08type / status\uFF09\uFF0C\u6240\u4EE5\u5207\u6362\u547D\u540D\u4E0D\u4F1A\u6539\u52A8\u5DF2\u6709\u7B14\u8BB0\u3002\u5207\u6362\u540E\u53EF\u7528\u4E0B\u65B9\u6309\u94AE\u628A\u7B14\u8BB0\u8FC1\u79FB\u5230\u65B0\u76EE\u5F55\u3002",
+  folderNamingEnglish: "\u82F1\u6587\uFF08anime / do\uFF09",
+  folderNamingChinese: "\u4E2D\u6587\uFF08BGM \u7528\u8BCD\uFF09",
+  migrateFolders: "\u8FC1\u79FB\u5206\u7C7B\u6587\u4EF6\u5939",
+  migrateFoldersDesc: "\u628A\u7B14\u8BB0\u4ECE\u539F\u6765\u7684\u76EE\u5F55\u547D\u540D\u8FC1\u79FB\u5230\u5F53\u524D\u547D\u540D\u3002\u6267\u884C\u524D\u4F1A\u5148\u663E\u793A\u9884\u89C8\uFF0C\u76EE\u6807\u4F4D\u7F6E\u5DF2\u5B58\u5728\u540C\u540D\u7B14\u8BB0\u7684\u4F1A\u88AB\u8DF3\u8FC7\u3002",
+  migrateFoldersButton: "\u9884\u89C8\u5E76\u8FC1\u79FB",
+  migrateFoldersTitle: "\u8FC1\u79FB\u5206\u7C7B\u6587\u4EF6\u5939",
+  migrateFoldersIntro: "\u5C06\u628A {{moves}} \u6761\u7B14\u8BB0\u8FC1\u79FB\u5230\u5F53\u524D\u547D\u540D\u3002{{conflicts}} \u6761\u56E0\u76EE\u6807\u4F4D\u7F6E\u5DF2\u5B58\u5728\u540C\u540D\u6587\u4EF6\u88AB\u8DF3\u8FC7\u3002",
+  migrateFoldersMore: "\u2026\u2026\u53E6\u6709 {{count}} \u6761",
+  migrateFoldersConflictNote: "\u4EE5\u4E0B\u7B14\u8BB0\u5728\u76EE\u6807\u4F4D\u7F6E\u5DF2\u5B58\u5728\uFF0C\u5C06\u4FDD\u6301\u539F\u6837\u4E0D\u52A8\uFF1A",
+  migrateFoldersNothing: "\u6CA1\u6709\u9700\u8981\u8FC1\u79FB\u7684\u6587\u4EF6\u5939\u3002",
+  migrateFoldersRunning: "\u6B63\u5728\u8FC1\u79FB\u5206\u7C7B\u6587\u4EF6\u5939\u2026\u2026",
+  migrateFoldersDone: "\u8FC1\u79FB\u5B8C\u6210\uFF1A\u79FB\u52A8 {{moved}} \u6761\uFF0C\u8DF3\u8FC7 {{conflicts}} \u6761\u3002",
+  migrateFoldersFailed: "\u6587\u4EF6\u5939\u8FC1\u79FB\u5931\u8D25\uFF1A{{message}}",
+  migrateFoldersConfirm: "\u5F00\u59CB\u8FC1\u79FB",
+  migrateFoldersCancel: "\u53D6\u6D88",
   issues: "\u95EE\u9898\u6570",
   lastSyncedAt: "\u4E0A\u6B21\u540C\u6B65\u65F6\u95F4",
   music: "\u97F3\u4E50",
@@ -546,7 +580,7 @@ var ZH = {
   user: "\u7528\u6237",
   username: "Username",
   usernameDesc: "\u53EF\u9009\u3002\u7559\u7A7A\u65F6\uFF0C\u63D2\u4EF6\u4F1A\u5728\u540C\u6B65\u65F6\u4F7F\u7528 /v0/me\u3002",
-  watching: "\u8FDB\u884C\u4E2D",
+  watching: "\u5728\u770B",
   watchingDesc: "\u540C\u6B65\u5F53\u524D\u6B63\u5728\u770B/\u8BFB/\u73A9\u7684\u6761\u76EE\u3002",
   weekdayMonday: "\u661F\u671F\u4E00",
   weekdayTuesday: "\u661F\u671F\u4E8C",
@@ -1014,6 +1048,245 @@ ${content}
   }
 };
 
+// src/utils/folder-naming.ts
+var FOLDER_NAMINGS = {
+  english: "english",
+  chinese: "chinese"
+};
+var FOLDER_NAMING_VALUES = [
+  FOLDER_NAMINGS.english,
+  FOLDER_NAMINGS.chinese
+];
+function isFolderNaming(value) {
+  return typeof value === "string" && FOLDER_NAMING_VALUES.includes(value);
+}
+var SUBJECT_FOLDER_KEYS = [
+  "book",
+  "anime",
+  "music",
+  "game",
+  "real"
+];
+var STATUS_FOLDER_KEYS = [
+  "wish",
+  "collect",
+  "do",
+  "on_hold",
+  "dropped"
+];
+var SUBJECT_NAMES_ZH = {
+  book: "\u4E66\u7C4D",
+  anime: "\u52A8\u753B",
+  music: "\u97F3\u4E50",
+  game: "\u6E38\u620F",
+  real: "\u4E09\u6B21\u5143"
+};
+var STATUS_NAMES_ZH = {
+  book: {
+    wish: "\u60F3\u8BFB",
+    collect: "\u8BFB\u8FC7",
+    do: "\u5728\u8BFB",
+    on_hold: "\u6401\u7F6E",
+    dropped: "\u629B\u5F03"
+  },
+  music: {
+    wish: "\u60F3\u542C",
+    collect: "\u542C\u8FC7",
+    do: "\u5728\u542C",
+    on_hold: "\u6401\u7F6E",
+    dropped: "\u629B\u5F03"
+  },
+  other: {
+    wish: "\u60F3\u770B",
+    collect: "\u770B\u8FC7",
+    do: "\u5728\u770B",
+    on_hold: "\u6401\u7F6E",
+    dropped: "\u629B\u5F03"
+  }
+};
+function subjectGroup(subjectType) {
+  if (subjectType === "book") return "book";
+  if (subjectType === "music") return "music";
+  return "other";
+}
+function subjectFolderName(subjectType, naming) {
+  var _a;
+  if (naming !== FOLDER_NAMINGS.chinese) return subjectType;
+  return (_a = SUBJECT_NAMES_ZH[subjectType]) != null ? _a : subjectType;
+}
+function statusFolderName(subjectType, collectionStatus, naming) {
+  var _a;
+  if (naming !== FOLDER_NAMINGS.chinese) return collectionStatus;
+  return (_a = STATUS_NAMES_ZH[subjectGroup(subjectType)][collectionStatus]) != null ? _a : collectionStatus;
+}
+
+// src/sync/folder-migration.ts
+var import_obsidian3 = require("obsidian");
+
+// src/utils/target-directory.ts
+function buildTargetDirectory({ root, layout, naming }, subjectType, collectionStatus) {
+  const type = subjectFolderName(subjectType, naming);
+  const status = statusFolderName(subjectType, collectionStatus, naming);
+  switch (layout) {
+    case BANGUMI_STORAGE_LAYOUTS.subjectThenCollection:
+      return `${root}/${type}/${status}`;
+    case BANGUMI_STORAGE_LAYOUTS.collectionThenSubject:
+      return `${root}/${status}/${type}`;
+    case BANGUMI_STORAGE_LAYOUTS.flat:
+    default:
+      return root;
+  }
+}
+
+// src/utils/vault.ts
+var import_obsidian2 = require("obsidian");
+async function ensureFolder(app, path) {
+  const parts = (0, import_obsidian2.normalizePath)(path).split("/").filter(Boolean);
+  let current = "";
+  for (const part of parts) {
+    current = current ? `${current}/${part}` : part;
+    if (!app.vault.getAbstractFileByPath(current)) {
+      await app.vault.createFolder(current);
+    }
+  }
+}
+function getMarkdownFilesInFolder(app, path) {
+  const root = app.vault.getAbstractFileByPath((0, import_obsidian2.normalizePath)(path));
+  if (root instanceof import_obsidian2.TFile) {
+    return root.extension === "md" ? [root] : [];
+  }
+  if (!(root instanceof import_obsidian2.TFolder)) {
+    return [];
+  }
+  const files = [];
+  collectMarkdownFiles(root, files);
+  return files;
+}
+function collectMarkdownFiles(folder, files) {
+  for (const child of folder.children) {
+    if (child instanceof import_obsidian2.TFile) {
+      if (child.extension === "md") {
+        files.push(child);
+      }
+      continue;
+    }
+    if (child instanceof import_obsidian2.TFolder) {
+      collectMarkdownFiles(child, files);
+    }
+  }
+}
+
+// src/sync/folder-migration.ts
+function parentOf(path) {
+  const index = path.lastIndexOf("/");
+  return index > 0 ? path.slice(0, index) : null;
+}
+var FolderMigration = class {
+  constructor(app, settings) {
+    this.app = app;
+    this.settings = settings;
+  }
+  buildPlan() {
+    const toNaming = this.settings.folderNaming;
+    const fromNaming = toNaming === FOLDER_NAMINGS.chinese ? FOLDER_NAMINGS.english : FOLDER_NAMINGS.chinese;
+    const plan = {
+      fromNaming,
+      toNaming,
+      moves: [],
+      conflicts: [],
+      sourceFolders: []
+    };
+    if (this.settings.storageLayout === BANGUMI_STORAGE_LAYOUTS.flat) {
+      return plan;
+    }
+    const root = this.settings.syncDirectory;
+    const sourceFolders = /* @__PURE__ */ new Set();
+    for (const subject of SUBJECT_FOLDER_KEYS) {
+      for (const status of STATUS_FOLDER_KEYS) {
+        const from = (0, import_obsidian3.normalizePath)(
+          buildTargetDirectory(
+            { root, layout: this.settings.storageLayout, naming: fromNaming },
+            subject,
+            status
+          )
+        );
+        const to = (0, import_obsidian3.normalizePath)(
+          buildTargetDirectory(
+            { root, layout: this.settings.storageLayout, naming: toNaming },
+            subject,
+            status
+          )
+        );
+        if (from === to) continue;
+        const folder = this.app.vault.getAbstractFileByPath(from);
+        if (!(folder instanceof import_obsidian3.TFolder)) continue;
+        sourceFolders.add(from);
+        for (const child of folder.children) {
+          if (!(child instanceof import_obsidian3.TFile) || child.extension !== "md") continue;
+          const targetPath = (0, import_obsidian3.normalizePath)(`${to}/${child.name}`);
+          const move = { from: child.path, to: targetPath };
+          if (this.app.vault.getAbstractFileByPath(targetPath)) {
+            plan.conflicts.push(move);
+          } else {
+            plan.moves.push(move);
+          }
+        }
+      }
+    }
+    plan.sourceFolders = [...sourceFolders];
+    return plan;
+  }
+  async execute(plan) {
+    let moved = 0;
+    for (const move of plan.moves) {
+      const file = this.app.vault.getAbstractFileByPath(move.from);
+      if (!(file instanceof import_obsidian3.TFile)) continue;
+      const directory = parentOf(move.to);
+      if (directory) {
+        await ensureFolder(this.app, directory);
+      }
+      await this.app.vault.rename(file, move.to);
+      moved += 1;
+    }
+    const removedFolders = await this.removeEmptyFolders(plan.sourceFolders);
+    return {
+      moved,
+      conflicts: plan.conflicts.length,
+      removedFolders
+    };
+  }
+  /**
+   * Delete the now-empty source folders, deepest first, then walk upwards so
+   * an emptied status folder (collection-then-subject) also disappears.
+   */
+  async removeEmptyFolders(folders) {
+    const candidates = /* @__PURE__ */ new Set();
+    for (const folder of folders) {
+      let current = folder;
+      while (current) {
+        candidates.add(current);
+        current = parentOf(current);
+      }
+    }
+    const root = (0, import_obsidian3.normalizePath)(this.settings.syncDirectory);
+    const ordered = [...candidates].filter((path) => path !== root && path.length > root.length).sort((a, b) => b.split("/").length - a.split("/").length);
+    let removed = 0;
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const path of ordered) {
+        const folder = this.app.vault.getAbstractFileByPath(path);
+        if (folder instanceof import_obsidian3.TFolder && folder.children.length === 0) {
+          await this.app.vault.delete(folder, true);
+          removed += 1;
+          changed = true;
+        }
+      }
+    }
+    return removed;
+  }
+};
+
 // src/settings.ts
 var SYNC_CONCURRENCY_MIN = 1;
 var SYNC_CONCURRENCY_MAX = 8;
@@ -1092,6 +1365,13 @@ function sanitizeLoadedSettings(loaded) {
       invalid.push("storageLayout");
     }
   }
+  if ("folderNaming" in obj) {
+    if (isFolderNaming(obj.folderNaming)) {
+      result.folderNaming = obj.folderNaming;
+    } else {
+      invalid.push("folderNaming");
+    }
+  }
   if ("fileNameFormat" in obj) {
     const value = obj.fileNameFormat;
     const allowed = Object.values(BANGUMI_FILE_NAME_FORMATS);
@@ -1163,6 +1443,7 @@ var DEFAULT_SETTINGS = {
   username: "",
   syncDirectory: "Bangumi",
   storageLayout: BANGUMI_STORAGE_LAYOUTS.flat,
+  folderNaming: FOLDER_NAMINGS.english,
   fileNameFormat: BANGUMI_FILE_NAME_FORMATS.titleThenId,
   includeOnHoldAndDropped: false,
   incrementalSync: true,
@@ -1273,7 +1554,7 @@ var FILE_NAME_FORMAT_OPTIONS = [
 ];
 var DAILY_NOTE_SYNC_SNIPPET = `<!-- bangumi-daily-sync-start -->
 <!-- bangumi-daily-sync-end -->`;
-var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
+var BangumiSyncSettingTab = class extends import_obsidian4.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -1288,8 +1569,8 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
     const selectedFileNameFormat = (_b = FILE_NAME_FORMAT_OPTIONS.find(
       (option) => option.key === this.plugin.settings.fileNameFormat
     )) != null ? _b : FILE_NAME_FORMAT_OPTIONS[0];
-    new import_obsidian2.Setting(containerEl).setName(t("bangumiSync")).setHeading();
-    new import_obsidian2.Setting(containerEl).setName(t("accessToken")).setDesc(t("accessTokenDesc")).addText((text) => {
+    new import_obsidian4.Setting(containerEl).setName(t("bangumiSync")).setHeading();
+    new import_obsidian4.Setting(containerEl).setName(t("accessToken")).setDesc(t("accessTokenDesc")).addText((text) => {
       text.inputEl.type = "password";
       text.setPlaceholder("Bearer token").setValue(this.plugin.settings.accessToken).onChange(async (value) => {
         this.plugin.settings.accessToken = value.trim();
@@ -1310,7 +1591,7 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         void this.plugin.testAccessToken();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("syncDirectory")).setDesc(t("syncDirectoryDesc")).addButton(
+    new import_obsidian4.Setting(containerEl).setName(t("syncDirectory")).setDesc(t("syncDirectoryDesc")).addButton(
       (button) => button.setButtonText(t("syncOneSubject")).onClick(() => {
         this.plugin.openSyncOneSubjectModal();
       })
@@ -1320,7 +1601,7 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("storageLayout")).setDesc(t(selectedStorageLayout.descriptionKey)).addDropdown((dropdown) => {
+    new import_obsidian4.Setting(containerEl).setName(t("storageLayout")).setDesc(t(selectedStorageLayout.descriptionKey)).addDropdown((dropdown) => {
       for (const option of STORAGE_LAYOUT_OPTIONS) {
         dropdown.addOption(option.key, t(option.labelKey));
       }
@@ -1330,7 +1611,20 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         this.display();
       });
     });
-    new import_obsidian2.Setting(containerEl).setName(t("fileNameFormat")).setDesc(t(selectedFileNameFormat.descriptionKey)).addDropdown((dropdown) => {
+    new import_obsidian4.Setting(containerEl).setName(t("folderNaming")).setDesc(t("folderNamingDesc")).addDropdown(
+      (dropdown) => dropdown.addOption(FOLDER_NAMINGS.english, t("folderNamingEnglish")).addOption(FOLDER_NAMINGS.chinese, t("folderNamingChinese")).setValue(this.plugin.settings.folderNaming).onChange(async (value) => {
+        this.plugin.settings.folderNaming = isFolderNaming(value) ? value : FOLDER_NAMINGS.english;
+        await this.plugin.saveSettings();
+      })
+    );
+    if (this.plugin.settings.storageLayout !== BANGUMI_STORAGE_LAYOUTS.flat) {
+      new import_obsidian4.Setting(containerEl).setName(t("migrateFolders")).setDesc(t("migrateFoldersDesc")).addButton(
+        (button) => button.setButtonText(t("migrateFoldersButton")).onClick(() => {
+          void this.openFolderMigration();
+        })
+      );
+    }
+    new import_obsidian4.Setting(containerEl).setName(t("fileNameFormat")).setDesc(t(selectedFileNameFormat.descriptionKey)).addDropdown((dropdown) => {
       for (const option of FILE_NAME_FORMAT_OPTIONS) {
         dropdown.addOption(option.key, t(option.labelKey));
       }
@@ -1340,55 +1634,55 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         this.display();
       });
     });
-    new import_obsidian2.Setting(containerEl).setName(t("includeOnHoldDropped")).setDesc(t("includeOnHoldDroppedDesc")).addToggle(
+    new import_obsidian4.Setting(containerEl).setName(t("includeOnHoldDropped")).setDesc(t("includeOnHoldDroppedDesc")).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.includeOnHoldAndDropped).onChange(async (enabled) => {
         this.plugin.settings.includeOnHoldAndDropped = enabled;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("incrementalSync")).setDesc(t("incrementalSyncDesc")).addToggle(
+    new import_obsidian4.Setting(containerEl).setName(t("incrementalSync")).setDesc(t("incrementalSyncDesc")).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.incrementalSync).onChange(async (enabled) => {
         this.plugin.settings.incrementalSync = enabled;
         await this.plugin.saveSettings();
         this.display();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("syncConcurrency")).setDesc(t("syncConcurrencyDesc")).addSlider(
+    new import_obsidian4.Setting(containerEl).setName(t("syncConcurrency")).setDesc(t("syncConcurrencyDesc")).addSlider(
       (slider) => slider.setLimits(SYNC_CONCURRENCY_MIN, SYNC_CONCURRENCY_MAX, 1).setValue(this.plugin.settings.syncConcurrency).setDynamicTooltip().onChange(async (value) => {
         this.plugin.settings.syncConcurrency = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("dnsFix")).setDesc(
-      import_obsidian2.Platform.isDesktopApp ? t("dnsFixDesc") : t("dnsFixMobileDesc")
+    new import_obsidian4.Setting(containerEl).setName(t("dnsFix")).setDesc(
+      import_obsidian4.Platform.isDesktopApp ? t("dnsFixDesc") : t("dnsFixMobileDesc")
     ).addDropdown(
-      (dropdown) => dropdown.addOption(DNS_FIX_MODES.auto, t("dnsFixAuto")).addOption(DNS_FIX_MODES.always, t("dnsFixAlways")).addOption(DNS_FIX_MODES.off, t("dnsFixOff")).setValue(this.plugin.settings.dnsFixMode).setDisabled(!import_obsidian2.Platform.isDesktopApp).onChange(async (value) => {
+      (dropdown) => dropdown.addOption(DNS_FIX_MODES.auto, t("dnsFixAuto")).addOption(DNS_FIX_MODES.always, t("dnsFixAlways")).addOption(DNS_FIX_MODES.off, t("dnsFixOff")).setValue(this.plugin.settings.dnsFixMode).setDisabled(!import_obsidian4.Platform.isDesktopApp).onChange(async (value) => {
         this.plugin.settings.dnsFixMode = isDnsFixMode(value) ? value : DNS_FIX_MODES.auto;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("dailyNoteSync")).setDesc(t("dailyNoteSyncDesc")).addToggle(
+    new import_obsidian4.Setting(containerEl).setName(t("dailyNoteSync")).setDesc(t("dailyNoteSyncDesc")).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.dailyNoteSync).onChange(async (enabled) => {
         this.plugin.settings.dailyNoteSync = enabled;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("dailyNoteFolder")).setDesc(t("dailyNoteFolderDesc")).addText(
+    new import_obsidian4.Setting(containerEl).setName(t("dailyNoteFolder")).setDesc(t("dailyNoteFolderDesc")).addText(
       (text) => text.setPlaceholder("Daily").setValue(this.plugin.settings.dailyNoteFolder).onChange(async (value) => {
         this.plugin.settings.dailyNoteFolder = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("dailyNoteFormat")).setDesc(t("dailyNoteFormatDesc")).addText(
+    new import_obsidian4.Setting(containerEl).setName(t("dailyNoteFormat")).setDesc(t("dailyNoteFormatDesc")).addText(
       (text) => text.setPlaceholder("YYYY-MM-DD").setValue(this.plugin.settings.dailyNoteFormat).onChange(async (value) => {
         this.plugin.settings.dailyNoteFormat = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("dailyNoteSyncBlock")).setDesc(t("dailyNoteSyncBlockDesc")).addButton(
+    new import_obsidian4.Setting(containerEl).setName(t("dailyNoteSyncBlock")).setDesc(t("dailyNoteSyncBlockDesc")).addButton(
       (button) => button.setButtonText(t("copy")).onClick(async () => {
         await navigator.clipboard.writeText(DAILY_NOTE_SYNC_SNIPPET);
-        new import_obsidian2.Notice(t("copiedDailyNoteSyncBlock"));
+        new import_obsidian4.Notice(t("copiedDailyNoteSyncBlock"));
       })
     );
     const dailySnippetEl = containerEl.createEl("textarea", {
@@ -1397,7 +1691,7 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
     dailySnippetEl.readOnly = true;
     dailySnippetEl.rows = 2;
     dailySnippetEl.addClass("bangumi-note-daily-sync-snippet");
-    new import_obsidian2.Setting(containerEl).setName(t("enableOnAirNote")).setDesc(t("enableOnAirNoteDesc")).addButton(
+    new import_obsidian4.Setting(containerEl).setName(t("enableOnAirNote")).setDesc(t("enableOnAirNoteDesc")).addButton(
       (button) => button.setButtonText(t("updateOnAirNote")).onClick(() => {
         void this.plugin.updateOnAirNote();
       })
@@ -1407,13 +1701,13 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("enableWriteBack")).setDesc(t("enableWriteBackDesc")).addToggle(
+    new import_obsidian4.Setting(containerEl).setName(t("enableWriteBack")).setDesc(t("enableWriteBackDesc")).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.enableWriteBack).onChange(async (enabled) => {
         this.plugin.settings.enableWriteBack = enabled;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("lastSyncedAt")).setDesc(
+    new import_obsidian4.Setting(containerEl).setName(t("lastSyncedAt")).setDesc(
       formatLocalDateTime(this.plugin.settings.lastSyncedAt) || t("neverSynced")
     ).addButton(
       (button) => button.setButtonText(t("resetSyncState")).onClick(async () => {
@@ -1422,9 +1716,9 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         this.display();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("subjectTypes")).setHeading();
+    new import_obsidian4.Setting(containerEl).setName(t("subjectTypes")).setHeading();
     for (const option of SUBJECT_OPTIONS) {
-      new import_obsidian2.Setting(containerEl).setName(t(option.labelKey)).setDesc(t(option.descriptionKey)).addToggle(
+      new import_obsidian4.Setting(containerEl).setName(t(option.labelKey)).setDesc(t(option.descriptionKey)).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.subjectTypes.includes(option.key)).onChange(async (enabled) => {
           const selected = new Set(this.plugin.settings.subjectTypes);
           if (enabled) {
@@ -1437,9 +1731,9 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         })
       );
     }
-    new import_obsidian2.Setting(containerEl).setName(t("collectionStatuses")).setHeading();
+    new import_obsidian4.Setting(containerEl).setName(t("collectionStatuses")).setHeading();
     for (const option of COLLECTION_OPTIONS) {
-      new import_obsidian2.Setting(containerEl).setName(t(option.labelKey)).setDesc(t(option.descriptionKey)).addToggle(
+      new import_obsidian4.Setting(containerEl).setName(t(option.labelKey)).setDesc(t(option.descriptionKey)).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.collectionTypes.includes(option.key)).onChange(async (enabled) => {
           const selected = new Set(this.plugin.settings.collectionTypes);
           if (enabled) {
@@ -1452,33 +1746,33 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         })
       );
     }
-    new import_obsidian2.Setting(containerEl).setName(t("templateDataSources")).setDesc(t("templateDataSourcesDesc")).setHeading();
-    new import_obsidian2.Setting(containerEl).setName(t("fetchDetailedSubjectInfo")).setDesc(t("fetchDetailedSubjectInfoDesc")).addToggle(
+    new import_obsidian4.Setting(containerEl).setName(t("templateDataSources")).setDesc(t("templateDataSourcesDesc")).setHeading();
+    new import_obsidian4.Setting(containerEl).setName(t("fetchDetailedSubjectInfo")).setDesc(t("fetchDetailedSubjectInfoDesc")).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.fetchDetailedSubjectInfo).onChange(async (enabled) => {
         this.plugin.settings.fetchDetailedSubjectInfo = enabled;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("fetchStaff")).setDesc(t("fetchStaffDesc")).addToggle(
+    new import_obsidian4.Setting(containerEl).setName(t("fetchStaff")).setDesc(t("fetchStaffDesc")).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.fetchStaff).onChange(async (enabled) => {
         this.plugin.settings.fetchStaff = enabled;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("fetchCharacters")).setDesc(t("fetchCharactersDesc")).addToggle(
+    new import_obsidian4.Setting(containerEl).setName(t("fetchCharacters")).setDesc(t("fetchCharactersDesc")).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.fetchCharacters).onChange(async (enabled) => {
         this.plugin.settings.fetchCharacters = enabled;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("fetchRelations")).setDesc(t("fetchRelationsDesc")).addToggle(
+    new import_obsidian4.Setting(containerEl).setName(t("fetchRelations")).setDesc(t("fetchRelationsDesc")).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.fetchRelations).onChange(async (enabled) => {
         this.plugin.settings.fetchRelations = enabled;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("noteTemplate")).setHeading();
-    const subjectTemplateSetting = new import_obsidian2.Setting(containerEl).setName(t("subjectNoteTemplate")).setDesc(t("subjectNoteTemplateDesc"));
+    new import_obsidian4.Setting(containerEl).setName(t("noteTemplate")).setHeading();
+    const subjectTemplateSetting = new import_obsidian4.Setting(containerEl).setName(t("subjectNoteTemplate")).setDesc(t("subjectNoteTemplateDesc"));
     subjectTemplateSetting.descEl.addClass("bangumi-note-template-desc");
     const subjectTemplateEl = containerEl.createEl("textarea");
     subjectTemplateEl.rows = 18;
@@ -1488,12 +1782,12 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
       this.plugin.settings.subjectNoteTemplate = subjectTemplateEl.value.trim() || DEFAULT_SUBJECT_NOTE_TEMPLATE;
       void this.plugin.saveSettings();
     });
-    new import_obsidian2.Setting(containerEl).setName(t("templateVariablesDoc")).setDesc(t("templateVariablesDocDesc")).addButton(
+    new import_obsidian4.Setting(containerEl).setName(t("templateVariablesDoc")).setDesc(t("templateVariablesDocDesc")).addButton(
       (button) => button.setButtonText(t("templateVariablesDoc")).onClick(() => {
         void this.plugin.openTemplateVariablesDoc();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t("resetSubjectNoteTemplate")).setDesc(t("resetSubjectNoteTemplateDesc")).addButton(
+    new import_obsidian4.Setting(containerEl).setName(t("resetSubjectNoteTemplate")).setDesc(t("resetSubjectNoteTemplateDesc")).addButton(
       (button) => button.setButtonText(t("reset")).onClick(async () => {
         this.plugin.settings.subjectNoteTemplate = DEFAULT_SUBJECT_NOTE_TEMPLATE;
         await this.plugin.saveSettings();
@@ -1501,13 +1795,93 @@ var BangumiSyncSettingTab = class extends import_obsidian2.PluginSettingTab {
       })
     );
   }
+  async openFolderMigration() {
+    const migration = new FolderMigration(this.app, this.plugin.settings);
+    const plan = migration.buildPlan();
+    if (plan.moves.length === 0 && plan.conflicts.length === 0) {
+      new import_obsidian4.Notice(t("migrateFoldersNothing"));
+      return;
+    }
+    const confirmed = await new Promise((resolve) => {
+      new FolderMigrationModal(this.app, plan, resolve).open();
+    });
+    if (!confirmed) return;
+    try {
+      new import_obsidian4.Notice(t("migrateFoldersRunning"));
+      const result = await migration.execute(plan);
+      this.plugin.invalidateProgressBoardCache();
+      new import_obsidian4.Notice(
+        t("migrateFoldersDone", {
+          moved: result.moved,
+          conflicts: result.conflicts
+        })
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("unknownError");
+      new import_obsidian4.Notice(t("migrateFoldersFailed", { message }));
+      console.error(error);
+    }
+  }
+};
+var FolderMigrationModal = class extends import_obsidian4.Modal {
+  constructor(app, plan, resolve) {
+    super(app);
+    this.plan = plan;
+    this.resolve = resolve;
+    this.resolved = false;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    new import_obsidian4.Setting(contentEl).setName(t("migrateFoldersTitle")).setHeading();
+    contentEl.createEl("p", {
+      text: t("migrateFoldersIntro", {
+        moves: this.plan.moves.length,
+        conflicts: this.plan.conflicts.length
+      })
+    });
+    const lines = this.plan.moves.slice(0, 40).map((move) => `${move.from}  ->  ${move.to}`);
+    if (this.plan.moves.length > 40) {
+      lines.push(
+        t("migrateFoldersMore", { count: this.plan.moves.length - 40 })
+      );
+    }
+    if (lines.length > 0) {
+      contentEl.createEl("pre", { text: lines.join("\n") }).addClass("bangumi-note-push-preview");
+    }
+    if (this.plan.conflicts.length > 0) {
+      contentEl.createEl("p", { text: t("migrateFoldersConflictNote") });
+      const conflicts = this.plan.conflicts.slice(0, 10).map((move) => move.from);
+      contentEl.createEl("pre", { text: conflicts.join("\n") }).addClass("bangumi-note-push-preview");
+    }
+    new import_obsidian4.Setting(contentEl).addButton(
+      (button) => button.setButtonText(t("migrateFoldersCancel")).onClick(() => {
+        this.finish(false);
+        this.close();
+      })
+    ).addButton(
+      (button) => button.setButtonText(t("migrateFoldersConfirm")).setCta().onClick(() => {
+        this.finish(true);
+        this.close();
+      })
+    );
+  }
+  onClose() {
+    this.contentEl.empty();
+    this.finish(false);
+  }
+  finish(confirmed) {
+    if (this.resolved) return;
+    this.resolved = true;
+    this.resolve(confirmed);
+  }
 };
 
 // src/bangumi/client.ts
-var import_obsidian4 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 
 // src/bangumi/doh.ts
-var import_obsidian3 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 var DOH_ENDPOINTS = [
   "https://1.12.12.12/dns-query",
   "https://1.1.1.1/dns-query",
@@ -1525,7 +1899,7 @@ var addressCache = /* @__PURE__ */ new Map();
 var badAddresses = /* @__PURE__ */ new Map();
 var unavailableUntil = 0;
 function isDohTransportAvailable() {
-  return import_obsidian3.Platform.isDesktopApp;
+  return import_obsidian5.Platform.isDesktopApp;
 }
 function loadNodeModule(id) {
   const fromWindow = window.require;
@@ -2043,7 +2417,7 @@ var BangumiClient = class {
   }
   async executeWithObsidianTransport(path, request) {
     const { timeoutMs } = request;
-    const requestPromise = (0, import_obsidian4.requestUrl)({
+    const requestPromise = (0, import_obsidian6.requestUrl)({
       url: request.url,
       method: request.method,
       headers: request.headers,
@@ -2152,46 +2526,8 @@ function parseRetryAfter(headers) {
   return null;
 }
 
-// src/utils/vault.ts
-var import_obsidian5 = require("obsidian");
-async function ensureFolder(app, path) {
-  const parts = (0, import_obsidian5.normalizePath)(path).split("/").filter(Boolean);
-  let current = "";
-  for (const part of parts) {
-    current = current ? `${current}/${part}` : part;
-    if (!app.vault.getAbstractFileByPath(current)) {
-      await app.vault.createFolder(current);
-    }
-  }
-}
-function getMarkdownFilesInFolder(app, path) {
-  const root = app.vault.getAbstractFileByPath((0, import_obsidian5.normalizePath)(path));
-  if (root instanceof import_obsidian5.TFile) {
-    return root.extension === "md" ? [root] : [];
-  }
-  if (!(root instanceof import_obsidian5.TFolder)) {
-    return [];
-  }
-  const files = [];
-  collectMarkdownFiles(root, files);
-  return files;
-}
-function collectMarkdownFiles(folder, files) {
-  for (const child of folder.children) {
-    if (child instanceof import_obsidian5.TFile) {
-      if (child.extension === "md") {
-        files.push(child);
-      }
-      continue;
-    }
-    if (child instanceof import_obsidian5.TFolder) {
-      collectMarkdownFiles(child, files);
-    }
-  }
-}
-
 // src/sync/sync-service.ts
-var import_obsidian8 = require("obsidian");
+var import_obsidian9 = require("obsidian");
 
 // src/utils/concurrency.ts
 async function mapWithConcurrency(items, concurrency, worker) {
@@ -2215,21 +2551,8 @@ async function mapWithConcurrency(items, concurrency, worker) {
   return results;
 }
 
-// src/utils/target-directory.ts
-function buildTargetDirectory({ root, layout }, subjectType, collectionStatus) {
-  switch (layout) {
-    case BANGUMI_STORAGE_LAYOUTS.subjectThenCollection:
-      return `${root}/${subjectType}/${collectionStatus}`;
-    case BANGUMI_STORAGE_LAYOUTS.collectionThenSubject:
-      return `${root}/${collectionStatus}/${subjectType}`;
-    case BANGUMI_STORAGE_LAYOUTS.flat:
-    default:
-      return root;
-  }
-}
-
 // src/sync/note-writer.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 var NoteWriter = class {
   constructor(app, renderer, fileNameFormat) {
     this.app = app;
@@ -2249,14 +2572,14 @@ var NoteWriter = class {
       await this.app.vault.modify(existing, next);
       return { file: existing, changed: true };
     }
-    const directory = (0, import_obsidian6.normalizePath)(targetDirectory);
+    const directory = (0, import_obsidian7.normalizePath)(targetDirectory);
     await this.ensureFolder(directory);
     const title = subject.collection.subject.name_cn || subject.collection.subject.name;
-    const path = (0, import_obsidian6.normalizePath)(
+    const path = (0, import_obsidian7.normalizePath)(
       `${directory}/${this.buildFileName(title, subjectId)}.md`
     );
     const existingAtPath = this.app.vault.getAbstractFileByPath(path);
-    if (existingAtPath instanceof import_obsidian6.TFile) {
+    if (existingAtPath instanceof import_obsidian7.TFile) {
       const previous = await this.app.vault.read(existingAtPath);
       const next = this.renderer.mergeSyncedContent(previous, rendered);
       index.add(subjectId, existingAtPath);
@@ -2297,7 +2620,7 @@ var NoteWriter = class {
       await vault.adapter.write(path, next);
     }
     const file = vault.getAbstractFileByPath(path);
-    if (file instanceof import_obsidian6.TFile) {
+    if (file instanceof import_obsidian7.TFile) {
       index.add(subjectId, file);
       return { file, changed: next !== previous };
     }
@@ -2332,13 +2655,13 @@ var NoteWriter = class {
 };
 
 // src/sync/subject-note-index.ts
-var import_obsidian7 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 var SubjectNoteIndex = class _SubjectNoteIndex {
   constructor() {
     this.byId = /* @__PURE__ */ new Map();
   }
   static build(app, syncDirectory) {
-    const directory = (0, import_obsidian7.normalizePath)(syncDirectory);
+    const directory = (0, import_obsidian8.normalizePath)(syncDirectory);
     const index = new _SubjectNoteIndex();
     for (const file of getMarkdownFilesInFolder(app, directory)) {
       const id = readSubjectId(app, file);
@@ -2848,7 +3171,7 @@ var SyncService = class {
     }
     const path = this.getDailyNotePath();
     const existing = this.app.vault.getAbstractFileByPath(path);
-    if (!(existing instanceof import_obsidian8.TFile)) {
+    if (!(existing instanceof import_obsidian9.TFile)) {
       this.recordDailyNoteSyncWarning(
         options,
         t("dailyNoteSyncNoteMissing", { path })
@@ -2880,7 +3203,7 @@ var SyncService = class {
     }
     const existing = this.app.vault.getAbstractFileByPath(path);
     const nextBlock = this.renderDailySyncBlock(entries);
-    if (existing instanceof import_obsidian8.TFile) {
+    if (existing instanceof import_obsidian9.TFile) {
       const previous = await this.app.vault.read(existing);
       await this.app.vault.modify(
         existing,
@@ -2891,7 +3214,7 @@ var SyncService = class {
     throw new Error(t("dailyNoteSyncNoteMissing", { path }));
   }
   renderDailySyncBlock(entries) {
-    const date = (0, import_obsidian8.moment)().format("YYYY-MM-DD");
+    const date = (0, import_obsidian9.moment)().format("YYYY-MM-DD");
     const rows = entries.map((entry) => this.renderDailySyncRow(entry, date));
     return [
       DAILY_SYNC_BLOCK_START,
@@ -2988,9 +3311,9 @@ var SyncService = class {
     const options = this.getDailyNotesOptions();
     const format = this.settings.dailyNoteFormat.trim() || options.format || "YYYY-MM-DD";
     const folderInput = this.settings.dailyNoteFolder.trim() || options.folder || "";
-    const fileName = `${(0, import_obsidian8.moment)().format(format)}.md`;
-    const folder = folderInput ? (0, import_obsidian8.normalizePath)(folderInput) : "";
-    return (0, import_obsidian8.normalizePath)(folder ? `${folder}/${fileName}` : fileName);
+    const fileName = `${(0, import_obsidian9.moment)().format(format)}.md`;
+    const folder = folderInput ? (0, import_obsidian9.normalizePath)(folderInput) : "";
+    return (0, import_obsidian9.normalizePath)(folder ? `${folder}/${fileName}` : fileName);
   }
   getDailyNotesOptions() {
     var _a, _b, _c;
@@ -3044,19 +3367,20 @@ var SyncService = class {
     return buildTargetDirectory(
       {
         root: this.settings.syncDirectory,
-        layout: this.settings.storageLayout
+        layout: this.settings.storageLayout,
+        naming: this.settings.folderNaming
       },
       subjectTypeLabel(collection.subject.type),
       collectionStatusLabel(collection.type)
     );
   }
   async writeFailureReport(params) {
-    const directory = (0, import_obsidian8.normalizePath)(this.settings.syncDirectory);
+    const directory = (0, import_obsidian9.normalizePath)(this.settings.syncDirectory);
     await ensureFolder(this.app, directory);
-    const path = (0, import_obsidian8.normalizePath)(`${directory}/${REPORT_FILE_NAME}`);
+    const path = (0, import_obsidian9.normalizePath)(`${directory}/${REPORT_FILE_NAME}`);
     const content = this.renderFailureReport(params);
     const existing = this.app.vault.getAbstractFileByPath(path);
-    if (existing instanceof import_obsidian8.TFile) {
+    if (existing instanceof import_obsidian9.TFile) {
       await this.app.vault.modify(existing, content);
     } else {
       await this.app.vault.create(path, content);
@@ -3107,7 +3431,7 @@ var SyncService = class {
 };
 
 // src/sync/push-service.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 var PushService = class {
   constructor(app, settings, clientFactory = () => new BangumiClient({
     accessToken: settings.accessToken,
@@ -3120,7 +3444,7 @@ var PushService = class {
   async prepareCurrentNotePush() {
     var _a, _b, _c, _d, _e, _f, _g, _h;
     const file = this.app.workspace.getActiveFile();
-    if (!(file instanceof import_obsidian9.TFile) || file.extension !== "md") {
+    if (!(file instanceof import_obsidian10.TFile) || file.extension !== "md") {
       throw new Error(t("pushNoActiveFile"));
     }
     const cache = this.app.metadataCache.getFileCache(file);
@@ -3455,17 +3779,17 @@ var PushService = class {
     if (this.settings.storageLayout === BANGUMI_STORAGE_LAYOUTS.flat) {
       return void 0;
     }
-    const targetDirectory = (0, import_obsidian9.normalizePath)(
+    const targetDirectory = (0, import_obsidian10.normalizePath)(
       this.getTargetDirectory(preview.subjectType, finalCollectionType)
     );
     await this.ensureFolder(targetDirectory);
     const fileName = (_a = preview.file.path.split("/").pop()) != null ? _a : preview.file.name;
-    const targetPath = (0, import_obsidian9.normalizePath)(`${targetDirectory}/${fileName}`);
-    if ((0, import_obsidian9.normalizePath)(preview.file.path) === targetPath) {
+    const targetPath = (0, import_obsidian10.normalizePath)(`${targetDirectory}/${fileName}`);
+    if ((0, import_obsidian10.normalizePath)(preview.file.path) === targetPath) {
       return void 0;
     }
     const existing = this.app.vault.getAbstractFileByPath(targetPath);
-    if (existing instanceof import_obsidian9.TFile && existing !== preview.file) {
+    if (existing instanceof import_obsidian10.TFile && existing !== preview.file) {
       throw new Error(t("pushMoveTargetExists", { path: targetPath }));
     }
     await this.app.vault.rename(preview.file, targetPath);
@@ -3501,7 +3825,7 @@ var PushService = class {
 };
 
 // src/sync/on-air-service.ts
-var import_obsidian10 = require("obsidian");
+var import_obsidian11 = require("obsidian");
 var ON_AIR_BLOCK_START = "<!-- bangumi-onair-start -->";
 var ON_AIR_BLOCK_END = "<!-- bangumi-onair-end -->";
 var ON_AIR_FILE_NAME = "On Air.md";
@@ -3549,12 +3873,12 @@ var OnAirService = class {
       localNoteBySubjectId
     );
     const allRows = this.buildAllRows(calendar, localNoteBySubjectId);
-    const directory = (0, import_obsidian10.normalizePath)(this.settings.syncDirectory || "Bangumi");
+    const directory = (0, import_obsidian11.normalizePath)(this.settings.syncDirectory || "Bangumi");
     await ensureFolder(this.app, directory);
-    const path = (0, import_obsidian10.normalizePath)(`${directory}/${ON_AIR_FILE_NAME}`);
+    const path = (0, import_obsidian11.normalizePath)(`${directory}/${ON_AIR_FILE_NAME}`);
     const content = this.renderOnAirNote(myRows, allRows);
     const existing = this.app.vault.getAbstractFileByPath(path);
-    if (existing instanceof import_obsidian10.TFile) {
+    if (existing instanceof import_obsidian11.TFile) {
       const previous = await this.app.vault.read(existing);
       const next = this.mergeOnAirBlock(previous, content);
       if (next === previous) {
@@ -3728,7 +4052,7 @@ ${existingContent}`;
 };
 
 // src/sync/progress-board-service.ts
-var import_obsidian11 = require("obsidian");
+var import_obsidian12 = require("obsidian");
 var ProgressBoardService = class {
   constructor(app, syncDirectory) {
     this.app = app;
@@ -3736,7 +4060,7 @@ var ProgressBoardService = class {
   }
   listDoingItems() {
     var _a;
-    const directory = (0, import_obsidian11.normalizePath)(this.syncDirectory || "Bangumi");
+    const directory = (0, import_obsidian12.normalizePath)(this.syncDirectory || "Bangumi");
     const items = [];
     for (const file of getMarkdownFilesInFolder(this.app, directory)) {
       const frontmatter = (_a = this.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter;
@@ -3786,7 +4110,7 @@ var ProgressBoardCache = class {
     this.cachedItems = null;
   }
   listDoingItems(syncDirectory, forceRefresh = false) {
-    const directory = (0, import_obsidian11.normalizePath)(syncDirectory || "Bangumi");
+    const directory = (0, import_obsidian12.normalizePath)(syncDirectory || "Bangumi");
     if (!forceRefresh && this.cachedItems !== null && this.cachedDirectory === directory) {
       return this.cachedItems;
     }
@@ -3803,7 +4127,7 @@ var ProgressBoardCache = class {
 };
 
 // src/progress-board-view.ts
-var import_obsidian12 = require("obsidian");
+var import_obsidian13 = require("obsidian");
 var VIEW_TYPE_BANGUMI_BOARD = "bangumi-progress-board";
 var BOARD_TYPE_FILTERS = ["all", "anime", "book", "music", "game", "real"];
 var BOARD_STATUS_OPTIONS = [
@@ -3813,7 +4137,7 @@ var BOARD_STATUS_OPTIONS = [
   { type: BANGUMI_COLLECTION_TYPES.onHold, label: "on_hold" },
   { type: BANGUMI_COLLECTION_TYPES.dropped, label: "dropped" }
 ];
-var ProgressBoardView = class extends import_obsidian12.ItemView {
+var ProgressBoardView = class extends import_obsidian13.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.plugin = plugin;
@@ -3854,7 +4178,7 @@ var ProgressBoardView = class extends import_obsidian12.ItemView {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("bangumi-note-board");
-    new import_obsidian12.Setting(contentEl).setName(t("boardTitle")).addDropdown((dropdown) => {
+    new import_obsidian13.Setting(contentEl).setName(t("boardTitle")).addDropdown((dropdown) => {
       for (const type of BOARD_TYPE_FILTERS) {
         dropdown.addOption(type, this.getTypeFilterLabel(type));
       }
@@ -3894,7 +4218,7 @@ var ProgressBoardView = class extends import_obsidian12.ItemView {
   }
   async openItem(item) {
     if (!this.plugin.settings.accessToken) {
-      new import_obsidian12.Notice(t("noToken"));
+      new import_obsidian13.Notice(t("noToken"));
       return;
     }
     this.selectedItem = item;
@@ -3904,7 +4228,7 @@ var ProgressBoardView = class extends import_obsidian12.ItemView {
       await this.loadItemEpisodes(item);
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian12.Notice(t("boardLoadFailed", { message }));
+      new import_obsidian13.Notice(t("boardLoadFailed", { message }));
       this.episodes = [];
       this.remoteStatus = null;
     } finally {
@@ -3946,7 +4270,7 @@ var ProgressBoardView = class extends import_obsidian12.ItemView {
       this.renderList();
       return;
     }
-    new import_obsidian12.Setting(contentEl).setName(item.title).addButton(
+    new import_obsidian13.Setting(contentEl).setName(item.title).addButton(
       (button) => button.setButtonText(t("boardBackToList")).onClick(() => this.renderList())
     ).addButton(
       (button) => button.setButtonText(t("boardRefreshItem")).onClick(() => {
@@ -3960,7 +4284,7 @@ var ProgressBoardView = class extends import_obsidian12.ItemView {
       });
       return;
     }
-    new import_obsidian12.Setting(contentEl).setName(t("boardStatus")).addDropdown((dropdown) => {
+    new import_obsidian13.Setting(contentEl).setName(t("boardStatus")).addDropdown((dropdown) => {
       var _a;
       for (const option of BOARD_STATUS_OPTIONS) {
         dropdown.addOption(String(option.type), option.label);
@@ -4004,7 +4328,7 @@ var ProgressBoardView = class extends import_obsidian12.ItemView {
         undone: summary.markUndone.length
       })
     });
-    new import_obsidian12.Setting(contentEl).addButton(
+    new import_obsidian13.Setting(contentEl).addButton(
       (button) => button.setButtonText(t("boardDiscardChanges")).onClick(() => {
         for (const episode of this.episodes) {
           episode.localChecked = episode.remoteChecked;
@@ -4025,7 +4349,7 @@ var ProgressBoardView = class extends import_obsidian12.ItemView {
   }
   async pushChanges() {
     if (!this.plugin.settings.enableWriteBack) {
-      new import_obsidian12.Notice(t("pushWriteBackDisabled"));
+      new import_obsidian13.Notice(t("pushWriteBackDisabled"));
       return;
     }
     const item = this.selectedItem;
@@ -4034,17 +4358,17 @@ var ProgressBoardView = class extends import_obsidian12.ItemView {
     }
     const changes = this.getChanges();
     if (changes.markDone.length === 0 && changes.markUndone.length === 0) {
-      new import_obsidian12.Notice(t("pushNoChanges"));
+      new import_obsidian13.Notice(t("pushNoChanges"));
       return;
     }
     const confirmed = await this.confirmPush(changes);
     if (!confirmed) {
-      new import_obsidian12.Notice(t("pushCancelled"));
+      new import_obsidian13.Notice(t("pushCancelled"));
       return;
     }
     try {
       const client = this.plugin.getBangumiClient();
-      new import_obsidian12.Notice(t("pushStarted"));
+      new import_obsidian13.Notice(t("pushStarted"));
       if (changes.markDone.length > 0) {
         await client.patchSubjectEpisodeCollections({
           subjectId: item.subjectId,
@@ -4062,7 +4386,7 @@ var ProgressBoardView = class extends import_obsidian12.ItemView {
       await this.reloadAndVerify(item, changes);
       await this.updateLocalEpisodeChecklist(item);
       this.updateListProgress(item);
-      new import_obsidian12.Notice(
+      new import_obsidian13.Notice(
         t("boardPushFinished", {
           episodes: changes.markDone.length + changes.markUndone.length
         })
@@ -4070,14 +4394,14 @@ var ProgressBoardView = class extends import_obsidian12.ItemView {
       this.renderDetail();
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian12.Notice(t("pushFailed", { message }));
+      new import_obsidian13.Notice(t("pushFailed", { message }));
       console.error(error);
     }
   }
   async changeStatus(nextType) {
     var _a, _b;
     if (!this.plugin.settings.enableWriteBack) {
-      new import_obsidian12.Notice(t("pushWriteBackDisabled"));
+      new import_obsidian13.Notice(t("pushWriteBackDisabled"));
       this.renderDetail();
       return;
     }
@@ -4093,7 +4417,7 @@ var ProgressBoardView = class extends import_obsidian12.ItemView {
     }
     try {
       const client = this.plugin.getBangumiClient();
-      new import_obsidian12.Notice(t("boardStatusStarted"));
+      new import_obsidian13.Notice(t("boardStatusStarted"));
       await client.patchSubjectCollection({
         subjectId: item.subjectId,
         type: nextType,
@@ -4125,7 +4449,7 @@ var ProgressBoardView = class extends import_obsidian12.ItemView {
         comment: this.remoteComment,
         rate: this.remoteRating
       });
-      new import_obsidian12.Notice(
+      new import_obsidian13.Notice(
         t("boardStatusFinished", {
           status: collectionStatusLabel(remote.type)
         })
@@ -4143,7 +4467,7 @@ var ProgressBoardView = class extends import_obsidian12.ItemView {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian12.Notice(t("pushFailed", { message }));
+      new import_obsidian13.Notice(t("pushFailed", { message }));
       console.error(error);
       this.renderDetail();
     }
@@ -4201,13 +4525,13 @@ var ProgressBoardView = class extends import_obsidian12.ItemView {
     if (this.plugin.settings.storageLayout === BANGUMI_STORAGE_LAYOUTS.flat) {
       return;
     }
-    const targetDirectory = (0, import_obsidian12.normalizePath)(
+    const targetDirectory = (0, import_obsidian13.normalizePath)(
       this.getTargetDirectory(item.type, collectionStatusLabel(status))
     );
     await this.ensureFolder(targetDirectory);
     const fileName = (_a = item.file.path.split("/").pop()) != null ? _a : item.file.name;
-    const targetPath = (0, import_obsidian12.normalizePath)(`${targetDirectory}/${fileName}`);
-    if ((0, import_obsidian12.normalizePath)(item.file.path) === targetPath) {
+    const targetPath = (0, import_obsidian13.normalizePath)(`${targetDirectory}/${fileName}`);
+    if ((0, import_obsidian13.normalizePath)(item.file.path) === targetPath) {
       return;
     }
     const existing = this.app.vault.getAbstractFileByPath(targetPath);
@@ -4222,7 +4546,8 @@ var ProgressBoardView = class extends import_obsidian12.ItemView {
     return buildTargetDirectory(
       {
         root: this.plugin.settings.syncDirectory,
-        layout: this.plugin.settings.storageLayout
+        layout: this.plugin.settings.storageLayout,
+        naming: this.plugin.settings.folderNaming
       },
       type,
       status
@@ -4354,7 +4679,7 @@ function updateEpisodeChecklistContent(content, checkedByEpisodeId) {
   );
   return `${before}${nextBlock}${after}`;
 }
-var BoardPushConfirmModal = class extends import_obsidian12.Modal {
+var BoardPushConfirmModal = class extends import_obsidian13.Modal {
   constructor(app, changes, resolve) {
     super(app);
     this.changes = changes;
@@ -4364,7 +4689,7 @@ var BoardPushConfirmModal = class extends import_obsidian12.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
-    new import_obsidian12.Setting(contentEl).setName(t("pushConfirmTitle")).setHeading();
+    new import_obsidian13.Setting(contentEl).setName(t("pushConfirmTitle")).setHeading();
     contentEl.createEl("p", { text: t("pushConfirmDesc") });
     const lines = [
       `Mark done: ${this.changes.markDone.length}`,
@@ -4378,7 +4703,7 @@ var BoardPushConfirmModal = class extends import_obsidian12.Modal {
     ];
     const previewEl = contentEl.createEl("pre", { text: lines.join("\n") });
     previewEl.addClass("bangumi-note-push-preview");
-    new import_obsidian12.Setting(contentEl).addButton(
+    new import_obsidian13.Setting(contentEl).addButton(
       (button) => button.setButtonText(t("pushCancel")).onClick(() => {
         this.finish(false);
         this.close();
@@ -4400,7 +4725,7 @@ var BoardPushConfirmModal = class extends import_obsidian12.Modal {
     this.resolve(confirmed);
   }
 };
-var BoardStatusCommentModal = class extends import_obsidian12.Modal {
+var BoardStatusCommentModal = class extends import_obsidian13.Modal {
   constructor(app, previousStatus, nextStatus, initialComment, initialRating, resolve) {
     super(app);
     this.previousStatus = previousStatus;
@@ -4417,9 +4742,9 @@ var BoardStatusCommentModal = class extends import_obsidian12.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
-    new import_obsidian12.Setting(contentEl).setName(t("boardStatusCommentTitle", { status: this.nextStatus })).setHeading();
+    new import_obsidian13.Setting(contentEl).setName(t("boardStatusCommentTitle", { status: this.nextStatus })).setHeading();
     contentEl.createEl("p", { text: t("boardStatusCommentDesc") });
-    new import_obsidian12.Setting(contentEl).setName(t("boardRating")).addDropdown((dropdown) => {
+    new import_obsidian13.Setting(contentEl).setName(t("boardRating")).addDropdown((dropdown) => {
       dropdown.addOption("0", t("boardRatingNone"));
       for (let rating = 1; rating <= 10; rating++) {
         dropdown.addOption(String(rating), String(rating));
@@ -4436,7 +4761,7 @@ var BoardStatusCommentModal = class extends import_obsidian12.Modal {
     this.previewEl = contentEl.createEl("pre");
     this.previewEl.addClass("bangumi-note-push-preview");
     this.renderPreview();
-    new import_obsidian12.Setting(contentEl).addButton(
+    new import_obsidian13.Setting(contentEl).addButton(
       (button) => button.setButtonText(t("pushCancel")).onClick(() => {
         this.finish(null);
         this.close();
@@ -4484,7 +4809,7 @@ var BoardStatusCommentModal = class extends import_obsidian12.Modal {
 
 // src/main.ts
 function needsMobileDnsHint(error) {
-  return !import_obsidian13.Platform.isDesktopApp && looksLikeNetworkError(error);
+  return !import_obsidian14.Platform.isDesktopApp && looksLikeNetworkError(error);
 }
 var ACCESS_TOKEN_CREATE_URL = "https://next.bgm.tv/demo/access-token/create";
 var TEMPLATE_VARIABLES_FILE_NAME = "Template Variables.md";
@@ -4629,7 +4954,7 @@ cover: {{cover_yaml}}
 ---
 \`\`\`
 `;
-var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
+var BangumiSyncPlugin = class extends import_obsidian14.Plugin {
   constructor() {
     super(...arguments);
     this.cachedClient = null;
@@ -4789,56 +5114,56 @@ var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
     );
   }
   isPathInSyncDirectory(path) {
-    const directory = (0, import_obsidian13.normalizePath)(this.settings.syncDirectory || "Bangumi");
-    const normalized = (0, import_obsidian13.normalizePath)(path);
+    const directory = (0, import_obsidian14.normalizePath)(this.settings.syncDirectory || "Bangumi");
+    const normalized = (0, import_obsidian14.normalizePath)(path);
     return normalized === directory || normalized.startsWith(`${directory}/`);
   }
   async openTemplateVariablesDoc() {
     try {
-      const directory = (0, import_obsidian13.normalizePath)(this.settings.syncDirectory || "Bangumi");
+      const directory = (0, import_obsidian14.normalizePath)(this.settings.syncDirectory || "Bangumi");
       await ensureFolder(this.app, directory);
-      const path = (0, import_obsidian13.normalizePath)(`${directory}/${TEMPLATE_VARIABLES_FILE_NAME}`);
+      const path = (0, import_obsidian14.normalizePath)(`${directory}/${TEMPLATE_VARIABLES_FILE_NAME}`);
       const existing = this.app.vault.getAbstractFileByPath(path);
-      const file = existing instanceof import_obsidian13.TFile ? existing : await this.app.vault.create(path, TEMPLATE_VARIABLES_CONTENT);
+      const file = existing instanceof import_obsidian14.TFile ? existing : await this.app.vault.create(path, TEMPLATE_VARIABLES_CONTENT);
       await this.app.workspace.getLeaf(false).openFile(file);
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian13.Notice(t("templateVariablesDocFailed", { message }));
+      new import_obsidian14.Notice(t("templateVariablesDocFailed", { message }));
       console.error(error);
     }
   }
   openAccessTokenPage() {
     window.open(ACCESS_TOKEN_CREATE_URL);
-    new import_obsidian13.Notice(t("tokenPageOpened"));
+    new import_obsidian14.Notice(t("tokenPageOpened"));
   }
   async fillAccessTokenFromClipboard() {
     try {
       const text = await navigator.clipboard.readText();
       const token = this.normalizeAccessToken(text);
       if (!token) {
-        new import_obsidian13.Notice(t("clipboardTokenMissing"));
+        new import_obsidian14.Notice(t("clipboardTokenMissing"));
         return;
       }
       this.settings.accessToken = token;
       await this.saveSettings();
-      new import_obsidian13.Notice(t("clipboardTokenFilled"));
+      new import_obsidian14.Notice(t("clipboardTokenFilled"));
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian13.Notice(t("clipboardTokenFailed", { message }));
+      new import_obsidian14.Notice(t("clipboardTokenFailed", { message }));
       console.error(error);
     }
   }
   async testAccessToken() {
     if (!this.settings.accessToken) {
-      new import_obsidian13.Notice(t("noToken"));
+      new import_obsidian14.Notice(t("noToken"));
       return;
     }
     try {
       const user = await this.getBangumiClient().getMe();
-      new import_obsidian13.Notice(t("testTokenSucceeded", { username: user.username }));
+      new import_obsidian14.Notice(t("testTokenSucceeded", { username: user.username }));
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian13.Notice(
+      new import_obsidian14.Notice(
         t(
           needsMobileDnsHint(error) ? "testTokenFailedMobileNetwork" : "testTokenFailed",
           { message }
@@ -4849,7 +5174,7 @@ var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
   }
   openSyncOneSubjectModal() {
     if (!this.settings.accessToken) {
-      new import_obsidian13.Notice(t("noToken"));
+      new import_obsidian14.Notice(t("noToken"));
       return;
     }
     const client = this.getBangumiClient();
@@ -4886,7 +5211,7 @@ var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
         );
         const collectionType = await this.chooseLocalCollectionType(subject);
         if (collectionType === null) {
-          new import_obsidian13.Notice(t("syncOneSubjectCancelled"));
+          new import_obsidian14.Notice(t("syncOneSubjectCancelled"));
           return;
         }
         await client.createSubjectCollection({
@@ -4899,7 +5224,7 @@ var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
           subject.type
         );
       }
-      new import_obsidian13.Notice(
+      new import_obsidian14.Notice(
         t("syncOneSubjectStarted", {
           title: this.getSubjectTitle(collection.subject)
         })
@@ -4910,18 +5235,18 @@ var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
         () => this.getBangumiClient()
       ).syncSubjectCollection(collection);
       const title = this.getSubjectTitle(collection.subject);
-      new import_obsidian13.Notice(
+      new import_obsidian14.Notice(
         t(result.changed ? "syncOneSubjectUpdated" : "syncOneSubjectUnchanged", {
           title,
           path: result.path
         })
       );
       if (result.episodeSyncError) {
-        new import_obsidian13.Notice(t("syncOneSubjectProgressMissing"));
+        new import_obsidian14.Notice(t("syncOneSubjectProgressMissing"));
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian13.Notice(t("syncOneSubjectFailed", { message }));
+      new import_obsidian14.Notice(t("syncOneSubjectFailed", { message }));
       console.error(error);
     }
   }
@@ -5040,11 +5365,11 @@ var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
   }
   async pushCurrentNoteToBangumi() {
     if (!this.settings.enableWriteBack) {
-      new import_obsidian13.Notice(t("pushWriteBackDisabled"));
+      new import_obsidian14.Notice(t("pushWriteBackDisabled"));
       return;
     }
     if (!this.settings.accessToken) {
-      new import_obsidian13.Notice(t("noToken"));
+      new import_obsidian14.Notice(t("noToken"));
       return;
     }
     try {
@@ -5055,7 +5380,7 @@ var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
       );
       const preview = await service.prepareCurrentNotePush();
       if (preview.unknownEpisodeIds.length > 0) {
-        new import_obsidian13.Notice(
+        new import_obsidian14.Notice(
           t("pushUnknownEpisodes", {
             ids: preview.unknownEpisodeIds.join(", ")
           })
@@ -5063,17 +5388,17 @@ var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
         return;
       }
       if (!service.hasChanges(preview)) {
-        new import_obsidian13.Notice(t("pushNoChanges"));
+        new import_obsidian14.Notice(t("pushNoChanges"));
         return;
       }
       const confirmed = await this.confirmPush(preview);
       if (!confirmed) {
-        new import_obsidian13.Notice(t("pushCancelled"));
+        new import_obsidian14.Notice(t("pushCancelled"));
         return;
       }
-      new import_obsidian13.Notice(t("pushStarted"));
+      new import_obsidian14.Notice(t("pushStarted"));
       const result = await service.executePreparedPush(preview);
-      new import_obsidian13.Notice(
+      new import_obsidian14.Notice(
         t("pushFinished", {
           episodes: result.changedEpisodes,
           finalStatus: result.finalStatus,
@@ -5083,7 +5408,7 @@ var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian13.Notice(t("pushFailed", { message }));
+      new import_obsidian14.Notice(t("pushFailed", { message }));
       console.error(error);
     }
   }
@@ -5094,10 +5419,10 @@ var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
         this.settings,
         () => this.getBangumiClient()
       ).update();
-      new import_obsidian13.Notice(result.message);
+      new import_obsidian14.Notice(result.message);
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian13.Notice(t("onAirNoteFailed", { message }));
+      new import_obsidian14.Notice(t("onAirNoteFailed", { message }));
       console.error(error);
     }
   }
@@ -5115,7 +5440,7 @@ var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
       ).sync({
         onProgress: (progress) => {
           if (progress.stage === "start" || progress.stage === "summary" || progress.stage === "warning") {
-            new import_obsidian13.Notice(progress.message);
+            new import_obsidian14.Notice(progress.message);
           }
         }
       });
@@ -5127,17 +5452,17 @@ var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
             this.settings,
             () => this.getBangumiClient()
           ).update();
-          new import_obsidian13.Notice(onAirResult.message);
+          new import_obsidian14.Notice(onAirResult.message);
         } catch (error) {
           const message = error instanceof Error ? error.message : t("unknownError");
-          new import_obsidian13.Notice(t("onAirNoteFailed", { message }));
+          new import_obsidian14.Notice(t("onAirNoteFailed", { message }));
           console.error(error);
         }
       }
-      new import_obsidian13.Notice(result.message);
+      new import_obsidian14.Notice(result.message);
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian13.Notice(
+      new import_obsidian14.Notice(
         t(
           needsMobileDnsHint(error) ? "syncFailedMobileNetwork" : "syncFailed",
           { message }
@@ -5147,7 +5472,7 @@ var BangumiSyncPlugin = class extends import_obsidian13.Plugin {
     }
   }
 };
-var PushConfirmModal = class extends import_obsidian13.Modal {
+var PushConfirmModal = class extends import_obsidian14.Modal {
   constructor(app, preview, resolve) {
     super(app);
     this.preview = preview;
@@ -5157,13 +5482,13 @@ var PushConfirmModal = class extends import_obsidian13.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
-    new import_obsidian13.Setting(contentEl).setName(t("pushConfirmTitle")).setHeading();
+    new import_obsidian14.Setting(contentEl).setName(t("pushConfirmTitle")).setHeading();
     contentEl.createEl("p", { text: t("pushConfirmDesc") });
     const previewEl = contentEl.createEl("pre", {
       text: renderPushPreview(this.preview)
     });
     previewEl.addClass("bangumi-note-push-preview");
-    new import_obsidian13.Setting(contentEl).addButton(
+    new import_obsidian14.Setting(contentEl).addButton(
       (button) => button.setButtonText(t("pushCancel")).onClick(() => {
         this.finish(false);
         this.close();
@@ -5187,7 +5512,7 @@ var PushConfirmModal = class extends import_obsidian13.Modal {
     this.resolve(confirmed);
   }
 };
-var SubjectLookupModal = class extends import_obsidian13.SuggestModal {
+var SubjectLookupModal = class extends import_obsidian14.SuggestModal {
   constructor(app, client, parseSubjectId, onChoose) {
     super(app);
     this.client = client;
@@ -5215,7 +5540,7 @@ var SubjectLookupModal = class extends import_obsidian13.SuggestModal {
       return page.data.map((subject) => ({ kind: "subject", subject }));
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
-      new import_obsidian13.Notice(t("syncOneSubjectFailed", { message }));
+      new import_obsidian14.Notice(t("syncOneSubjectFailed", { message }));
       console.error(error);
       return [];
     }
@@ -5247,7 +5572,7 @@ var SubjectLookupModal = class extends import_obsidian13.SuggestModal {
     this.onChoose(suggestion);
   }
 };
-var CollectionStatusModal = class extends import_obsidian13.Modal {
+var CollectionStatusModal = class extends import_obsidian14.Modal {
   constructor(app, subject, resolve) {
     super(app);
     this.subject = subject;
@@ -5257,7 +5582,7 @@ var CollectionStatusModal = class extends import_obsidian13.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
-    new import_obsidian13.Setting(contentEl).setName(t("syncOneSubjectStatusPlaceholder")).setHeading();
+    new import_obsidian14.Setting(contentEl).setName(t("syncOneSubjectStatusPlaceholder")).setHeading();
     contentEl.createEl("p", {
       text: this.subject.name_cn || this.subject.name
     });
@@ -5269,7 +5594,7 @@ var CollectionStatusModal = class extends import_obsidian13.Modal {
       { type: BANGUMI_COLLECTION_TYPES.dropped, label: "dropped" }
     ];
     for (const option of options) {
-      new import_obsidian13.Setting(contentEl).setName(
+      new import_obsidian14.Setting(contentEl).setName(
         t("syncOneSubjectStatusOption", {
           status: option.label,
           title: this.subject.name_cn || this.subject.name
