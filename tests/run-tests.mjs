@@ -1394,16 +1394,16 @@ status: do
 // Status drift notice text
 {
 	const summary = {
-		outOfScope: 1,
-		truncated: false,
-		stale: [
+		updated: [
 			{
 				path: "x.md",
 				subjectId: 9,
 				title: "ZZZ",
 				localStatus: "do",
 				remoteStatus: "collect"
-			},
+			}
+		],
+		uncollected: [
 			{
 				path: "y.md",
 				subjectId: 10,
@@ -1411,16 +1411,25 @@ status: do
 				localStatus: "do",
 				remoteStatus: null
 			}
-		]
+		],
+		outOfScope: 1,
+		failed: 0,
+		truncated: false
 	};
 	const text = formatStatusDriftNotice(summary);
-	assert.ok(text.includes("ZZZ"), "notice should name the drifted note");
+	assert.ok(text.includes("ZZZ"), "notice should name the updated note");
 	assert.ok(text.includes("Gone"), "notice should name the uncollected note");
 	assert.ok(text.length > 0);
 
 	// Nothing to report means no notice at all.
 	assert.equal(
-		formatStatusDriftNotice({ outOfScope: 0, truncated: false, stale: [] }),
+		formatStatusDriftNotice({
+			updated: [],
+			uncollected: [],
+			outOfScope: 0,
+			failed: 0,
+			truncated: false
+		}),
 		""
 	);
 }

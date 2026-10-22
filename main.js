@@ -218,12 +218,12 @@ var EN = {
   dnsFixOff: "Off",
   dnsFixMobileDesc: "Not available on mobile: the built-in DNS-over-HTTPS transport needs a desktop runtime. If syncing fails with network errors on mobile, turn on encrypted DNS at the OS level instead - on Android set Private DNS to dns.alidns.com, on iOS install a DoH/DoT configuration profile.",
   statusDriftItem: "{{title}} ({{from}} -> {{to}})",
-  statusDriftItemUncollected: "{{title}} (no longer collected)",
   statusDriftSeparator: "; ",
-  statusDriftStale: "{{count}} local note(s) no longer match Bangumi: {{items}}",
-  statusDriftStaleMore: "{{count}} local note(s) no longer match Bangumi: {{items}} and {{rest}} more",
-  statusDriftOutOfScope: "Another {{count}} local note(s) are outside the current sync scope (subject type or collection status not selected).",
-  statusDriftHint: "Use Sync one subject to refresh a note, or select that collection status in settings.",
+  statusDriftUpdated: "Updated {{count}} note(s) to match Bangumi: {{items}}",
+  statusDriftUpdatedMore: "Updated {{count}} note(s) to match Bangumi: {{items}} and {{rest}} more",
+  statusDriftUncollected: "{{count}} note(s) are no longer in your Bangumi collection: {{items}}",
+  statusDriftOutOfScope: "Another {{count}} local note(s) are outside the current sync scope (subject type not selected).",
+  statusDriftFailed: "{{count}} note(s) could not be checked; see the console log for details.",
   folderNaming: "Folder naming",
   folderNamingDesc: "Language used for the classification folder names. Note frontmatter always keeps the English codes (type / status), so switching this never rewrites existing notes. Use the migrate button below to move notes into the new folders.",
   folderNamingEnglish: "English (anime / do)",
@@ -467,12 +467,12 @@ var ZH = {
   dnsFixOff: "\u5173\u95ED",
   dnsFixMobileDesc: "\u79FB\u52A8\u7AEF\u4E0D\u652F\u6301\uFF1A\u5185\u7F6E\u7684 DNS-over-HTTPS \u4F20\u8F93\u5C42\u9700\u8981\u684C\u9762\u8FD0\u884C\u65F6\u3002\u79FB\u52A8\u7AEF\u82E5\u540C\u6B65\u62A5\u7F51\u7EDC\u9519\u8BEF\uFF0C\u8BF7\u5728\u7CFB\u7EDF\u5C42\u5F00\u542F\u52A0\u5BC6 DNS \u2014\u2014 Android \u628A\u300C\u79C1\u4EBA DNS\u300D\u8BBE\u4E3A dns.alidns.com\uFF0CiOS \u5B89\u88C5 DoH/DoT \u914D\u7F6E\u63CF\u8FF0\u6587\u4EF6\u3002",
   statusDriftItem: "{{title}}\uFF08{{from}} \u2192 {{to}}\uFF09",
-  statusDriftItemUncollected: "{{title}}\uFF08\u5DF2\u4E0D\u5728\u6536\u85CF\uFF09",
   statusDriftSeparator: "\uFF1B",
-  statusDriftStale: "\u68C0\u6D4B\u5230 {{count}} \u6761\u672C\u5730\u7B14\u8BB0\u7684\u6536\u85CF\u72B6\u6001\u4E0E Bangumi \u4E0D\u4E00\u81F4\uFF1A{{items}}",
-  statusDriftStaleMore: "\u68C0\u6D4B\u5230 {{count}} \u6761\u672C\u5730\u7B14\u8BB0\u7684\u6536\u85CF\u72B6\u6001\u4E0E Bangumi \u4E0D\u4E00\u81F4\uFF1A{{items}} \u7B49\uFF08\u53E6\u6709 {{rest}} \u6761\uFF09",
-  statusDriftOutOfScope: "\u53E6\u6709 {{count}} \u6761\u672C\u5730\u7B14\u8BB0\u4E0D\u5728\u5F53\u524D\u540C\u6B65\u8303\u56F4\uFF08\u6761\u76EE\u7C7B\u578B\u6216\u6536\u85CF\u72B6\u6001\u672A\u52FE\u9009\uFF09\u3002",
-  statusDriftHint: "\u53EF\u7528 Sync one subject \u66F4\u65B0\u5355\u6761\uFF0C\u6216\u5728\u8BBE\u7F6E\u91CC\u52FE\u9009\u5BF9\u5E94\u6536\u85CF\u72B6\u6001\u3002",
+  statusDriftUpdated: "\u5DF2\u6309 Bangumi \u7684\u73B0\u72B6\u66F4\u65B0 {{count}} \u6761\u7B14\u8BB0\uFF1A{{items}}",
+  statusDriftUpdatedMore: "\u5DF2\u6309 Bangumi \u7684\u73B0\u72B6\u66F4\u65B0 {{count}} \u6761\u7B14\u8BB0\uFF1A{{items}} \u7B49\uFF08\u53E6\u6709 {{rest}} \u6761\uFF09",
+  statusDriftUncollected: "{{count}} \u6761\u7B14\u8BB0\u5DF2\u4E0D\u5728 Bangumi \u6536\u85CF\u4E2D\uFF1A{{items}}",
+  statusDriftOutOfScope: "\u53E6\u6709 {{count}} \u6761\u672C\u5730\u7B14\u8BB0\u4E0D\u5728\u5F53\u524D\u540C\u6B65\u8303\u56F4\uFF08\u6761\u76EE\u7C7B\u578B\u672A\u52FE\u9009\uFF09\u3002",
+  statusDriftFailed: "\u53E6\u6709 {{count}} \u6761\u6838\u5BF9\u5931\u8D25\uFF0C\u8BE6\u89C1\u63A7\u5236\u53F0\u65E5\u5FD7\u3002",
   folderNaming: "\u5206\u7C7B\u6587\u4EF6\u5939\u547D\u540D",
   folderNamingDesc: "\u5206\u7C7B\u6587\u4EF6\u5939\u4F7F\u7528\u54EA\u79CD\u8BED\u8A00\u547D\u540D\u3002\u7B14\u8BB0 frontmatter \u59CB\u7EC8\u4FDD\u7559\u82F1\u6587\u4EE3\u7801\uFF08type / status\uFF09\uFF0C\u6240\u4EE5\u5207\u6362\u547D\u540D\u4E0D\u4F1A\u6539\u52A8\u5DF2\u6709\u7B14\u8BB0\u3002\u5207\u6362\u540E\u53EF\u7528\u4E0B\u65B9\u6309\u94AE\u628A\u7B14\u8BB0\u8FC1\u79FB\u5230\u65B0\u76EE\u5F55\u3002",
   folderNamingEnglish: "\u82F1\u6587\uFF08anime / do\uFF09",
@@ -715,29 +715,38 @@ function statusDisplayName(code) {
 }
 function formatStatusDriftNotice(summary) {
   const parts = [];
-  if (summary.stale.length > 0) {
-    const items = summary.stale.slice(0, NOTICE_MAX_ITEMS).map(
-      (entry) => entry.remoteStatus === null ? t("statusDriftItemUncollected", { title: entry.title }) : t("statusDriftItem", {
+  if (summary.updated.length > 0) {
+    const items = summary.updated.slice(0, NOTICE_MAX_ITEMS).map(
+      (entry) => entry.remoteStatus === null ? entry.title : t("statusDriftItem", {
         title: entry.title,
         from: statusDisplayName(entry.localStatus),
         to: statusDisplayName(entry.remoteStatus)
       })
     ).join(t("statusDriftSeparator"));
-    const count = summary.stale.length > NOTICE_MAX_ITEMS ? t("statusDriftStaleMore", {
-      count: summary.stale.length,
-      items,
-      rest: summary.stale.length - NOTICE_MAX_ITEMS
-    }) : t("statusDriftStale", {
-      count: summary.stale.length,
-      items
-    });
-    parts.push(count);
+    const rest = summary.updated.length - NOTICE_MAX_ITEMS;
+    parts.push(
+      rest > 0 ? t("statusDriftUpdatedMore", {
+        count: summary.updated.length,
+        items,
+        rest
+      }) : t("statusDriftUpdated", {
+        count: summary.updated.length,
+        items
+      })
+    );
+  }
+  if (summary.uncollected.length > 0) {
+    const items = summary.uncollected.slice(0, NOTICE_MAX_ITEMS).map((entry) => entry.title).join(t("statusDriftSeparator"));
+    parts.push(
+      t("statusDriftUncollected", { count: summary.uncollected.length, items })
+    );
   }
   if (summary.outOfScope > 0) {
     parts.push(t("statusDriftOutOfScope", { count: summary.outOfScope }));
   }
-  if (parts.length === 0) return "";
-  parts.push(t("statusDriftHint"));
+  if (summary.failed > 0) {
+    parts.push(t("statusDriftFailed", { count: summary.failed }));
+  }
   return parts.join(" ");
 }
 var KNOWN_SUBJECT_TYPE_CODES = [
@@ -3024,7 +3033,15 @@ var SyncService = class {
         console.error("Bangumi Sync failed to write daily note sync block", error);
       }
     }
-    const statusDrift = await this.collectStatusDrift(client, seenSubjectIds);
+    const statusDrift = await this.reconcileLocalNoteStatuses(
+      client,
+      writer,
+      noteIndex,
+      seenSubjectIds
+    );
+    if (statusDrift) {
+      written += statusDrift.updated.length;
+    }
     let reportPath;
     if (failures.length > 0) {
       (_d = options.onProgress) == null ? void 0 : _d.call(options, {
@@ -3431,7 +3448,49 @@ var SyncService = class {
     const title = episode.name_cn || episode.name || "";
     return title ? `EP${episode.sort} ${title}` : `EP${episode.sort}`;
   }
-  async collectStatusDrift(client, seenSubjectIds) {
+  /**
+   * Write a note for `collection` and move it when the storage layout puts it
+   * in a different folder than where the file currently lives.
+   *
+   * A subject whose status changed on Bangumi must also move on disk, otherwise
+   * the folder layout drifts away from the note's own `status` field.
+   */
+  async writeAndRelocate(writer, noteIndex, collection, episodes, extras, episodeSyncError) {
+    var _a, _b;
+    const targetDirectory = (0, import_obsidian9.normalizePath)(this.getTargetDirectory(collection));
+    const result = await writer.writeSubjectNote(
+      targetDirectory,
+      { collection, episodes, episodeSyncError, extras },
+      noteIndex
+    );
+    const currentDirectory = (0, import_obsidian9.normalizePath)((_b = (_a = result.file.parent) == null ? void 0 : _a.path) != null ? _b : "");
+    if (currentDirectory === targetDirectory) {
+      return { path: result.file.path, changed: result.changed, moved: false };
+    }
+    await ensureFolder(this.app, targetDirectory);
+    const targetPath = (0, import_obsidian9.normalizePath)(`${targetDirectory}/${result.file.name}`);
+    if (this.app.vault.getAbstractFileByPath(targetPath)) {
+      return { path: result.file.path, changed: result.changed, moved: false };
+    }
+    await this.app.vault.rename(result.file, targetPath);
+    const moved = this.app.vault.getAbstractFileByPath(targetPath);
+    if (moved instanceof import_obsidian9.TFile) {
+      noteIndex.add(collection.subject.id, moved);
+    }
+    return { path: targetPath, changed: true, moved: true };
+  }
+  /**
+   * Bring existing local notes back in line with Bangumi.
+   *
+   * `collectionTypes` decides what a full sync pulls, but a note whose subject
+   * was moved to a status you are not syncing would otherwise keep its old
+   * status forever. This pass finds those notes, fetches their real remote
+   * state, rewrites them, and relocates the file into the matching folder.
+   *
+   * Notes excluded by the subject **type** selection are only counted, never
+   * rewritten: that exclusion is a deliberate scope choice.
+   */
+  async reconcileLocalNoteStatuses(client, writer, noteIndex, seenSubjectIds) {
     let notes;
     try {
       notes = readLocalNoteStatuses(this.app, this.settings.syncDirectory);
@@ -3444,23 +3503,44 @@ var SyncService = class {
       subjectTypes: this.settings.subjectTypes,
       collectionStatuses: this.getEffectiveCollectionTypes()
     });
-    const missing = inScope.filter(
-      (note) => !seenSubjectIds.has(note.subjectId)
-    );
+    const missing = inScope.filter((note) => !seenSubjectIds.has(note.subjectId));
     if (missing.length === 0 && outOfScope.length === 0) return void 0;
-    const stale = [];
+    const updated = [];
+    const uncollected = [];
+    let failed = 0;
     let truncated = false;
     for (const note of missing) {
-      if (stale.length >= STATUS_DRIFT_MAX_REMOTE_CHECKS) {
+      if (updated.length + uncollected.length >= STATUS_DRIFT_MAX_REMOTE_CHECKS) {
         truncated = true;
         break;
       }
       try {
-        const remote = await client.getSubjectCollection(note.subjectId);
-        const remoteStatus = collectionStatusLabel(remote.type);
+        const collection = await client.getSubjectCollection(note.subjectId);
+        const remoteStatus = collectionStatusLabel(collection.type);
         if (remoteStatus === note.status) continue;
-        stale.push({
-          path: note.path,
+        let episodes = [];
+        let episodeSyncError;
+        if (this.shouldFetchEpisodeCollections(collection)) {
+          try {
+            episodes = await this.fetchAllEpisodeCollections(
+              client,
+              note.subjectId
+            );
+          } catch (error) {
+            episodeSyncError = this.getErrorMessage(error);
+          }
+        }
+        const extras = await this.fetchSubjectExtras(client, collection, []);
+        const result = await this.writeAndRelocate(
+          writer,
+          noteIndex,
+          collection,
+          episodes,
+          extras,
+          episodeSyncError
+        );
+        updated.push({
+          path: result.path,
           subjectId: note.subjectId,
           title: note.title,
           localStatus: note.status,
@@ -3468,7 +3548,7 @@ var SyncService = class {
         });
       } catch (error) {
         if (error instanceof BangumiApiError && error.status === 404) {
-          stale.push({
+          uncollected.push({
             path: note.path,
             subjectId: note.subjectId,
             title: note.title,
@@ -3476,15 +3556,24 @@ var SyncService = class {
             remoteStatus: null
           });
         } else {
+          failed += 1;
           console.error(
-            `Bangumi Sync failed to verify status for ${note.subjectId}`,
+            `Bangumi Sync failed to reconcile status for ${note.subjectId}`,
             error
           );
         }
       }
     }
-    if (stale.length === 0 && outOfScope.length === 0) return void 0;
-    return { outOfScope: outOfScope.length, stale, truncated };
+    if (updated.length === 0 && uncollected.length === 0 && outOfScope.length === 0 && failed === 0) {
+      return void 0;
+    }
+    return {
+      updated,
+      uncollected,
+      outOfScope: outOfScope.length,
+      failed,
+      truncated
+    };
   }
   getEffectiveCollectionTypes() {
     if (this.settings.includeOnHoldAndDropped) {

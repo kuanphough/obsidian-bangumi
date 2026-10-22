@@ -352,7 +352,15 @@ export class SyncService {
 			}
 		}
 
-		const statusDrift = await this.collectStatusDrift(client, seenSubjectIds);
+		const statusDrift = await this.reconcileLocalNoteStatuses(
+			client,
+			writer,
+			noteIndex,
+			seenSubjectIds
+		);
+		if (statusDrift) {
+			written += statusDrift.updated.length;
+		}
 
 		let reportPath: string | undefined;
 		if (failures.length > 0) {
@@ -886,8 +894,63 @@ export class SyncService {
 		return title ? `EP${episode.sort} ${title}` : `EP${episode.sort}`;
 	}
 
-	private async collectStatusDrift(
+	/**
+	 * Write a note for `collection` and move it when the storage layout puts it
+	 * in a different folder than where the file currently lives.
+	 *
+	 * A subject whose status changed on Bangumi must also move on disk, otherwise
+	 * the folder layout drifts away from the note's own `status` field.
+	 */
+	private async writeAndRelocate(
+		writer: NoteWriter,
+		noteIndex: SubjectNoteIndex,
+		collection: BangumiCollection,
+		episodes: BangumiEpisodeCollection[],
+		extras: BangumiSubjectExtras | undefined,
+		episodeSyncError?: string
+	): Promise<{ path: string; changed: boolean; moved: boolean }> {
+		const targetDirectory = normalizePath(this.getTargetDirectory(collection));
+		const result = await writer.writeSubjectNote(
+			targetDirectory,
+			{ collection, episodes, episodeSyncError, extras },
+			noteIndex
+		);
+
+		const currentDirectory = normalizePath(result.file.parent?.path ?? "");
+		if (currentDirectory === targetDirectory) {
+			return { path: result.file.path, changed: result.changed, moved: false };
+		}
+
+		await ensureFolder(this.app, targetDirectory);
+		const targetPath = normalizePath(`${targetDirectory}/${result.file.name}`);
+		if (this.app.vault.getAbstractFileByPath(targetPath)) {
+			// Something already sits at the destination; never overwrite it.
+			return { path: result.file.path, changed: result.changed, moved: false };
+		}
+
+		await this.app.vault.rename(result.file, targetPath);
+		const moved = this.app.vault.getAbstractFileByPath(targetPath);
+		if (moved instanceof TFile) {
+			noteIndex.add(collection.subject.id, moved);
+		}
+		return { path: targetPath, changed: true, moved: true };
+	}
+
+	/**
+	 * Bring existing local notes back in line with Bangumi.
+	 *
+	 * `collectionTypes` decides what a full sync pulls, but a note whose subject
+	 * was moved to a status you are not syncing would otherwise keep its old
+	 * status forever. This pass finds those notes, fetches their real remote
+	 * state, rewrites them, and relocates the file into the matching folder.
+	 *
+	 * Notes excluded by the subject **type** selection are only counted, never
+	 * rewritten: that exclusion is a deliberate scope choice.
+	 */
+	private async reconcileLocalNoteStatuses(
 		client: BangumiClient,
+		writer: NoteWriter,
+		noteIndex: SubjectNoteIndex,
 		seenSubjectIds: ReadonlySet<number>
 	): Promise<StatusDriftSummary | undefined> {
 		let notes: LocalNoteStatus[];
@@ -904,25 +967,48 @@ export class SyncService {
 			collectionStatuses: this.getEffectiveCollectionTypes()
 		});
 
-		const missing = inScope.filter(
-			(note) => !seenSubjectIds.has(note.subjectId)
-		);
+		const missing = inScope.filter((note) => !seenSubjectIds.has(note.subjectId));
 		if (missing.length === 0 && outOfScope.length === 0) return undefined;
 
-		const stale: StatusDriftEntry[] = [];
+		const updated: StatusDriftEntry[] = [];
+		const uncollected: StatusDriftEntry[] = [];
+		let failed = 0;
 		let truncated = false;
 
 		for (const note of missing) {
-			if (stale.length >= STATUS_DRIFT_MAX_REMOTE_CHECKS) {
+			if (updated.length + uncollected.length >= STATUS_DRIFT_MAX_REMOTE_CHECKS) {
 				truncated = true;
 				break;
 			}
 			try {
-				const remote = await client.getSubjectCollection(note.subjectId);
-				const remoteStatus = collectionStatusLabel(remote.type);
+				const collection = await client.getSubjectCollection(note.subjectId);
+				const remoteStatus = collectionStatusLabel(collection.type);
 				if (remoteStatus === note.status) continue;
-				stale.push({
-					path: note.path,
+
+				let episodes: BangumiEpisodeCollection[] = [];
+				let episodeSyncError: string | undefined;
+				if (this.shouldFetchEpisodeCollections(collection)) {
+					try {
+						episodes = await this.fetchAllEpisodeCollections(
+							client,
+							note.subjectId
+						);
+					} catch (error) {
+						episodeSyncError = this.getErrorMessage(error);
+					}
+				}
+				const extras = await this.fetchSubjectExtras(client, collection, []);
+				const result = await this.writeAndRelocate(
+					writer,
+					noteIndex,
+					collection,
+					episodes,
+					extras,
+					episodeSyncError
+				);
+
+				updated.push({
+					path: result.path,
 					subjectId: note.subjectId,
 					title: note.title,
 					localStatus: note.status,
@@ -930,7 +1016,7 @@ export class SyncService {
 				});
 			} catch (error) {
 				if (error instanceof BangumiApiError && error.status === 404) {
-					stale.push({
+					uncollected.push({
 						path: note.path,
 						subjectId: note.subjectId,
 						title: note.title,
@@ -938,16 +1024,31 @@ export class SyncService {
 						remoteStatus: null
 					});
 				} else {
+					failed += 1;
 					console.error(
-						`Bangumi Sync failed to verify status for ${note.subjectId}`,
+						`Bangumi Sync failed to reconcile status for ${note.subjectId}`,
 						error
 					);
 				}
 			}
 		}
 
-		if (stale.length === 0 && outOfScope.length === 0) return undefined;
-		return { outOfScope: outOfScope.length, stale, truncated };
+		if (
+			updated.length === 0 &&
+			uncollected.length === 0 &&
+			outOfScope.length === 0 &&
+			failed === 0
+		) {
+			return undefined;
+		}
+
+		return {
+			updated,
+			uncollected,
+			outOfScope: outOfScope.length,
+			failed,
+			truncated
+		};
 	}
 
 	private getEffectiveCollectionTypes(): BangumiCollectionType[] {

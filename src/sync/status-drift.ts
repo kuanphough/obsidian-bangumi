@@ -52,11 +52,15 @@ export interface StatusDriftEntry {
 }
 
 export interface StatusDriftSummary {
-	/** Local notes excluded by the current subject type / status selection. */
+	/** Local notes the plugin already updated to match Bangumi. */
+	updated: StatusDriftEntry[];
+	/** Local notes whose subject is no longer collected remotely. */
+	uncollected: StatusDriftEntry[];
+	/** Local notes excluded by the current subject type selection. */
 	outOfScope: number;
-	/** Local notes that should have synced but whose remote status changed. */
-	stale: StatusDriftEntry[];
-	/** True when not every stale note could be verified within the request cap. */
+	/** Notes that could not be verified or rewritten. */
+	failed: number;
+	/** True when not every drifted note could be handled within the cap. */
 	truncated: boolean;
 }
 
@@ -145,12 +149,12 @@ function statusDisplayName(code: string): string {
 export function formatStatusDriftNotice(summary: StatusDriftSummary): string {
 	const parts: string[] = [];
 
-	if (summary.stale.length > 0) {
-		const items = summary.stale
+	if (summary.updated.length > 0) {
+		const items = summary.updated
 			.slice(0, NOTICE_MAX_ITEMS)
 			.map((entry) =>
 				entry.remoteStatus === null
-					? t("statusDriftItemUncollected", { title: entry.title })
+					? entry.title
 					: t("statusDriftItem", {
 							title: entry.title,
 							from: statusDisplayName(entry.localStatus),
@@ -158,26 +162,39 @@ export function formatStatusDriftNotice(summary: StatusDriftSummary): string {
 						})
 			)
 			.join(t("statusDriftSeparator"));
-		const count =
-			summary.stale.length > NOTICE_MAX_ITEMS
-				? t("statusDriftStaleMore", {
-						count: summary.stale.length,
+		const rest = summary.updated.length - NOTICE_MAX_ITEMS;
+		parts.push(
+			rest > 0
+				? t("statusDriftUpdatedMore", {
+						count: summary.updated.length,
 						items,
-						rest: summary.stale.length - NOTICE_MAX_ITEMS
+						rest
 					})
-				: t("statusDriftStale", {
-						count: summary.stale.length,
+				: t("statusDriftUpdated", {
+						count: summary.updated.length,
 						items
-					});
-		parts.push(count);
+					})
+		);
+	}
+
+	if (summary.uncollected.length > 0) {
+		const items = summary.uncollected
+			.slice(0, NOTICE_MAX_ITEMS)
+			.map((entry) => entry.title)
+			.join(t("statusDriftSeparator"));
+		parts.push(
+			t("statusDriftUncollected", { count: summary.uncollected.length, items })
+		);
 	}
 
 	if (summary.outOfScope > 0) {
 		parts.push(t("statusDriftOutOfScope", { count: summary.outOfScope }));
 	}
 
-	if (parts.length === 0) return "";
-	parts.push(t("statusDriftHint"));
+	if (summary.failed > 0) {
+		parts.push(t("statusDriftFailed", { count: summary.failed }));
+	}
+
 	return parts.join(" ");
 }
 
