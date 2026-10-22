@@ -52,6 +52,8 @@ export interface SyncResult {
 	reportPath?: string;
 	/** Local notes whose remote collection status no longer matches. */
 	statusDrift?: StatusDriftSummary;
+	/** Notes that received a local cover during this run. */
+	localizedCovers: number;
 	message: string;
 }
 
@@ -134,6 +136,7 @@ export class SyncService {
 				failed: 0,
 				totalCollections: 0,
 				failures: [],
+				localizedCovers: 0,
 				message: t("noToken")
 			};
 		}
@@ -147,6 +150,7 @@ export class SyncService {
 				failed: 0,
 				totalCollections: 0,
 				failures: [],
+				localizedCovers: 0,
 				message: t("collectionStatusRequired")
 			};
 		}
@@ -160,6 +164,7 @@ export class SyncService {
 				failed: 0,
 				totalCollections: 0,
 				failures: [],
+				localizedCovers: 0,
 				message: t("subjectTypeRequired")
 			};
 		}
@@ -174,6 +179,7 @@ export class SyncService {
 				failed: 0,
 				totalCollections: 0,
 				failures: [],
+				localizedCovers: 0,
 				message: t("activeStatusRequired")
 			};
 		}
@@ -350,6 +356,8 @@ export class SyncService {
 			}
 		}
 
+		const localizedCovers = await this.localizeCoversForAllNotes(client);
+
 		if (this.settings.dailyNoteSync && dailySyncEntries.length > 0) {
 			try {
 				await this.writeDailyNoteSyncBlock(dailySyncEntries);
@@ -413,6 +421,7 @@ export class SyncService {
 			failures,
 			reportPath,
 			statusDrift,
+			localizedCovers,
 			message
 		};
 	}
@@ -903,17 +912,22 @@ export class SyncService {
 	}
 
 	/** Vault path where a localized cover for this subject lives. */
-	private coverStoragePath(collection: BangumiCollection): string | null {
-		const url =
-			collection.subject.images?.large || collection.subject.images?.common;
+	private coverPathFromUrl(subjectId: number, url: string): string | null {
 		if (!url) return null;
-
 		const match = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(url);
 		const raw = match ? match[1].toLowerCase() : "jpg";
 		const extension = COVER_EXTENSIONS.has(raw) ? raw : "jpg";
 		return normalizePath(
-			`${this.settings.syncDirectory}/covers/${collection.subject.id}.${extension}`
+			`${this.settings.syncDirectory}/covers/${subjectId}.${extension}`
 		);
+	}
+
+	/** Vault path where a localized cover for this subject lives. */
+	private coverStoragePath(collection: BangumiCollection): string | null {
+		const url =
+			collection.subject.images?.large || collection.subject.images?.common;
+		if (!url) return null;
+		return this.coverPathFromUrl(collection.subject.id, url);
 	}
 
 	/** True when localization is on but this subject has no local cover yet. */
@@ -955,6 +969,75 @@ export class SyncService {
 			);
 			return undefined;
 		}
+	}
+
+	/**
+	 * Localize covers for every note in the sync directory, regardless of the
+	 * configured subject types and collection statuses.
+	 *
+	 * A cover is independent of the sync scope: a note whose status is not being
+	 * pulled still renders its cover, so it deserves a local copy too. The remote
+	 * URL is already in the note frontmatter, so this needs no API call unless an
+	 * image actually has to be downloaded.
+	 */
+	private async localizeCoversForAllNotes(
+		client: BangumiClient
+	): Promise<number> {
+		if (!this.settings.localizeCovers) return 0;
+
+		let notes: LocalNoteStatus[];
+		try {
+			notes = readLocalNoteStatuses(this.app, this.settings.syncDirectory);
+		} catch (error) {
+			console.error(
+				"Bangumi Sync failed to read local notes for cover localization",
+				error
+			);
+			return 0;
+		}
+
+		let localized = 0;
+		for (const note of notes) {
+			const file = this.app.vault.getAbstractFileByPath(note.path);
+			if (!(file instanceof TFile)) continue;
+
+			const raw: unknown =
+				this.app.metadataCache.getFileCache(file)?.frontmatter;
+			if (typeof raw !== "object" || raw === null) continue;
+			const cover = (raw as Record<string, unknown>).cover;
+			if (typeof cover !== "string" || !/^https?:\/\//i.test(cover)) continue;
+
+			const path = this.coverPathFromUrl(note.subjectId, cover);
+			if (!path) continue;
+
+			if (!this.app.vault.getAbstractFileByPath(path)) {
+				try {
+					const data = await client.downloadBinary(cover);
+					const directory = path.slice(0, path.lastIndexOf("/"));
+					if (directory) await ensureFolder(this.app, directory);
+					await this.app.vault.createBinary(path, data);
+				} catch (error) {
+					console.error(
+						`Bangumi Sync failed to download cover for ${note.subjectId}`,
+						error
+					);
+					continue;
+				}
+			}
+
+			const content = await this.app.vault.read(file);
+			const next = content
+				.split(`![](${cover})`)
+				.join(`![[${path}]]`)
+				.split(cover)
+				.join(path);
+			if (next !== content) {
+				await this.app.vault.modify(file, next);
+				localized += 1;
+			}
+		}
+
+		return localized;
 	}
 
 	/**

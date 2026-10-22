@@ -817,6 +817,9 @@ export default class BangumiSyncPlugin extends Plugin {
 			if (result.statusDrift) {
 				new Notice(formatStatusDriftNotice(result.statusDrift));
 			}
+			if (result.localizedCovers > 0) {
+				new Notice(t("coversLocalized", { count: result.localizedCovers }));
+			}
 		} catch (error) {
 			const message =
 				error instanceof Error ? error.message : t("unknownError");

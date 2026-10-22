@@ -217,6 +217,7 @@ var EN = {
   dnsFixAlways: "Always use DoH",
   dnsFixOff: "Off",
   dnsFixMobileDesc: "Not available on mobile: the built-in DNS-over-HTTPS transport needs a desktop runtime. If syncing fails with network errors on mobile, turn on encrypted DNS at the OS level instead - on Android set Private DNS to dns.alidns.com, on iOS install a DoH/DoT configuration profile.",
+  coversLocalized: "Localized covers for {{count}} note(s).",
   localizeCovers: "Localize cover images",
   localizeCoversDesc: "Download covers into the vault and link them locally instead of pointing at the remote URL. Off by default, because it stores extra files in your vault; enable it only when remote covers do not load, for example when the system DNS cannot resolve lain.bgm.tv. Images go into a covers folder inside the sync directory.",
   statusDriftItem: "{{title}} ({{from}} -> {{to}})",
@@ -468,6 +469,7 @@ var ZH = {
   dnsFixAlways: "\u603B\u662F\u4F7F\u7528 DoH",
   dnsFixOff: "\u5173\u95ED",
   dnsFixMobileDesc: "\u79FB\u52A8\u7AEF\u4E0D\u652F\u6301\uFF1A\u5185\u7F6E\u7684 DNS-over-HTTPS \u4F20\u8F93\u5C42\u9700\u8981\u684C\u9762\u8FD0\u884C\u65F6\u3002\u79FB\u52A8\u7AEF\u82E5\u540C\u6B65\u62A5\u7F51\u7EDC\u9519\u8BEF\uFF0C\u8BF7\u5728\u7CFB\u7EDF\u5C42\u5F00\u542F\u52A0\u5BC6 DNS \u2014\u2014 Android \u628A\u300C\u79C1\u4EBA DNS\u300D\u8BBE\u4E3A dns.alidns.com\uFF0CiOS \u5B89\u88C5 DoH/DoT \u914D\u7F6E\u63CF\u8FF0\u6587\u4EF6\u3002",
+  coversLocalized: "\u5DF2\u4E3A {{count}} \u6761\u7B14\u8BB0\u672C\u5730\u5316\u5C01\u9762\u3002",
   localizeCovers: "\u672C\u5730\u5316\u5C01\u9762\u56FE",
   localizeCoversDesc: "\u628A\u5C01\u9762\u4E0B\u8F7D\u5230\u5E93\u4E2D\u5E76\u6539\u4E3A\u672C\u5730\u94FE\u63A5\uFF0C\u800C\u4E0D\u662F\u5F15\u7528\u8FDC\u7A0B\u5730\u5740\u3002\u9ED8\u8BA4\u5173\u95ED\uFF0C\u56E0\u4E3A\u5B83\u4F1A\u5728\u5E93\u91CC\u989D\u5916\u5B58\u50A8\u6587\u4EF6\uFF1B\u4EC5\u5728\u8FDC\u7A0B\u5C01\u9762\u52A0\u8F7D\u4E0D\u51FA\u6765\u65F6\u5EFA\u8BAE\u5F00\u542F\uFF0C\u4F8B\u5982\u7CFB\u7EDF DNS \u65E0\u6CD5\u89E3\u6790 lain.bgm.tv\u3002\u56FE\u7247\u5B58\u653E\u5728\u540C\u6B65\u76EE\u5F55\u4E0B\u7684 covers \u6587\u4EF6\u5939\u3002",
   statusDriftItem: "{{title}}\uFF08{{from}} \u2192 {{to}}\uFF09",
@@ -2942,6 +2944,7 @@ var SyncService = class {
         failed: 0,
         totalCollections: 0,
         failures: [],
+        localizedCovers: 0,
         message: t("noToken")
       };
     }
@@ -2954,6 +2957,7 @@ var SyncService = class {
         failed: 0,
         totalCollections: 0,
         failures: [],
+        localizedCovers: 0,
         message: t("collectionStatusRequired")
       };
     }
@@ -2966,6 +2970,7 @@ var SyncService = class {
         failed: 0,
         totalCollections: 0,
         failures: [],
+        localizedCovers: 0,
         message: t("subjectTypeRequired")
       };
     }
@@ -2979,6 +2984,7 @@ var SyncService = class {
         failed: 0,
         totalCollections: 0,
         failures: [],
+        localizedCovers: 0,
         message: t("activeStatusRequired")
       };
     }
@@ -3132,6 +3138,7 @@ var SyncService = class {
         });
       }
     }
+    const localizedCovers = await this.localizeCoversForAllNotes(client);
     if (this.settings.dailyNoteSync && dailySyncEntries.length > 0) {
       try {
         await this.writeDailyNoteSyncBlock(dailySyncEntries);
@@ -3190,6 +3197,7 @@ var SyncService = class {
       failures,
       reportPath,
       statusDrift,
+      localizedCovers,
       message
     };
   }
@@ -3557,16 +3565,21 @@ var SyncService = class {
     return title ? `EP${episode.sort} ${title}` : `EP${episode.sort}`;
   }
   /** Vault path where a localized cover for this subject lives. */
-  coverStoragePath(collection) {
-    var _a, _b;
-    const url = ((_a = collection.subject.images) == null ? void 0 : _a.large) || ((_b = collection.subject.images) == null ? void 0 : _b.common);
+  coverPathFromUrl(subjectId, url) {
     if (!url) return null;
     const match = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(url);
     const raw = match ? match[1].toLowerCase() : "jpg";
     const extension = COVER_EXTENSIONS.has(raw) ? raw : "jpg";
     return (0, import_obsidian9.normalizePath)(
-      `${this.settings.syncDirectory}/covers/${collection.subject.id}.${extension}`
+      `${this.settings.syncDirectory}/covers/${subjectId}.${extension}`
     );
+  }
+  /** Vault path where a localized cover for this subject lives. */
+  coverStoragePath(collection) {
+    var _a, _b;
+    const url = ((_a = collection.subject.images) == null ? void 0 : _a.large) || ((_b = collection.subject.images) == null ? void 0 : _b.common);
+    if (!url) return null;
+    return this.coverPathFromUrl(collection.subject.id, url);
   }
   /** True when localization is on but this subject has no local cover yet. */
   needsCoverLocalization(collection) {
@@ -3600,6 +3613,61 @@ var SyncService = class {
       );
       return void 0;
     }
+  }
+  /**
+   * Localize covers for every note in the sync directory, regardless of the
+   * configured subject types and collection statuses.
+   *
+   * A cover is independent of the sync scope: a note whose status is not being
+   * pulled still renders its cover, so it deserves a local copy too. The remote
+   * URL is already in the note frontmatter, so this needs no API call unless an
+   * image actually has to be downloaded.
+   */
+  async localizeCoversForAllNotes(client) {
+    var _a;
+    if (!this.settings.localizeCovers) return 0;
+    let notes;
+    try {
+      notes = readLocalNoteStatuses(this.app, this.settings.syncDirectory);
+    } catch (error) {
+      console.error(
+        "Bangumi Sync failed to read local notes for cover localization",
+        error
+      );
+      return 0;
+    }
+    let localized = 0;
+    for (const note of notes) {
+      const file = this.app.vault.getAbstractFileByPath(note.path);
+      if (!(file instanceof import_obsidian9.TFile)) continue;
+      const raw = (_a = this.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter;
+      if (typeof raw !== "object" || raw === null) continue;
+      const cover = raw.cover;
+      if (typeof cover !== "string" || !/^https?:\/\//i.test(cover)) continue;
+      const path = this.coverPathFromUrl(note.subjectId, cover);
+      if (!path) continue;
+      if (!this.app.vault.getAbstractFileByPath(path)) {
+        try {
+          const data = await client.downloadBinary(cover);
+          const directory = path.slice(0, path.lastIndexOf("/"));
+          if (directory) await ensureFolder(this.app, directory);
+          await this.app.vault.createBinary(path, data);
+        } catch (error) {
+          console.error(
+            `Bangumi Sync failed to download cover for ${note.subjectId}`,
+            error
+          );
+          continue;
+        }
+      }
+      const content = await this.app.vault.read(file);
+      const next = content.split(`![](${cover})`).join(`![[${path}]]`).split(cover).join(path);
+      if (next !== content) {
+        await this.app.vault.modify(file, next);
+        localized += 1;
+      }
+    }
+    return localized;
   }
   /**
    * Write a note for `collection` and move it when the storage layout puts it
@@ -5871,6 +5939,9 @@ var BangumiSyncPlugin = class extends import_obsidian14.Plugin {
       new import_obsidian14.Notice(result.message);
       if (result.statusDrift) {
         new import_obsidian14.Notice(formatStatusDriftNotice(result.statusDrift));
+      }
+      if (result.localizedCovers > 0) {
+        new import_obsidian14.Notice(t("coversLocalized", { count: result.localizedCovers }));
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : t("unknownError");
