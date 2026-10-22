@@ -218,6 +218,8 @@ var EN = {
   dnsFixOff: "Off",
   dnsFixMobileDesc: "Not available on mobile: the built-in DNS-over-HTTPS transport needs a desktop runtime. If syncing fails with network errors on mobile, turn on encrypted DNS at the OS level instead - on Android set Private DNS to dns.alidns.com, on iOS install a DoH/DoT configuration profile.",
   coversLocalized: "Localized covers for {{count}} note(s).",
+  coverFolder: "Cover folder",
+  coverFolderDesc: "Vault folder that receives localized covers. Leave empty to use a covers folder inside the sync directory. Use this when your images live somewhere else, for example an existing attachment folder. Changing it later does not move already downloaded covers.",
   localizeCovers: "Localize cover images",
   localizeCoversDesc: "Download covers into the vault and link them locally instead of pointing at the remote URL. Off by default, because it stores extra files in your vault; enable it only when remote covers do not load, for example when the system DNS cannot resolve lain.bgm.tv. Images go into a covers folder inside the sync directory.",
   statusDriftItem: "{{title}} ({{from}} -> {{to}})",
@@ -470,6 +472,8 @@ var ZH = {
   dnsFixOff: "\u5173\u95ED",
   dnsFixMobileDesc: "\u79FB\u52A8\u7AEF\u4E0D\u652F\u6301\uFF1A\u5185\u7F6E\u7684 DNS-over-HTTPS \u4F20\u8F93\u5C42\u9700\u8981\u684C\u9762\u8FD0\u884C\u65F6\u3002\u79FB\u52A8\u7AEF\u82E5\u540C\u6B65\u62A5\u7F51\u7EDC\u9519\u8BEF\uFF0C\u8BF7\u5728\u7CFB\u7EDF\u5C42\u5F00\u542F\u52A0\u5BC6 DNS \u2014\u2014 Android \u628A\u300C\u79C1\u4EBA DNS\u300D\u8BBE\u4E3A dns.alidns.com\uFF0CiOS \u5B89\u88C5 DoH/DoT \u914D\u7F6E\u63CF\u8FF0\u6587\u4EF6\u3002",
   coversLocalized: "\u5DF2\u4E3A {{count}} \u6761\u7B14\u8BB0\u672C\u5730\u5316\u5C01\u9762\u3002",
+  coverFolder: "\u5C01\u9762\u5B58\u653E\u76EE\u5F55",
+  coverFolderDesc: "\u672C\u5730\u5316\u5C01\u9762\u7684\u5B58\u653E\u76EE\u5F55\u3002\u7559\u7A7A\u5219\u4F7F\u7528\u540C\u6B65\u76EE\u5F55\u4E0B\u7684 covers \u6587\u4EF6\u5939\u3002\u5982\u679C\u4F60\u7684\u56FE\u7247\u4E60\u60EF\u653E\u5728\u522B\u5904\uFF08\u4F8B\u5982\u5DF2\u6709\u7684\u9644\u4EF6\u76EE\u5F55\uFF09\uFF0C\u5728\u8FD9\u91CC\u586B\u5199\u3002\u4FEE\u6539\u540E\u4E0D\u4F1A\u81EA\u52A8\u79FB\u52A8\u5DF2\u4E0B\u8F7D\u7684\u5C01\u9762\u3002",
   localizeCovers: "\u672C\u5730\u5316\u5C01\u9762\u56FE",
   localizeCoversDesc: "\u628A\u5C01\u9762\u4E0B\u8F7D\u5230\u5E93\u4E2D\u5E76\u6539\u4E3A\u672C\u5730\u94FE\u63A5\uFF0C\u800C\u4E0D\u662F\u5F15\u7528\u8FDC\u7A0B\u5730\u5740\u3002\u9ED8\u8BA4\u5173\u95ED\uFF0C\u56E0\u4E3A\u5B83\u4F1A\u5728\u5E93\u91CC\u989D\u5916\u5B58\u50A8\u6587\u4EF6\uFF1B\u4EC5\u5728\u8FDC\u7A0B\u5C01\u9762\u52A0\u8F7D\u4E0D\u51FA\u6765\u65F6\u5EFA\u8BAE\u5F00\u542F\uFF0C\u4F8B\u5982\u7CFB\u7EDF DNS \u65E0\u6CD5\u89E3\u6790 lain.bgm.tv\u3002\u56FE\u7247\u5B58\u653E\u5728\u540C\u6B65\u76EE\u5F55\u4E0B\u7684 covers \u6587\u4EF6\u5939\u3002",
   statusDriftItem: "{{title}}\uFF08{{from}} \u2192 {{to}}\uFF09",
@@ -1434,6 +1438,7 @@ var STRING_SETTING_KEYS = [
   "lastSyncedAt",
   "dailyNoteFolder",
   "dailyNoteFormat",
+  "coverFolder",
   "subjectNoteTemplate",
   "userAgent"
 ];
@@ -1576,6 +1581,7 @@ var DEFAULT_SETTINGS = {
   fetchCharacters: false,
   fetchRelations: false,
   localizeCovers: false,
+  coverFolder: "",
   dnsFixMode: DNS_FIX_MODES.auto,
   lastSyncedAt: "",
   subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
@@ -1776,6 +1782,12 @@ var BangumiSyncSettingTab = class extends import_obsidian4.PluginSettingTab {
     new import_obsidian4.Setting(containerEl).setName(t("localizeCovers")).setDesc(t("localizeCoversDesc")).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.localizeCovers).onChange(async (enabled) => {
         this.plugin.settings.localizeCovers = enabled;
+        await this.plugin.saveSettings();
+      })
+    );
+    new import_obsidian4.Setting(containerEl).setName(t("coverFolder")).setDesc(t("coverFolderDesc")).addText(
+      (text) => text.setPlaceholder(`${this.plugin.settings.syncDirectory}/covers`).setValue(this.plugin.settings.coverFolder).onChange(async (value) => {
+        this.plugin.settings.coverFolder = value;
         await this.plugin.saveSettings();
       })
     );
@@ -3564,15 +3576,21 @@ var SyncService = class {
     const title = episode.name_cn || episode.name || "";
     return title ? `EP${episode.sort} ${title}` : `EP${episode.sort}`;
   }
+  /** Folder that receives localized covers, without a trailing slash. */
+  coverBaseDirectory() {
+    const custom = this.settings.coverFolder.trim();
+    if (custom.length > 0 && !custom.includes("..")) {
+      return (0, import_obsidian9.normalizePath)(custom);
+    }
+    return (0, import_obsidian9.normalizePath)(`${this.settings.syncDirectory}/covers`);
+  }
   /** Vault path where a localized cover for this subject lives. */
   coverPathFromUrl(subjectId, url) {
     if (!url) return null;
     const match = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(url);
     const raw = match ? match[1].toLowerCase() : "jpg";
     const extension = COVER_EXTENSIONS.has(raw) ? raw : "jpg";
-    return (0, import_obsidian9.normalizePath)(
-      `${this.settings.syncDirectory}/covers/${subjectId}.${extension}`
-    );
+    return (0, import_obsidian9.normalizePath)(`${this.coverBaseDirectory()}/${subjectId}.${extension}`);
   }
   /** Vault path where a localized cover for this subject lives. */
   coverStoragePath(collection) {

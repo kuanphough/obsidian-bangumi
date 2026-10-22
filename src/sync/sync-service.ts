@@ -911,15 +911,23 @@ export class SyncService {
 		return title ? `EP${episode.sort} ${title}` : `EP${episode.sort}`;
 	}
 
+	/** Folder that receives localized covers, without a trailing slash. */
+	private coverBaseDirectory(): string {
+		const custom = this.settings.coverFolder.trim();
+		// Reject parent traversal: the target must stay inside the vault.
+		if (custom.length > 0 && !custom.includes("..")) {
+			return normalizePath(custom);
+		}
+		return normalizePath(`${this.settings.syncDirectory}/covers`);
+	}
+
 	/** Vault path where a localized cover for this subject lives. */
 	private coverPathFromUrl(subjectId: number, url: string): string | null {
 		if (!url) return null;
 		const match = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(url);
 		const raw = match ? match[1].toLowerCase() : "jpg";
 		const extension = COVER_EXTENSIONS.has(raw) ? raw : "jpg";
-		return normalizePath(
-			`${this.settings.syncDirectory}/covers/${subjectId}.${extension}`
-		);
+		return normalizePath(`${this.coverBaseDirectory()}/${subjectId}.${extension}`);
 	}
 
 	/** Vault path where a localized cover for this subject lives. */

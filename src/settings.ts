@@ -49,6 +49,7 @@ export interface BangumiSyncSettings {
 	fetchCharacters: boolean;
 	fetchRelations: boolean;
 	localizeCovers: boolean;
+	coverFolder: string;
 	dnsFixMode: DnsFixMode;
 	lastSyncedAt: string;
 	subjectTypes: BangumiSubjectType[];
@@ -96,6 +97,7 @@ const STRING_SETTING_KEYS = [
 	"lastSyncedAt",
 	"dailyNoteFolder",
 	"dailyNoteFormat",
+	"coverFolder",
 	"subjectNoteTemplate",
 	"userAgent"
 ] as const satisfies ReadonlyArray<keyof BangumiSyncSettings>;
@@ -273,6 +275,7 @@ export const DEFAULT_SETTINGS: BangumiSyncSettings = {
 	fetchCharacters: false,
 	fetchRelations: false,
 	localizeCovers: false,
+	coverFolder: "",
 	dnsFixMode: DNS_FIX_MODES.auto,
 	lastSyncedAt: "",
 	subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
@@ -582,6 +585,19 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.localizeCovers)
 					.onChange(async (enabled) => {
 						this.plugin.settings.localizeCovers = enabled;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(t("coverFolder"))
+			.setDesc(t("coverFolderDesc"))
+			.addText((text) =>
+				text
+					.setPlaceholder(`${this.plugin.settings.syncDirectory}/covers`)
+					.setValue(this.plugin.settings.coverFolder)
+					.onChange(async (value) => {
+						this.plugin.settings.coverFolder = value;
 						await this.plugin.saveSettings();
 					})
 			);
