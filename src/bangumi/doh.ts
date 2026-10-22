@@ -71,6 +71,13 @@ interface NodeCapableWindow extends Window {
 }
 
 /**
+ * Declared locally so this module does not depend on `@types/node` being
+ * resolvable. Shadowing the Node global here is intentional: it keeps the
+ * fallback path typed even in type-checking environments without Node types.
+ */
+declare const require: ((id: string) => unknown) | undefined;
+
+/**
  * Minimal structural types for the two Node HTTPS entry points we use.
  *
  * Declared locally instead of `typeof import("https")`: when a type checker
