@@ -144,7 +144,7 @@ function loadHttps(): NodeHttps {
 		typeof fromWindow === "function"
 			? fromWindow
 			: typeof require === "function"
-				? (require as (id: string) => unknown)
+				? require
 				: undefined;
 	if (!loader) {
 		throw new Error('Node module "https" is unavailable in this environment');

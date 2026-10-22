@@ -2704,6 +2704,7 @@ function readSubjectId(app, file) {
 }
 
 // src/sync/sync-service.ts
+var obsidianMoment = import_obsidian9.moment;
 var PAGE_LIMIT = 50;
 var REPORT_FILE_NAME = "Bangumi Sync Report.md";
 var DAILY_SYNC_BLOCK_START = "<!-- bangumi-daily-sync-start -->";
@@ -3212,7 +3213,7 @@ var SyncService = class {
     throw new Error(t("dailyNoteSyncNoteMissing", { path }));
   }
   renderDailySyncBlock(entries) {
-    const date = (0, import_obsidian9.moment)().format("YYYY-MM-DD");
+    const date = obsidianMoment().format("YYYY-MM-DD");
     const rows = entries.map((entry) => this.renderDailySyncRow(entry, date));
     return [
       DAILY_SYNC_BLOCK_START,
@@ -3309,7 +3310,7 @@ var SyncService = class {
     const options = this.getDailyNotesOptions();
     const format = this.settings.dailyNoteFormat.trim() || options.format || "YYYY-MM-DD";
     const folderInput = this.settings.dailyNoteFolder.trim() || options.folder || "";
-    const fileName = `${(0, import_obsidian9.moment)().format(format)}.md`;
+    const fileName = `${obsidianMoment().format(format)}.md`;
     const folder = folderInput ? (0, import_obsidian9.normalizePath)(folderInput) : "";
     return (0, import_obsidian9.normalizePath)(folder ? `${folder}/${fileName}` : fileName);
   }

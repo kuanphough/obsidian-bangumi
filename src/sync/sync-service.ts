@@ -1,5 +1,15 @@
 import { App, TFile, moment, normalizePath } from "obsidian";
 
+/**
+ * `moment` is re-exported by obsidian. Narrow it to the single method we use so
+ * that a moment type declaration which fails to resolve cannot silently turn the
+ * whole call chain into `any`.
+ */
+interface MomentLike {
+	format(pattern: string): string;
+}
+const obsidianMoment = moment as unknown as () => MomentLike;
+
 import {
 	BangumiCollection,
 	BangumiCollectionType,
@@ -708,7 +718,7 @@ export class SyncService {
 	}
 
 	private renderDailySyncBlock(entries: DailySyncEntry[]): string {
-		const date = moment().format("YYYY-MM-DD");
+		const date = obsidianMoment().format("YYYY-MM-DD");
 		const rows = entries.map((entry) => this.renderDailySyncRow(entry, date));
 
 		return [
@@ -833,7 +843,7 @@ export class SyncService {
 			this.settings.dailyNoteFormat.trim() || options.format || "YYYY-MM-DD";
 		const folderInput =
 			this.settings.dailyNoteFolder.trim() || options.folder || "";
-		const fileName = `${moment().format(format)}.md`;
+		const fileName = `${obsidianMoment().format(format)}.md`;
 		const folder = folderInput ? normalizePath(folderInput) : "";
 		return normalizePath(folder ? `${folder}/${fileName}` : fileName);
 	}
