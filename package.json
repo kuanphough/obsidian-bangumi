@@ -1,6 +1,6 @@
 {
 	"name": "bangumi-note",
-	"version": "0.4.1",
+	"version": "0.4.2",
 	"description": "Sync Bangumi collection and episode progress into notes.",
 	"main": "main.js",
 	"scripts": {
