@@ -140,6 +140,9 @@ const EN = {
 	dnsFixOff: "Off",
 	dnsFixMobileDesc:
 		"Not available on mobile: the built-in DNS-over-HTTPS transport needs a desktop runtime. If syncing fails with network errors on mobile, turn on encrypted DNS at the OS level instead - on Android set Private DNS to dns.alidns.com, on iOS install a DoH/DoT configuration profile.",
+	localizeCovers: "Localize cover images",
+	localizeCoversDesc:
+		"Download covers into the vault and link them locally instead of pointing at the remote URL. Off by default, because it stores extra files in your vault; enable it only when remote covers do not load, for example when the system DNS cannot resolve lain.bgm.tv. Images go into a covers folder inside the sync directory.",
 	statusDriftItem: "{{title}} ({{from}} -> {{to}})",
 	statusDriftSeparator: "; ",
 	statusDriftUpdated:
@@ -448,6 +451,9 @@ const ZH: Record<LocaleKey, string> = {
 	dnsFixOff: "关闭",
 	dnsFixMobileDesc:
 		"移动端不支持：内置的 DNS-over-HTTPS 传输层需要桌面运行时。移动端若同步报网络错误，请在系统层开启加密 DNS —— Android 把「私人 DNS」设为 dns.alidns.com，iOS 安装 DoH/DoT 配置描述文件。",
+	localizeCovers: "本地化封面图",
+	localizeCoversDesc:
+		"把封面下载到库中并改为本地链接，而不是引用远程地址。默认关闭，因为它会在库里额外存储文件；仅在远程封面加载不出来时建议开启，例如系统 DNS 无法解析 lain.bgm.tv。图片存放在同步目录下的 covers 文件夹。",
 	statusDriftItem: "{{title}}（{{from}} → {{to}}）",
 	statusDriftSeparator: "；",
 	statusDriftUpdated:

@@ -90,6 +90,7 @@ export interface SyncSingleSubjectResult {
 }
 
 const PAGE_LIMIT = 50;
+const COVER_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "gif", "avif"]);
 const REPORT_FILE_NAME = "Bangumi Sync Report.md";
 const DAILY_SYNC_BLOCK_START = "<!-- bangumi-daily-sync-start -->";
 const DAILY_SYNC_BLOCK_END = "<!-- bangumi-daily-sync-end -->";
@@ -254,7 +255,8 @@ export class SyncService {
 
 					if (
 						this.shouldSkipUnchanged(collection) &&
-						noteIndex.has(subjectId)
+						noteIndex.has(subjectId) &&
+						!this.needsCoverLocalization(collection)
 					) {
 						incrementalSkipped += 1;
 						groupUnchanged += 1;
@@ -279,13 +281,18 @@ export class SyncService {
 					const { episodes, episodeSyncError } = episodesResult;
 
 					try {
+						const localCoverPath = await this.prepareLocalCover(
+							client,
+							collection
+						);
 						const result = await writer.writeSubjectNote(
 							this.getTargetDirectory(collection),
 							{
 								collection,
 								episodes,
 								episodeSyncError,
-								extras
+								extras,
+								localCoverPath
 							},
 							noteIndex
 						);
@@ -895,6 +902,61 @@ export class SyncService {
 		return title ? `EP${episode.sort} ${title}` : `EP${episode.sort}`;
 	}
 
+	/** Vault path where a localized cover for this subject lives. */
+	private coverStoragePath(collection: BangumiCollection): string | null {
+		const url =
+			collection.subject.images?.large || collection.subject.images?.common;
+		if (!url) return null;
+
+		const match = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(url);
+		const raw = match ? match[1].toLowerCase() : "jpg";
+		const extension = COVER_EXTENSIONS.has(raw) ? raw : "jpg";
+		return normalizePath(
+			`${this.settings.syncDirectory}/covers/${collection.subject.id}.${extension}`
+		);
+	}
+
+	/** True when localization is on but this subject has no local cover yet. */
+	private needsCoverLocalization(collection: BangumiCollection): boolean {
+		if (!this.settings.localizeCovers) return false;
+		const path = this.coverStoragePath(collection);
+		if (!path) return false;
+		return !this.app.vault.getAbstractFileByPath(path);
+	}
+
+	/**
+	 * Download the cover into the vault when cover localization is enabled.
+	 * Returns the vault path so the note can embed it instead of a remote URL.
+	 */
+	private async prepareLocalCover(
+		client: BangumiClient,
+		collection: BangumiCollection
+	): Promise<string | undefined> {
+		if (!this.settings.localizeCovers) return undefined;
+
+		const path = this.coverStoragePath(collection);
+		if (!path) return undefined;
+		if (this.app.vault.getAbstractFileByPath(path)) return path;
+
+		const url =
+			collection.subject.images?.large || collection.subject.images?.common;
+		if (!url) return undefined;
+
+		try {
+			const data = await client.downloadBinary(url);
+			const directory = path.slice(0, path.lastIndexOf("/"));
+			if (directory) await ensureFolder(this.app, directory);
+			await this.app.vault.createBinary(path, data);
+			return path;
+		} catch (error) {
+			console.error(
+				`Bangumi Sync failed to download cover for ${collection.subject.id}`,
+				error
+			);
+			return undefined;
+		}
+	}
+
 	/**
 	 * Write a note for `collection` and move it when the storage layout puts it
 	 * in a different folder than where the file currently lives.
@@ -908,12 +970,13 @@ export class SyncService {
 		collection: BangumiCollection,
 		episodes: BangumiEpisodeCollection[],
 		extras: BangumiSubjectExtras | undefined,
-		episodeSyncError?: string
+		episodeSyncError?: string,
+		localCoverPath?: string
 	): Promise<{ path: string; changed: boolean; moved: boolean }> {
 		const targetDirectory = normalizePath(this.getTargetDirectory(collection));
 		const result = await writer.writeSubjectNote(
 			targetDirectory,
-			{ collection, episodes, episodeSyncError, extras },
+			{ collection, episodes, episodeSyncError, extras, localCoverPath },
 			noteIndex
 		);
 
@@ -1007,13 +1070,18 @@ export class SyncService {
 					}
 				}
 				const extras = await this.fetchSubjectExtras(client, collection, []);
+				const localCoverPath = await this.prepareLocalCover(
+					client,
+					collection
+				);
 				const result = await this.writeAndRelocate(
 					writer,
 					noteIndex,
 					collection,
 					episodes,
 					extras,
-					episodeSyncError
+					episodeSyncError,
+					localCoverPath
 				);
 
 				updated.push({

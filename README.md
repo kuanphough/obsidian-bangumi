@@ -86,6 +86,7 @@ Keep the token private. It authorizes the plugin to read your Bangumi account da
 | `Include on hold/dropped` | Whether to sync on-hold and dropped subjects. |
 | `Incremental sync` | Skip unchanged subjects by Bangumi updated time and recreate missing local notes. |
 | `DNS fix (DoH)` | How `api.bgm.tv` is resolved. `Auto` (default) uses the normal network path first and only switches to DNS-over-HTTPS after a network failure; `Always` resolves through DoH up front; `Off` keeps Obsidian's default transport. Useful when the system DNS returns wrong bgm.tv addresses and syncing fails with network errors. Desktop only. |
+| `Localize cover images` | Download covers into the vault and link them locally instead of the remote URL. Off by default because it stores extra files; enable it when remote covers do not load (for example when the system DNS cannot resolve `lain.bgm.tv`). Images go to a `covers` folder inside the sync directory. |
 | `Daily note sync` | Write newly added or updated in-progress subjects to today's Daily Note block. |
 | `Daily note folder` | Folder that holds your daily notes. Leave empty to use the Daily Notes core plugin setting; fill it in when you create daily notes with QuickAdd, Periodic Notes, or another method. |
 | `Daily note date format` | Moment.js date format for the daily note file name. Leave empty to use the core plugin setting, falling back to `YYYY-MM-DD`. |
@@ -304,6 +305,7 @@ BRAT 适合测试开发版。正式发布后，普通用户更建议使用 Obsid
 | `Include on hold/dropped` | 是否同步搁置和抛弃条目。 |
 | `Incremental sync` | 根据 Bangumi 更新时间跳过未变化条目，并补回本地缺失文件。 |
 | `DNS fix (DoH)` | 解析 `api.bgm.tv` 的方式。`自动`（默认）先走系统网络，只有出现网络错误后才改用 DNS-over-HTTPS；`总是` 直接走 DoH；`关闭` 只使用 Obsidian 默认方式。用于系统 DNS 返回错误 bgm.tv 地址、导致同步报网络错误的情况。仅桌面端生效。 |
+| `Localize cover images` | 把封面下载到库中并改为本地链接，而不是引用远程地址。默认关闭，因为会在库里额外存储文件；远程封面加载不出来时开启（例如系统 DNS 无法解析 `lain.bgm.tv`）。图片存放在同步目录下的 `covers` 文件夹。 |
 | `Daily note sync` | 将本次新增或更新的进行中条目写入今天的 Daily Note 同步块。 |
 | `Daily note folder` | 每日日记所在文件夹。留空则沿用官方 Daily Notes 核心插件的设置；用 QuickAdd / Periodic Notes 等方式建日记时在这里填写。 |
 | `Daily note date format` | 日记文件名使用的 moment.js 日期格式。留空则沿用核心插件设置，兜底 `YYYY-MM-DD`。 |

@@ -2,7 +2,7 @@ import { Platform } from "obsidian";
 import type { RequestUrlResponse } from "obsidian";
 
 /**
- * DNS-over-HTTPS transport for Bangumi API requests.
+ * DNS-over-HTTPS transport for Bangumi requests.
  *
  * Some networks return poisoned addresses for the bgm.tv domains, so
  * Obsidian's requestUrl() times out even though the site itself is fine.
@@ -18,7 +18,7 @@ import type { RequestUrlResponse } from "obsidian";
  * lies just loses the vote instead of breaking the sync.
  *
  * Only the hostname is ever sent to a resolver. The access token and every
- * other header stay on the request to api.bgm.tv.
+ * other header stay on the request to the real host.
  *
  * Desktop only: relies on Node's https module. Callers must check
  * isDohTransportAvailable() first.
@@ -61,6 +61,12 @@ export interface DohRequestInit {
 	timeoutMs: number;
 }
 
+export interface DohDownloadInit {
+	url: string;
+	headers?: Record<string, string>;
+	timeoutMs: number;
+}
+
 export function isDohTransportAvailable(): boolean {
 	return Platform.isDesktopApp;
 }
@@ -78,7 +84,7 @@ interface NodeCapableWindow extends Window {
 declare const require: ((id: string) => unknown) | undefined;
 
 /**
- * Minimal structural types for the two Node HTTPS entry points we use.
+ * Minimal structural types for the Node HTTPS entry points we use.
  *
  * Declared locally instead of `typeof import("https")`: when a type checker
  * cannot resolve `@types/node`, that import silently degrades to `any` and
@@ -91,6 +97,14 @@ interface NodeResponse {
 	on(event: "end", listener: () => void): void;
 	on(event: "error", listener: (error: Error) => void): void;
 	headers: Record<string, string | string[] | undefined>;
+	statusCode?: number;
+}
+
+/** Same socket, binary chunks. Without setEncoding Node hands us Buffers. */
+interface NodeBinaryResponse {
+	on(event: "data", listener: (chunk: Uint8Array) => void): void;
+	on(event: "end", listener: () => void): void;
+	on(event: "error", listener: (error: Error) => void): void;
 	statusCode?: number;
 }
 
@@ -108,6 +122,21 @@ type LookupCallback = (
 	family?: number
 ) => void;
 
+type ConnectionOptions = {
+	protocol: string;
+	hostname: string;
+	port: number | string;
+	path: string;
+	method: string;
+	headers?: Record<string, string>;
+	timeout: number;
+	lookup: (
+		hostname: string,
+		options: { all?: boolean },
+		callback: LookupCallback
+	) => void;
+};
+
 interface NodeHttps {
 	get(
 		url: string,
@@ -115,20 +144,7 @@ interface NodeHttps {
 		callback: (response: NodeResponse) => void
 	): NodeRequest;
 	request(
-		options: {
-			protocol: string;
-			hostname: string;
-			port: number | string;
-			path: string;
-			method: string;
-			headers?: Record<string, string>;
-			timeout: number;
-			lookup: (
-				hostname: string,
-				options: { all?: boolean },
-				callback: LookupCallback
-			) => void;
-		},
+		options: ConnectionOptions,
 		callback: (response: NodeResponse) => void
 	): NodeRequest;
 }
@@ -332,96 +348,17 @@ function collectHeaders(
 	return headers;
 }
 
-function attemptRequest(
-	url: URL,
-	init: DohRequestInit,
-	address: string,
-	family: number,
-	timeoutMs: number
-): Promise<RequestUrlResponse> {
-	const https = loadHttps();
-
-	// Node 18+ calls lookup with all:true and expects an array back.
-	const lookup = (
-		_hostname: string,
-		options: { all?: boolean },
-		callback: LookupCallback
-	): void => {
-		if (options.all) {
-			callback(null, [{ address, family }], family);
-			return;
-		}
-		callback(null, address, family);
-	};
-
-	return new Promise<RequestUrlResponse>((resolve, reject) => {
-		const request = https.request(
-			{
-				protocol: url.protocol,
-				hostname: url.hostname,
-				port: url.port || 443,
-				path: `${url.pathname}${url.search}`,
-				method: init.method ?? "GET",
-				headers: init.headers,
-				timeout: timeoutMs,
-				// Connect to the DoH answer while keeping hostname for SNI / certs.
-				lookup
-			},
-			(response) => {
-				// Any HTTP response means this address works, whatever the status.
-				const chunks: string[] = [];
-				response.setEncoding("utf8");
-				response.on("data", (chunk: string) => {
-					chunks.push(chunk);
-				});
-				response.on("error", (error: Error) => reject(error));
-				response.on("end", () => {
-					const text = chunks.join("");
-					let json: unknown;
-					try {
-						json = text.length > 0 ? JSON.parse(text) : undefined;
-					} catch {
-						json = undefined;
-					}
-					const result: RequestUrlResponse = {
-						status: response.statusCode ?? 0,
-						headers: collectHeaders(response.headers),
-						text,
-						json,
-						// The DoH transport only carries JSON/text bodies and never
-						// fetches binary payloads (cover images are loaded by Obsidian
-						// itself). Read `text` or `json` from this transport.
-						arrayBuffer: new ArrayBuffer(0)
-					};
-					resolve(result);
-				});
-			}
-		);
-
-		request.on("timeout", () =>
-			request.destroy(new Error("Bangumi request timed out"))
-		);
-		request.on("error", (error: Error) => reject(error));
-		if (init.body !== undefined) {
-			request.write(init.body);
-		}
-		request.end();
-	});
-}
-
 /**
- * Perform an HTTPS request that resolves the host through DoH. The returned
- * object mirrors the shape of Obsidian's RequestUrlResponse so it can be used
- * interchangeably by the client.
+ * Run `attempt` against every ranked candidate until one connects.
  *
- * Candidates are tried in vote order. A candidate that fails to connect is
- * quarantined and the next one is used, so one lying resolver cannot take the
- * whole sync down.
+ * A candidate that fails is quarantined so later requests skip it, and the whole
+ * answer set is invalidated when nothing worked (the resolver probably lied).
  */
-export async function dohRequest(
-	init: DohRequestInit
-): Promise<RequestUrlResponse> {
-	const url = new URL(init.url);
+async function withCandidates<T>(
+	url: URL,
+	timeoutMs: number,
+	attempt: (address: string, family: number, timeoutMs: number) => Promise<T>
+): Promise<T> {
 	const resolved = await resolveViaDoh(url.hostname);
 	if (!resolved) {
 		throw new Error(`DoH resolution failed for ${url.hostname}`);
@@ -441,25 +378,176 @@ export async function dohRequest(
 	for (const [index, address] of ordered.entries()) {
 		// The top candidate gets the caller's full timeout; retries stay short so
 		// a quarantined address cannot stall the request for long.
-		const timeoutMs =
-			index === 0
-				? init.timeoutMs
-				: Math.min(init.timeoutMs, RETRY_ATTEMPT_TIMEOUT_MS);
+		const attemptTimeout =
+			index === 0 ? timeoutMs : Math.min(timeoutMs, RETRY_ATTEMPT_TIMEOUT_MS);
 		try {
-			return await attemptRequest(
-				url,
-				init,
-				address,
-				resolved.family,
-				timeoutMs
-			);
+			return await attempt(address, resolved.family, attemptTimeout);
 		} catch (error) {
 			lastError = toError(error, `DoH request failed for ${address}`);
 			markBadAddress(address);
 		}
 	}
 
-	// Every candidate failed: the answer set is probably stale.
 	invalidateDohCache(url.hostname);
 	throw lastError ?? new Error(`DoH request failed for ${url.hostname}`);
+}
+
+function connectionOptions(
+	url: URL,
+	address: string,
+	family: number,
+	timeoutMs: number,
+	headers?: Record<string, string>
+): ConnectionOptions {
+	return {
+		protocol: url.protocol,
+		hostname: url.hostname,
+		port: url.port || 443,
+		path: `${url.pathname}${url.search}`,
+		method: "GET",
+		headers,
+		timeout: timeoutMs,
+		// Connect to the DoH answer while keeping hostname for SNI / certs.
+		lookup: (
+			_hostname: string,
+			options: { all?: boolean },
+			callback: LookupCallback
+		): void => {
+			// Node 18+ calls lookup with all:true and expects an array back.
+			if (options.all) {
+				callback(null, [{ address, family }], family);
+				return;
+			}
+			callback(null, address, family);
+		}
+	};
+}
+
+function attemptRequest(
+	url: URL,
+	init: DohRequestInit,
+	address: string,
+	family: number,
+	timeoutMs: number
+): Promise<RequestUrlResponse> {
+	const https = loadHttps();
+	const options = connectionOptions(
+		url,
+		address,
+		family,
+		timeoutMs,
+		init.headers
+	);
+	options.method = init.method ?? "GET";
+
+	return new Promise<RequestUrlResponse>((resolve, reject) => {
+		const request = https.request(options, (response) => {
+			// Any HTTP response means this address works, whatever the status.
+			const chunks: string[] = [];
+			response.setEncoding("utf8");
+			response.on("data", (chunk: string) => {
+				chunks.push(chunk);
+			});
+			response.on("error", (error: Error) => reject(error));
+			response.on("end", () => {
+				const text = chunks.join("");
+				let json: unknown;
+				try {
+					json = text.length > 0 ? JSON.parse(text) : undefined;
+				} catch {
+					json = undefined;
+				}
+				resolve({
+					status: response.statusCode ?? 0,
+					headers: collectHeaders(response.headers),
+					text,
+					json,
+					// JSON endpoints only. Binary downloads go through dohDownload().
+					arrayBuffer: new ArrayBuffer(0)
+				});
+			});
+		});
+
+		request.on("timeout", () =>
+			request.destroy(new Error("Bangumi request timed out"))
+		);
+		request.on("error", (error: Error) => reject(error));
+		if (init.body !== undefined) {
+			request.write(init.body);
+		}
+		request.end();
+	});
+}
+
+function attemptDownload(
+	url: URL,
+	init: DohDownloadInit,
+	address: string,
+	family: number,
+	timeoutMs: number
+): Promise<ArrayBuffer> {
+	const https = loadHttps();
+	const options = connectionOptions(
+		url,
+		address,
+		family,
+		timeoutMs,
+		init.headers
+	);
+
+	return new Promise<ArrayBuffer>((resolve, reject) => {
+		const request = https.request(options, (response) => {
+			// No setEncoding: Node hands over Buffers, which are Uint8Arrays.
+			const binary = response as unknown as NodeBinaryResponse;
+			const chunks: Uint8Array[] = [];
+			binary.on("data", (chunk: Uint8Array) => {
+				chunks.push(chunk);
+			});
+			binary.on("error", (error: Error) => reject(error));
+			binary.on("end", () => {
+				const status = binary.statusCode ?? 0;
+				if (status < 200 || status >= 300) {
+					reject(new Error(`Download failed with HTTP ${status}`));
+					return;
+				}
+				let total = 0;
+				for (const chunk of chunks) total += chunk.length;
+				const merged = new Uint8Array(total);
+				let offset = 0;
+				for (const chunk of chunks) {
+					merged.set(chunk, offset);
+					offset += chunk.length;
+				}
+				resolve(merged.buffer);
+			});
+		});
+
+		request.on("timeout", () =>
+			request.destroy(new Error("Bangumi download timed out"))
+		);
+		request.on("error", (error: Error) => reject(error));
+		request.end();
+	});
+}
+
+/**
+ * Perform an HTTPS request that resolves the host through DoH. The returned
+ * object mirrors the shape of Obsidian's RequestUrlResponse so it can be used
+ * interchangeably by the client.
+ */
+export async function dohRequest(
+	init: DohRequestInit
+): Promise<RequestUrlResponse> {
+	const url = new URL(init.url);
+	return withCandidates(url, init.timeoutMs, (address, family, timeoutMs) =>
+		attemptRequest(url, init, address, family, timeoutMs)
+	);
+}
+
+/** Download binary content (cover images) through the DoH transport. */
+export async function dohDownload(init: DohDownloadInit): Promise<ArrayBuffer> {
+	const url = new URL(init.url);
+	return withCandidates(url, init.timeoutMs, (address, family, timeoutMs) =>
+		attemptDownload(url, init, address, family, timeoutMs)
+	);
 }

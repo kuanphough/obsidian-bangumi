@@ -1434,6 +1434,22 @@ status: do
 	);
 }
 
+// Cover localization: embed a vault link instead of the remote URL
+{
+	const remote = new MarkdownRenderer().renderSubjectNote(makeSubject());
+	assert.ok(remote.includes("![](https://example.com/cover.jpg)"));
+
+	const local = new MarkdownRenderer().renderSubjectNote(
+		makeSubject({ localCoverPath: "Bangumi/covers/123.jpg" })
+	);
+	assert.ok(local.includes("![[Bangumi/covers/123.jpg]]"));
+	assert.ok(local.includes("Bangumi/covers/123.jpg"));
+	assert.ok(
+		!local.includes("![](https://example.com/cover.jpg)"),
+		"localized cover must not keep the remote image link"
+	);
+}
+
 // HTTP retry: 429 + Retry-After then 200
 {
 	requestUrl.calls.length = 0;

@@ -121,7 +121,9 @@ export class MarkdownRenderer {
 	renderSubjectNote(subject: BangumiSyncedSubject): string {
 		const bangumiSubject = subject.collection.subject;
 		const title = bangumiSubject.name_cn || bangumiSubject.name;
-		const cover = bangumiSubject.images?.large || bangumiSubject.images?.common;
+		const remoteCover =
+			bangumiSubject.images?.large || bangumiSubject.images?.common;
+		const cover = subject.localCoverPath ?? remoteCover;
 		const rating = subject.collection.rate ?? "";
 		const updatedAt = subject.collection.updated_at ?? "";
 		const status = collectionStatusLabel(subject.collection.type);
@@ -143,7 +145,11 @@ export class MarkdownRenderer {
 			comment,
 			comment_json: JSON.stringify(comment),
 			cover: cover ?? "",
-			cover_image: cover ? `![](${cover})` : "",
+			cover_image: subject.localCoverPath
+				? `![[${subject.localCoverPath}]]`
+				: remoteCover
+					? `![](${remoteCover})`
+					: "",
 			cover_yaml: this.renderYamlScalar(cover ?? ""),
 			eps_total: String(bangumiSubject.eps ?? ""),
 			last_done_episode_json: JSON.stringify(

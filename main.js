@@ -217,6 +217,8 @@ var EN = {
   dnsFixAlways: "Always use DoH",
   dnsFixOff: "Off",
   dnsFixMobileDesc: "Not available on mobile: the built-in DNS-over-HTTPS transport needs a desktop runtime. If syncing fails with network errors on mobile, turn on encrypted DNS at the OS level instead - on Android set Private DNS to dns.alidns.com, on iOS install a DoH/DoT configuration profile.",
+  localizeCovers: "Localize cover images",
+  localizeCoversDesc: "Download covers into the vault and link them locally instead of pointing at the remote URL. Off by default, because it stores extra files in your vault; enable it only when remote covers do not load, for example when the system DNS cannot resolve lain.bgm.tv. Images go into a covers folder inside the sync directory.",
   statusDriftItem: "{{title}} ({{from}} -> {{to}})",
   statusDriftSeparator: "; ",
   statusDriftUpdated: "Updated {{count}} note(s) to match Bangumi: {{items}}",
@@ -466,6 +468,8 @@ var ZH = {
   dnsFixAlways: "\u603B\u662F\u4F7F\u7528 DoH",
   dnsFixOff: "\u5173\u95ED",
   dnsFixMobileDesc: "\u79FB\u52A8\u7AEF\u4E0D\u652F\u6301\uFF1A\u5185\u7F6E\u7684 DNS-over-HTTPS \u4F20\u8F93\u5C42\u9700\u8981\u684C\u9762\u8FD0\u884C\u65F6\u3002\u79FB\u52A8\u7AEF\u82E5\u540C\u6B65\u62A5\u7F51\u7EDC\u9519\u8BEF\uFF0C\u8BF7\u5728\u7CFB\u7EDF\u5C42\u5F00\u542F\u52A0\u5BC6 DNS \u2014\u2014 Android \u628A\u300C\u79C1\u4EBA DNS\u300D\u8BBE\u4E3A dns.alidns.com\uFF0CiOS \u5B89\u88C5 DoH/DoT \u914D\u7F6E\u63CF\u8FF0\u6587\u4EF6\u3002",
+  localizeCovers: "\u672C\u5730\u5316\u5C01\u9762\u56FE",
+  localizeCoversDesc: "\u628A\u5C01\u9762\u4E0B\u8F7D\u5230\u5E93\u4E2D\u5E76\u6539\u4E3A\u672C\u5730\u94FE\u63A5\uFF0C\u800C\u4E0D\u662F\u5F15\u7528\u8FDC\u7A0B\u5730\u5740\u3002\u9ED8\u8BA4\u5173\u95ED\uFF0C\u56E0\u4E3A\u5B83\u4F1A\u5728\u5E93\u91CC\u989D\u5916\u5B58\u50A8\u6587\u4EF6\uFF1B\u4EC5\u5728\u8FDC\u7A0B\u5C01\u9762\u52A0\u8F7D\u4E0D\u51FA\u6765\u65F6\u5EFA\u8BAE\u5F00\u542F\uFF0C\u4F8B\u5982\u7CFB\u7EDF DNS \u65E0\u6CD5\u89E3\u6790 lain.bgm.tv\u3002\u56FE\u7247\u5B58\u653E\u5728\u540C\u6B65\u76EE\u5F55\u4E0B\u7684 covers \u6587\u4EF6\u5939\u3002",
   statusDriftItem: "{{title}}\uFF08{{from}} \u2192 {{to}}\uFF09",
   statusDriftSeparator: "\uFF1B",
   statusDriftUpdated: "\u5DF2\u6309 Bangumi \u7684\u73B0\u72B6\u66F4\u65B0 {{count}} \u6761\u7B14\u8BB0\uFF1A{{items}}",
@@ -930,31 +934,32 @@ var MarkdownRenderer = class {
     this.template = template;
   }
   renderSubjectNote(subject) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _A, _B;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _A, _B, _C;
     const bangumiSubject = subject.collection.subject;
     const title = bangumiSubject.name_cn || bangumiSubject.name;
-    const cover = ((_a = bangumiSubject.images) == null ? void 0 : _a.large) || ((_b = bangumiSubject.images) == null ? void 0 : _b.common);
-    const rating = (_c = subject.collection.rate) != null ? _c : "";
-    const updatedAt = (_d = subject.collection.updated_at) != null ? _d : "";
+    const remoteCover = ((_a = bangumiSubject.images) == null ? void 0 : _a.large) || ((_b = bangumiSubject.images) == null ? void 0 : _b.common);
+    const cover = (_c = subject.localCoverPath) != null ? _c : remoteCover;
+    const rating = (_d = subject.collection.rate) != null ? _d : "";
+    const updatedAt = (_e = subject.collection.updated_at) != null ? _e : "";
     const status = collectionStatusLabel(subject.collection.type);
     const subjectType = subjectTypeLabel(bangumiSubject.type);
-    const tags = (_e = subject.collection.tags) != null ? _e : [];
-    const comment = (_f = subject.collection.comment) != null ? _f : "";
+    const tags = (_f = subject.collection.tags) != null ? _f : [];
+    const comment = (_g = subject.collection.comment) != null ? _g : "";
     const progressSummary = this.getProgressSummary(subject);
     const progress = this.renderEpisodeChecklist(subject);
     const summarySection = this.renderSummarySection(bangumiSubject.summary);
     const template = this.hasSyncBlockMarkers(this.template) ? this.template : DEFAULT_SUBJECT_NOTE_TEMPLATE;
     return this.renderTemplate(template, {
-      air_date: (_g = bangumiSubject.date) != null ? _g : "",
-      air_date_yaml: this.renderYamlScalar((_h = bangumiSubject.date) != null ? _h : ""),
+      air_date: (_h = bangumiSubject.date) != null ? _h : "",
+      air_date_yaml: this.renderYamlScalar((_i = bangumiSubject.date) != null ? _i : ""),
       bangumi_id: String(bangumiSubject.id),
       bangumi_tags_json: JSON.stringify(tags),
       comment,
       comment_json: JSON.stringify(comment),
       cover: cover != null ? cover : "",
-      cover_image: cover ? `![](${cover})` : "",
+      cover_image: subject.localCoverPath ? `![[${subject.localCoverPath}]]` : remoteCover ? `![](${remoteCover})` : "",
       cover_yaml: this.renderYamlScalar(cover != null ? cover : ""),
-      eps_total: String((_i = bangumiSubject.eps) != null ? _i : ""),
+      eps_total: String((_j = bangumiSubject.eps) != null ? _j : ""),
       last_done_episode_json: JSON.stringify(
         progressSummary.lastDoneEpisodeTitle
       ),
@@ -969,26 +974,26 @@ var MarkdownRenderer = class {
       progress_percent: String(progressSummary.percent),
       progress_total: String(progressSummary.total),
       rating: String(rating),
-      characters: this.renderCharacters((_k = (_j = subject.extras) == null ? void 0 : _j.characters) != null ? _k : []),
-      characters_json: JSON.stringify((_m = (_l = subject.extras) == null ? void 0 : _l.characters) != null ? _m : []),
-      relations: this.renderRelations((_o = (_n = subject.extras) == null ? void 0 : _n.relations) != null ? _o : []),
-      relations_json: JSON.stringify((_q = (_p = subject.extras) == null ? void 0 : _p.relations) != null ? _q : []),
+      characters: this.renderCharacters((_l = (_k = subject.extras) == null ? void 0 : _k.characters) != null ? _l : []),
+      characters_json: JSON.stringify((_n = (_m = subject.extras) == null ? void 0 : _m.characters) != null ? _n : []),
+      relations: this.renderRelations((_p = (_o = subject.extras) == null ? void 0 : _o.relations) != null ? _p : []),
+      relations_json: JSON.stringify((_r = (_q = subject.extras) == null ? void 0 : _q.relations) != null ? _r : []),
       status,
-      staff: this.renderStaff((_s = (_r = subject.extras) == null ? void 0 : _r.staff) != null ? _s : []),
-      staff_json: JSON.stringify((_u = (_t = subject.extras) == null ? void 0 : _t.staff) != null ? _u : []),
+      staff: this.renderStaff((_t = (_s = subject.extras) == null ? void 0 : _s.staff) != null ? _t : []),
+      staff_json: JSON.stringify((_v = (_u = subject.extras) == null ? void 0 : _u.staff) != null ? _v : []),
       subject_collection_stats: this.renderCollectionStats(
         bangumiSubject.collection
       ),
       subject_collection_stats_json: JSON.stringify(
-        (_v = bangumiSubject.collection) != null ? _v : {}
+        (_w = bangumiSubject.collection) != null ? _w : {}
       ),
-      subject_infobox: this.renderInfobox((_w = bangumiSubject.infobox) != null ? _w : []),
-      subject_infobox_json: JSON.stringify((_x = bangumiSubject.infobox) != null ? _x : []),
+      subject_infobox: this.renderInfobox((_x = bangumiSubject.infobox) != null ? _x : []),
+      subject_infobox_json: JSON.stringify((_y = bangumiSubject.infobox) != null ? _y : []),
       subject_rating: this.renderSubjectRating(bangumiSubject.rating),
-      subject_rating_json: JSON.stringify((_y = bangumiSubject.rating) != null ? _y : {}),
-      subject_summary: (_z = bangumiSubject.summary) != null ? _z : "",
-      subject_tags: this.renderSubjectTags((_A = bangumiSubject.tags) != null ? _A : []),
-      subject_tags_json: JSON.stringify((_B = bangumiSubject.tags) != null ? _B : []),
+      subject_rating_json: JSON.stringify((_z = bangumiSubject.rating) != null ? _z : {}),
+      subject_summary: (_A = bangumiSubject.summary) != null ? _A : "",
+      subject_tags: this.renderSubjectTags((_B = bangumiSubject.tags) != null ? _B : []),
+      subject_tags_json: JSON.stringify((_C = bangumiSubject.tags) != null ? _C : []),
       summary_section: summarySection,
       sync_block_end: SYNC_BLOCK_END,
       sync_block_start: SYNC_BLOCK_START,
@@ -1439,7 +1444,8 @@ var BOOLEAN_SETTING_KEYS = [
   "fetchDetailedSubjectInfo",
   "fetchStaff",
   "fetchCharacters",
-  "fetchRelations"
+  "fetchRelations",
+  "localizeCovers"
 ];
 function sanitizeLoadedSettings(loaded) {
   const result = {};
@@ -1567,6 +1573,7 @@ var DEFAULT_SETTINGS = {
   fetchStaff: false,
   fetchCharacters: false,
   fetchRelations: false,
+  localizeCovers: false,
   dnsFixMode: DNS_FIX_MODES.auto,
   lastSyncedAt: "",
   subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
@@ -1761,6 +1768,12 @@ var BangumiSyncSettingTab = class extends import_obsidian4.PluginSettingTab {
     new import_obsidian4.Setting(containerEl).setName(t("syncConcurrency")).setDesc(t("syncConcurrencyDesc")).addSlider(
       (slider) => slider.setLimits(SYNC_CONCURRENCY_MIN, SYNC_CONCURRENCY_MAX, 1).setValue(this.plugin.settings.syncConcurrency).setDynamicTooltip().onChange(async (value) => {
         this.plugin.settings.syncConcurrency = value;
+        await this.plugin.saveSettings();
+      })
+    );
+    new import_obsidian4.Setting(containerEl).setName(t("localizeCovers")).setDesc(t("localizeCoversDesc")).addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.localizeCovers).onChange(async (enabled) => {
+        this.plugin.settings.localizeCovers = enabled;
         await this.plugin.saveSettings();
       })
     );
@@ -2152,72 +2165,7 @@ function collectHeaders(raw) {
   }
   return headers;
 }
-function attemptRequest(url, init, address, family, timeoutMs) {
-  const https = loadHttps();
-  const lookup = (_hostname, options, callback) => {
-    if (options.all) {
-      callback(null, [{ address, family }], family);
-      return;
-    }
-    callback(null, address, family);
-  };
-  return new Promise((resolve, reject) => {
-    var _a;
-    const request = https.request(
-      {
-        protocol: url.protocol,
-        hostname: url.hostname,
-        port: url.port || 443,
-        path: `${url.pathname}${url.search}`,
-        method: (_a = init.method) != null ? _a : "GET",
-        headers: init.headers,
-        timeout: timeoutMs,
-        // Connect to the DoH answer while keeping hostname for SNI / certs.
-        lookup
-      },
-      (response) => {
-        const chunks = [];
-        response.setEncoding("utf8");
-        response.on("data", (chunk) => {
-          chunks.push(chunk);
-        });
-        response.on("error", (error) => reject(error));
-        response.on("end", () => {
-          var _a2;
-          const text = chunks.join("");
-          let json;
-          try {
-            json = text.length > 0 ? JSON.parse(text) : void 0;
-          } catch (e) {
-            json = void 0;
-          }
-          const result = {
-            status: (_a2 = response.statusCode) != null ? _a2 : 0,
-            headers: collectHeaders(response.headers),
-            text,
-            json,
-            // The DoH transport only carries JSON/text bodies and never
-            // fetches binary payloads (cover images are loaded by Obsidian
-            // itself). Read `text` or `json` from this transport.
-            arrayBuffer: new ArrayBuffer(0)
-          };
-          resolve(result);
-        });
-      }
-    );
-    request.on(
-      "timeout",
-      () => request.destroy(new Error("Bangumi request timed out"))
-    );
-    request.on("error", (error) => reject(error));
-    if (init.body !== void 0) {
-      request.write(init.body);
-    }
-    request.end();
-  });
-}
-async function dohRequest(init) {
-  const url = new URL(init.url);
+async function withCandidates(url, timeoutMs, attempt) {
   const resolved = await resolveViaDoh(url.hostname);
   if (!resolved) {
     throw new Error(`DoH resolution failed for ${url.hostname}`);
@@ -2233,15 +2181,9 @@ async function dohRequest(init) {
   }
   let lastError = null;
   for (const [index, address] of ordered.entries()) {
-    const timeoutMs = index === 0 ? init.timeoutMs : Math.min(init.timeoutMs, RETRY_ATTEMPT_TIMEOUT_MS);
+    const attemptTimeout = index === 0 ? timeoutMs : Math.min(timeoutMs, RETRY_ATTEMPT_TIMEOUT_MS);
     try {
-      return await attemptRequest(
-        url,
-        init,
-        address,
-        resolved.family,
-        timeoutMs
-      );
+      return await attempt(address, resolved.family, attemptTimeout);
     } catch (error) {
       lastError = toError(error, `DoH request failed for ${address}`);
       markBadAddress(address);
@@ -2249,6 +2191,133 @@ async function dohRequest(init) {
   }
   invalidateDohCache(url.hostname);
   throw lastError != null ? lastError : new Error(`DoH request failed for ${url.hostname}`);
+}
+function connectionOptions(url, address, family, timeoutMs, headers) {
+  return {
+    protocol: url.protocol,
+    hostname: url.hostname,
+    port: url.port || 443,
+    path: `${url.pathname}${url.search}`,
+    method: "GET",
+    headers,
+    timeout: timeoutMs,
+    // Connect to the DoH answer while keeping hostname for SNI / certs.
+    lookup: (_hostname, options, callback) => {
+      if (options.all) {
+        callback(null, [{ address, family }], family);
+        return;
+      }
+      callback(null, address, family);
+    }
+  };
+}
+function attemptRequest(url, init, address, family, timeoutMs) {
+  var _a;
+  const https = loadHttps();
+  const options = connectionOptions(
+    url,
+    address,
+    family,
+    timeoutMs,
+    init.headers
+  );
+  options.method = (_a = init.method) != null ? _a : "GET";
+  return new Promise((resolve, reject) => {
+    const request = https.request(options, (response) => {
+      const chunks = [];
+      response.setEncoding("utf8");
+      response.on("data", (chunk) => {
+        chunks.push(chunk);
+      });
+      response.on("error", (error) => reject(error));
+      response.on("end", () => {
+        var _a2;
+        const text = chunks.join("");
+        let json;
+        try {
+          json = text.length > 0 ? JSON.parse(text) : void 0;
+        } catch (e) {
+          json = void 0;
+        }
+        resolve({
+          status: (_a2 = response.statusCode) != null ? _a2 : 0,
+          headers: collectHeaders(response.headers),
+          text,
+          json,
+          // JSON endpoints only. Binary downloads go through dohDownload().
+          arrayBuffer: new ArrayBuffer(0)
+        });
+      });
+    });
+    request.on(
+      "timeout",
+      () => request.destroy(new Error("Bangumi request timed out"))
+    );
+    request.on("error", (error) => reject(error));
+    if (init.body !== void 0) {
+      request.write(init.body);
+    }
+    request.end();
+  });
+}
+function attemptDownload(url, init, address, family, timeoutMs) {
+  const https = loadHttps();
+  const options = connectionOptions(
+    url,
+    address,
+    family,
+    timeoutMs,
+    init.headers
+  );
+  return new Promise((resolve, reject) => {
+    const request = https.request(options, (response) => {
+      const binary = response;
+      const chunks = [];
+      binary.on("data", (chunk) => {
+        chunks.push(chunk);
+      });
+      binary.on("error", (error) => reject(error));
+      binary.on("end", () => {
+        var _a;
+        const status = (_a = binary.statusCode) != null ? _a : 0;
+        if (status < 200 || status >= 300) {
+          reject(new Error(`Download failed with HTTP ${status}`));
+          return;
+        }
+        let total = 0;
+        for (const chunk of chunks) total += chunk.length;
+        const merged = new Uint8Array(total);
+        let offset = 0;
+        for (const chunk of chunks) {
+          merged.set(chunk, offset);
+          offset += chunk.length;
+        }
+        resolve(merged.buffer);
+      });
+    });
+    request.on(
+      "timeout",
+      () => request.destroy(new Error("Bangumi download timed out"))
+    );
+    request.on("error", (error) => reject(error));
+    request.end();
+  });
+}
+async function dohRequest(init) {
+  const url = new URL(init.url);
+  return withCandidates(
+    url,
+    init.timeoutMs,
+    (address, family, timeoutMs) => attemptRequest(url, init, address, family, timeoutMs)
+  );
+}
+async function dohDownload(init) {
+  const url = new URL(init.url);
+  return withCandidates(
+    url,
+    init.timeoutMs,
+    (address, family, timeoutMs) => attemptDownload(url, init, address, family, timeoutMs)
+  );
 }
 
 // src/bangumi/client.ts
@@ -2440,6 +2509,38 @@ var BangumiClient = class {
         }
       }
     );
+  }
+  /**
+   * Download binary content (cover images). Uses the DNS fix transport when it is
+   * available, so a poisoned resolver cannot block the image either.
+   */
+  async downloadBinary(url) {
+    var _a;
+    const mode = (_a = this.options.dnsFixMode) != null ? _a : DNS_FIX_MODES.auto;
+    if (mode !== DNS_FIX_MODES.off && isDohTransportAvailable()) {
+      try {
+        return await dohDownload({
+          url,
+          headers: { "User-Agent": this.options.userAgent },
+          timeoutMs: DEFAULT_REQUEST_TIMEOUT_MS
+        });
+      } catch (error) {
+        this.warnDohFailure(error);
+      }
+    }
+    const response = await (0, import_obsidian6.requestUrl)({
+      url,
+      headers: { "User-Agent": this.options.userAgent },
+      throw: false
+    });
+    if (response.status < 200 || response.status >= 300) {
+      throw new BangumiApiError(
+        `Download failed with HTTP ${response.status}`,
+        response.status,
+        url
+      );
+    }
+    return response.arrayBuffer;
   }
   async request(path, options = {}) {
     var _a, _b;
@@ -2817,6 +2918,7 @@ function readSubjectId(app, file) {
 // src/sync/sync-service.ts
 var obsidianMoment = import_obsidian9.moment;
 var PAGE_LIMIT = 50;
+var COVER_EXTENSIONS = /* @__PURE__ */ new Set(["jpg", "jpeg", "png", "webp", "gif", "avif"]);
 var REPORT_FILE_NAME = "Bangumi Sync Report.md";
 var DAILY_SYNC_BLOCK_START = "<!-- bangumi-daily-sync-start -->";
 var DAILY_SYNC_BLOCK_END = "<!-- bangumi-daily-sync-end -->";
@@ -2947,7 +3049,7 @@ var SyncService = class {
             continue;
           }
           seenSubjectIds.add(subjectId);
-          if (this.shouldSkipUnchanged(collection) && noteIndex.has(subjectId)) {
+          if (this.shouldSkipUnchanged(collection) && noteIndex.has(subjectId) && !this.needsCoverLocalization(collection)) {
             incrementalSkipped += 1;
             groupUnchanged += 1;
             continue;
@@ -2968,13 +3070,18 @@ var SyncService = class {
           ]);
           const { episodes, episodeSyncError } = episodesResult;
           try {
+            const localCoverPath = await this.prepareLocalCover(
+              client,
+              collection
+            );
             const result = await writer.writeSubjectNote(
               this.getTargetDirectory(collection),
               {
                 collection,
                 episodes,
                 episodeSyncError,
-                extras
+                extras,
+                localCoverPath
               },
               noteIndex
             );
@@ -3449,6 +3556,51 @@ var SyncService = class {
     const title = episode.name_cn || episode.name || "";
     return title ? `EP${episode.sort} ${title}` : `EP${episode.sort}`;
   }
+  /** Vault path where a localized cover for this subject lives. */
+  coverStoragePath(collection) {
+    var _a, _b;
+    const url = ((_a = collection.subject.images) == null ? void 0 : _a.large) || ((_b = collection.subject.images) == null ? void 0 : _b.common);
+    if (!url) return null;
+    const match = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(url);
+    const raw = match ? match[1].toLowerCase() : "jpg";
+    const extension = COVER_EXTENSIONS.has(raw) ? raw : "jpg";
+    return (0, import_obsidian9.normalizePath)(
+      `${this.settings.syncDirectory}/covers/${collection.subject.id}.${extension}`
+    );
+  }
+  /** True when localization is on but this subject has no local cover yet. */
+  needsCoverLocalization(collection) {
+    if (!this.settings.localizeCovers) return false;
+    const path = this.coverStoragePath(collection);
+    if (!path) return false;
+    return !this.app.vault.getAbstractFileByPath(path);
+  }
+  /**
+   * Download the cover into the vault when cover localization is enabled.
+   * Returns the vault path so the note can embed it instead of a remote URL.
+   */
+  async prepareLocalCover(client, collection) {
+    var _a, _b;
+    if (!this.settings.localizeCovers) return void 0;
+    const path = this.coverStoragePath(collection);
+    if (!path) return void 0;
+    if (this.app.vault.getAbstractFileByPath(path)) return path;
+    const url = ((_a = collection.subject.images) == null ? void 0 : _a.large) || ((_b = collection.subject.images) == null ? void 0 : _b.common);
+    if (!url) return void 0;
+    try {
+      const data = await client.downloadBinary(url);
+      const directory = path.slice(0, path.lastIndexOf("/"));
+      if (directory) await ensureFolder(this.app, directory);
+      await this.app.vault.createBinary(path, data);
+      return path;
+    } catch (error) {
+      console.error(
+        `Bangumi Sync failed to download cover for ${collection.subject.id}`,
+        error
+      );
+      return void 0;
+    }
+  }
   /**
    * Write a note for `collection` and move it when the storage layout puts it
    * in a different folder than where the file currently lives.
@@ -3456,12 +3608,12 @@ var SyncService = class {
    * A subject whose status changed on Bangumi must also move on disk, otherwise
    * the folder layout drifts away from the note's own `status` field.
    */
-  async writeAndRelocate(writer, noteIndex, collection, episodes, extras, episodeSyncError) {
+  async writeAndRelocate(writer, noteIndex, collection, episodes, extras, episodeSyncError, localCoverPath) {
     var _a, _b;
     const targetDirectory = (0, import_obsidian9.normalizePath)(this.getTargetDirectory(collection));
     const result = await writer.writeSubjectNote(
       targetDirectory,
-      { collection, episodes, episodeSyncError, extras },
+      { collection, episodes, episodeSyncError, extras, localCoverPath },
       noteIndex
     );
     const currentDirectory = (0, import_obsidian9.normalizePath)((_b = (_a = result.file.parent) == null ? void 0 : _a.path) != null ? _b : "");
@@ -3536,13 +3688,18 @@ var SyncService = class {
           }
         }
         const extras = await this.fetchSubjectExtras(client, collection, []);
+        const localCoverPath = await this.prepareLocalCover(
+          client,
+          collection
+        );
         const result = await this.writeAndRelocate(
           writer,
           noteIndex,
           collection,
           episodes,
           extras,
-          episodeSyncError
+          episodeSyncError,
+          localCoverPath
         );
         updated.push({
           path: result.path,

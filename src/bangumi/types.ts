@@ -161,4 +161,6 @@ export interface BangumiSyncedSubject {
 	episodes: BangumiEpisodeCollection[];
 	episodeSyncError?: string;
 	extras?: BangumiSubjectExtras;
+	/** Vault path of a locally stored cover, when cover localization is on. */
+	localCoverPath?: string;
 }

@@ -48,6 +48,7 @@ export interface BangumiSyncSettings {
 	fetchStaff: boolean;
 	fetchCharacters: boolean;
 	fetchRelations: boolean;
+	localizeCovers: boolean;
 	dnsFixMode: DnsFixMode;
 	lastSyncedAt: string;
 	subjectTypes: BangumiSubjectType[];
@@ -108,7 +109,8 @@ const BOOLEAN_SETTING_KEYS = [
 	"fetchDetailedSubjectInfo",
 	"fetchStaff",
 	"fetchCharacters",
-	"fetchRelations"
+	"fetchRelations",
+	"localizeCovers"
 ] as const satisfies ReadonlyArray<keyof BangumiSyncSettings>;
 
 export interface SettingsSanitizeResult {
@@ -270,6 +272,7 @@ export const DEFAULT_SETTINGS: BangumiSyncSettings = {
 	fetchStaff: false,
 	fetchCharacters: false,
 	fetchRelations: false,
+	localizeCovers: false,
 	dnsFixMode: DNS_FIX_MODES.auto,
 	lastSyncedAt: "",
 	subjectTypes: [BANGUMI_SUBJECT_TYPES.anime],
@@ -567,6 +570,18 @@ export class BangumiSyncSettingTab extends PluginSettingTab {
 					.setDynamicTooltip()
 					.onChange(async (value) => {
 						this.plugin.settings.syncConcurrency = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(t("localizeCovers"))
+			.setDesc(t("localizeCoversDesc"))
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.localizeCovers)
+					.onChange(async (enabled) => {
+						this.plugin.settings.localizeCovers = enabled;
 						await this.plugin.saveSettings();
 					})
 			);

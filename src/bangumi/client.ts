@@ -15,7 +15,7 @@ import {
 } from "./types";
 import { t } from "../i18n";
 import { DNS_FIX_MODES, type DnsFixMode } from "../dns-fix";
-import { dohRequest, isDohTransportAvailable } from "./doh";
+import { dohDownload, dohRequest, isDohTransportAvailable } from "./doh";
 
 export interface BangumiClientOptions {
 	accessToken: string;
@@ -301,6 +301,39 @@ export class BangumiClient {
 				}
 			}
 		);
+	}
+
+	/**
+	 * Download binary content (cover images). Uses the DNS fix transport when it is
+	 * available, so a poisoned resolver cannot block the image either.
+	 */
+	async downloadBinary(url: string): Promise<ArrayBuffer> {
+		const mode = this.options.dnsFixMode ?? DNS_FIX_MODES.auto;
+		if (mode !== DNS_FIX_MODES.off && isDohTransportAvailable()) {
+			try {
+				return await dohDownload({
+					url,
+					headers: { "User-Agent": this.options.userAgent },
+					timeoutMs: DEFAULT_REQUEST_TIMEOUT_MS
+				});
+			} catch (error) {
+				this.warnDohFailure(error);
+			}
+		}
+
+		const response = await requestUrl({
+			url,
+			headers: { "User-Agent": this.options.userAgent },
+			throw: false
+		});
+		if (response.status < 200 || response.status >= 300) {
+			throw new BangumiApiError(
+				`Download failed with HTTP ${response.status}`,
+				response.status,
+				url
+			);
+		}
+		return response.arrayBuffer;
 	}
 
 	private async request<T>(
